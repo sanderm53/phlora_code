@@ -1,0 +1,36 @@
+To export to other devices:
+
+0. Add the device ID of the target iPad in MJS Apple developer account
+
+1. Make sure all Xcode 9.2 signing settings are set to Automatic, and iOS Developer
+
+2. In Xcode select /Products/Archive to create the directory with the .ipa archive file
+(Takes a while!).
+
+3. Copy this to your target Mac laptop or desktop and open Apple Configurator 2 (from AppStore)
+
+4. Plug in iPad to target Mac laptop, select device when it is shown and click + to add the .ipa file, etc.
+
+5. Should install and run. 
+
+
+
+
+To upload to iTunesConnect:
+
+-- I think I did the export with the iPad pro attached and selected as the target!!!!!!
+-- Have to increment the build version number in XCODE's info.plist pane. Specifically the
+bundle versions string, short.
+-- Then go to Product/Archive in XCode to start upload process.
+-- Click upload to app store
+-- Choose default various options about bitcode and symbols, and default autosigning etc
+-- Click upload to app store
+
+
+
+
+Debugging IB:
+
+Error logs are kept in 
+
+/Users/mcmanderson/Library/Logs/DiagnosticReports
