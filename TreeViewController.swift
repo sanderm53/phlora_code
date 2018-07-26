@@ -659,7 +659,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		killTheAnimationTimer()	// If in the middle of a pan animation, kill the animation and go: IMPORTANT
 
 		let translation = recognizer.translation(in: imagePane)
-		//let treeLocation = treePoint(fromWindowPoint:location)
+	//let treeLocation = treePoint(fromWindowPoint:location)
 
 //		if recognizer.state == UIGestureRecognizerState.began
 //			{
@@ -669,11 +669,38 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			imagePane.translate(dx: translation.x, dy: translation.y, inTreeView: treeView)
 	treeView.layoutSubviews()
 			recognizer.setTranslation(CGPoint(x:0,y:0), in: imagePane) // reset
+
+//print ("ImagePane current frame and center = ", imagePane.frame, imagePane.center)
+
 			}
 		if recognizer.state == UIGestureRecognizerState.ended
 			{
 				let velocity = recognizer.velocity(in: imagePane)
-				targetY = velocity.y
+
+let magnitude = sqrt(velocity.x*velocity.x + velocity.y*velocity.y)
+let slideMultiplier = magnitude/1000
+let slideFactor = 0.1 * slideMultiplier
+
+				let targetX = velocity.x * slideFactor
+				let targetY = velocity.y * slideFactor
+var finalCenter = CGPoint(x:imagePane.center.x+targetX, y:imagePane.center.y+targetY)
+//finalCenter.x = clamp(finalCenter.x, between:0, and:treeView.bounds.size.width)
+//finalCenter.y = clamp(finalCenter.y, between:0, and:treeView.bounds.size.height)
+
+				imagePane.relativePaneCenter.x += targetX
+				imagePane.relativePaneCenter.y += targetY // only do this in .ended right now since above we use old translate() func
+let newPaneViewFrame = imagePane.frame.offsetBy(dx: targetX, dy: targetY)
+let newDiagonalFrame = imagePane.upDateDiagonalFrame(usingFrame: newPaneViewFrame, iconX:804)
+
+					UIView.animate(withDuration: Double(slideFactor*2),
+							delay: 0,
+							options: UIViewAnimationOptions.curveEaseOut,
+							animations:
+							{
+							//self.imageView.transform = transform
+							imagePane.center = finalCenter
+					//imagePane.diagonalLineView!.frame = newDiagonalFrame
+							} )
 
 
 				//createDisplayLink()

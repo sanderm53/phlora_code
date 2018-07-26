@@ -630,6 +630,7 @@ ctx.drawPath(using: .stroke)
 */
 	// **********************************************************************
 
+	/*
 	func drawLineToImage(inContext ctx:CGContext, fromX xImageCenter:CGFloat)
 		{
 			ctx.setLineWidth(treeSettings.edgeWidth)
@@ -647,7 +648,7 @@ ctx.drawPath(using: .stroke)
 			ctx.setLineDash(phase: 0, lengths: [])
 			ctx.setLineWidth(treeSettings.edgeWidth)
 		}
-
+*/
 	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat)
 			{
 		let radius:CGFloat=3 // Adjust this to change roundedness of corners

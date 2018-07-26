@@ -55,7 +55,23 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		var scale:CGFloat = 1.0
 		var maxScale:CGFloat = 1.0
 		var maxTransform:CGAffineTransform = CGAffineTransform.identity
-
+	
+/*
+		override var center:CGPoint  // I need this to set up the right direction of the diag line depending on position of pane above or below the latitude of the taxon label (which is always at center=0 in the superviews coord system
+			{
+			didSet {
+print ("Observing center",center.y)
+					if let dlview = self.diagonalLineView
+						{
+						if super.center.y > 0
+							{ dlview.diagonalToUpperRight = true }
+						else
+							{ dlview.diagonalToUpperRight = false }
+						}
+					
+					}
+			}
+*/
 
 // Default position of this view is centered on the frame provided to it
         init? (usingFrame f:CGRect,withFileNamePrefix name:String, atTreeDirectoryNamed tree:String)
@@ -144,6 +160,11 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 
 				self.addSubview(imageView)
 
+//print ("Initial pane frame, center = ", frame, center)
+//transform = CGAffineTransform.identity.translatedBy(x: 100, y: 100)
+//print ("Transformed pane frame, center = ", frame, center)
+
+
 				self.isUserInteractionEnabled=true
 				layer.borderColor=UIColor.white.cgColor
 				layer.borderWidth=2.0
@@ -160,42 +181,48 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
 				{
 				// This lets us pinch to a point in the imageView; thanks to stackoverflow (B. Paulino)
-				let pinchCenter = CGPoint(x:pt.x-imageView.bounds.midX,y:pt.y-imageView.bounds.midY)
-
-
-				let transform = imageView.transform.translatedBy(x: pinchCenter.x, y: pinchCenter.y).scaledBy(x: scale, y: scale).translatedBy(x: -pinchCenter.x, y: -pinchCenter.y)
-				imageView.transform = transform
+				
 
 // begin new code...
-/*
-				let theTransform = CGAffineTransform.identity.translatedBy(x: pinchCenter.x, y: pinchCenter.y).scaledBy(x: scale, y: scale).translatedBy(x: -pinchCenter.x, y: -pinchCenter.y)
-				let newImageViewBounds = imageView.bounds.applying(theTransform)
-				var newImageViewFrame = imageView.frame.applying(theTransform)
-print (imageView.frame, newImageViewFrame)
-
-				let newImageOrigin = newImageViewFrame.origin
-				let oldCenter = center
-				var newPaneFrame = frame.offsetBy(dx: newImageOrigin.x, dy: newImageOrigin.y)
-				newPaneFrame.size = CGSize(width:newImageViewFrame.width,height:newImageViewFrame.height)
-				newImageViewFrame = newImageViewFrame.offsetBy(dx: -newImageOrigin.x, dy: -newImageOrigin.y)
-
-self.imageView.bounds = newImageViewBounds
-self.bounds  = self.imageView.bounds
+//  NOTE DOES NOT YET UPDATE THE DIAGONAL LINE SMOOTHELY; SAME GUNK AS LABEL NO DOUBT
+let oldCenter = center
+let rect = imageView.frame
+let theTransform = CGAffineTransform.identity.translatedBy(x: pt.x, y: pt.y).scaledBy(x: scale, y: scale).translatedBy(x: -pt.x, y: -pt.y) // note that this order is reversed from how you'd apply them to curren transform (I think)
+let newRect = rect.applying(theTransform)
+let deltaOrigin = newRect.origin
+let newSize = newRect.size
+let newFrameOrigin = CGPoint(x: frame.origin.x+deltaOrigin.x, y: frame.origin.y+deltaOrigin.y)
+let newPaneViewFrame = CGRect(origin: newFrameOrigin, size: newSize)
+let newImageViewFrame = CGRect(origin: CGPoint(x:0,y:0), size: newSize)
+let newLabelCenter = CGPoint(x:newPaneViewFrame.width/2,y:imageLabel.frame.height/2 + newPaneViewFrame.height)
+//diagonalLineView?.isHidden = true
 
 
-//				relativePaneCenter.x += (newPaneFrame.midX-oldCenter.x)
-//				relativePaneCenter.y += (newPaneFrame.midY-oldCenter.y) // update the position of this relative pane center based on new frame calcs
+	let newDiagonalFrame = upDateDiagonalFrame(usingFrame: newPaneViewFrame, iconX:804)
 
 
 
-					UIView.animate(withDuration:0.4, animations:
+					UIView.animate(withDuration:0.2, animations:
 							{
 							//self.imageView.transform = transform
 							self.imageView.frame = newImageViewFrame
-							self.frame = newPaneFrame
-							}	)
-
+							self.frame = newPaneViewFrame
+							self.imageLabel.center = newLabelCenter
+				self.diagonalLineView!.frame = newDiagonalFrame
+							}
+/*							,
+							completion:
+								{
+								finished in
+								//self.diagonalLineView?.isHidden = false
+								}
 */
+							)
+				self.scale *= scale
+/* OLD CODE
+				let pinchCenter = CGPoint(x:pt.x-imageView.bounds.midX,y:pt.y-imageView.bounds.midY)
+				let transform = imageView.transform.translatedBy(x: pinchCenter.x, y: pinchCenter.y).scaledBy(x: scale, y: scale).translatedBy(x: -pinchCenter.x, y: -pinchCenter.y)
+				imageView.transform = transform
 
 				self.scale *= scale
 
@@ -209,7 +236,7 @@ self.bounds  = self.imageView.bounds
 				frame = frame.offsetBy(dx: newImageOrigin.x, dy: newImageOrigin.y)
 				frame.size = CGSize(width:imageView.frame.width,height:imageView.frame.height)
 				imageView.frame = imageView.frame.offsetBy(dx: -newImageOrigin.x, dy: -newImageOrigin.y)
-
+*/
 
 				relativePaneCenter.x += (center.x-oldCenter.x)
 				relativePaneCenter.y += (center.y-oldCenter.y) // update the position of this relative pane center based on new frame calcs
@@ -219,7 +246,8 @@ self.bounds  = self.imageView.bounds
 
 		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:DrawTreeView) // Don't use transforms, because they mess with the pane frame, which I need in scale
 				{
-				frame = frame.offsetBy(dx: x, dy: y)
+				//frame = frame.offsetBy(dx: x, dy: y)
+				center = CGPoint(x: center.x+x, y: center.y+y)
 				relativePaneCenter.x += x
 				relativePaneCenter.y += y // update the position of this relative pane center based on new frame calcs
 //...really affects pans and scaling: noticably flickers
@@ -287,10 +315,24 @@ self.bounds  = self.imageView.bounds
 
 				dlview.frame = rectFromTwoPoints(pt1,pt2)
 				
-				dlview.setNeedsDisplay() // yes to avoid drawing the actual line via some wonky xformation
+				//dlview.setNeedsDisplay() // yes to avoid drawing the actual line via some wonky xformation
 				}
 			}
 
+		func upDateDiagonalFrame(usingFrame f:CGRect,  iconX icx:CGFloat)->CGRect
+			{
+			// want pt1 and pt2 in paneView's coordinates...
+			let pt1 = CGPoint(x:f.width,y:0)
+			
+			let xDist = icx - f.maxX // distance to right side of frame
+			let pt2 = CGPoint(x:pt1.x+xDist, y:-center.y+f.height/2)
+			
+			
+
+			let newFrame = rectFromTwoPoints(pt1,pt2)
+				
+			return newFrame
+			}
 
         // Used if view is called programmatically
 
@@ -356,11 +398,14 @@ class DiagonalLineView: UIView
         		{
                 super.init(frame:CGRect()) // zero frame
                 self.isOpaque = false // this may slow rendering
+                self.contentMode = .redraw // need this, otherwise when frame is changed, it does NOT call draw(), and bitmap of diagonal gets distorted by default content scale mode
 				frame = rectFromTwoPoints(pt1,pt2)
+/*
 				if (pt1.y>pt2.y)
 					{diagonalToUpperRight = true}
 				else
 					{diagonalToUpperRight = false}
+*/
 				//layer.borderColor=UIColor.red.cgColor
 				//layer.borderWidth=2.0
                 }
@@ -377,6 +422,17 @@ class DiagonalLineView: UIView
 		override func draw(_ rect: CGRect)
 			{
 			var start,end:CGPoint
+
+if let sv = superview as? ImagePaneView
+	{
+//print ("Fetching parent center = ",sv.center.y)
+	if sv.center.y - sv.bounds.midY > 0
+		{ diagonalToUpperRight = true }
+	else
+		{ diagonalToUpperRight = false }
+
+	}
+
 			if diagonalToUpperRight
 				{
 				start = CGPoint(x: bounds.minX, y: bounds.maxY)

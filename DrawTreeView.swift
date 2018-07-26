@@ -329,6 +329,8 @@ var xTreeIsSetup:Bool = false
 					//imagePane.setLocationRelativeToTreeTo(0,panTranslateTree + treeCoordY + decoratedTreeRect.midY)
 					
 					imagePane.upDateDiagonalFrame(iconX:xCenterImageIcon)
+	let newFrame = imagePane.upDateDiagonalFrame(usingFrame: imagePane.frame, iconX:xCenterImageIcon)
+	imagePane.diagonalLineView?.frame = newFrame
 					imagePane.setLocationRelativeToTreeTo(0,WindowCoord(fromTreeCoord: treeCoordY , inTreeView: self))
 					}
 				}

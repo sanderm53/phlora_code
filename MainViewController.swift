@@ -75,14 +75,9 @@ class MainViewController: UIViewController {
 
 		let imageFile = "LupineTableMountain"
 		let image = UIImage(named:imageFile)
-
-		let resizedImage = resizeUIImage(image:image!, toSize:view.frame.size)
-
-
-		let imageView = UIImageView(image: resizedImage)
+		let imageView = UIImageView(image: image)
 		imageView.contentMode = .scaleAspectFill
 		view.addSubview(imageView)
-
 		imageView.translatesAutoresizingMaskIntoConstraints = false
 		imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
 		imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
