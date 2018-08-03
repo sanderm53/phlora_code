@@ -55,7 +55,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		var scale:CGFloat = 1.0
 		var maxScale:CGFloat = 1.0
 		var maxTransform:CGAffineTransform = CGAffineTransform.identity
-	
+		var diagonalIsHidden:Bool = false
 /*
 		override var center:CGPoint  // I need this to set up the right direction of the diag line depending on position of pane above or below the latitude of the taxon label (which is always at center=0 in the superviews coord system
 			{
@@ -208,7 +208,7 @@ let newLabelCenter = CGPoint(x:newPaneViewFrame.width/2,y:imageLabel.frame.heigh
 							self.imageView.frame = newImageViewFrame
 							self.frame = newPaneViewFrame
 							self.imageLabel.center = newLabelCenter
-				self.diagonalLineView!.frame = newDiagonalFrame
+				//self.diagonalLineView!.frame = newDiagonalFrame
 							}
 /*							,
 							completion:
@@ -247,11 +247,17 @@ let newLabelCenter = CGPoint(x:newPaneViewFrame.width/2,y:imageLabel.frame.heigh
 		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:DrawTreeView) // Don't use transforms, because they mess with the pane frame, which I need in scale
 				{
 				//frame = frame.offsetBy(dx: x, dy: y)
-				center = CGPoint(x: center.x+x, y: center.y+y)
-				relativePaneCenter.x += x
-				relativePaneCenter.y += y // update the position of this relative pane center based on new frame calcs
-//...really affects pans and scaling: noticably flickers
-				//treeView.setNeedsDisplay() // needed so we update the connector line to the node
+					let newCenter = CGPoint(x: center.x+x, y: center.y+y)
+let newRect = centeredRect(center: newCenter, size: bounds.size)
+if rectInPaneCoordsDoesIntersectWithWindow(paneRect:newRect, ofTreeView:treeView)
+					{
+
+					center = newCenter
+					relativePaneCenter.x += x
+					relativePaneCenter.y += y // update the position of this relative pane center based on new frame calcs
+	//...really affects pans and scaling: noticably flickers
+					//treeView.setNeedsDisplay() // needed so we update the connector line to the node
+					}
 				}
 	
 
@@ -327,6 +333,8 @@ let newLabelCenter = CGPoint(x:newPaneViewFrame.width/2,y:imageLabel.frame.heigh
 			let xDist = icx - f.maxX // distance to right side of frame
 			let pt2 = CGPoint(x:pt1.x+xDist, y:-center.y+f.height/2)
 			
+			if pt1.x > pt2.x // pane moving past imageIcon to right, stop displaying
+				{ return CGRect() }
 			
 
 			let newFrame = rectFromTwoPoints(pt1,pt2)
@@ -347,42 +355,35 @@ let newLabelCenter = CGPoint(x:newPaneViewFrame.width/2,y:imageLabel.frame.heigh
                 super.init(coder:aDecoder)
         }
 	
-	
-					/*
-						override func draw(_ rect: CGRect)
-							{
-					print ("4..calling draw in ImagePaneView")
+		func convert(panePt pt:CGPoint, toTreeView treeView:DrawTreeView) -> CGPoint
+			{
+			let nodeY = self.associatedNode!.coord.y
+			let treeCoordY = nodeY + pt.y
+			let Y = WindowCoord(fromTreeCoord: treeCoordY, inTreeView:treeView)
+			let X = pt.x
+			return CGPoint(x: X, y: Y)
+			}
+		func isPanePointWithinWindow(panePt pt:CGPoint, ofTreeView treeView:DrawTreeView) -> Bool
+			{
+			let p = convert(panePt:pt, toTreeView:treeView)
+			let r = treeView.decoratedTreeRect!
+			if p.x > r.minX && p.x < r.maxX && p.y > r.minY && p.y < r.maxY
+				{ return true }
+			else
+				{ return false }
+			}
 
-							super.draw(rect)
-							if isAttachedToNode
-								{
-								let treeView = superview as! DrawTreeView
-								//let ctx = treeView.ctx!
-							let ctx = UIGraphicsGetCurrentContext()!
-
-								//ctx.translateBy(x: 0.0, y: treeView.panTranslateTree + treeView.decoratedTreeRect.midY)
-
-							//ctx = UIGraphicsGetCurrentContext()
-							//ctx.setStrokeColor(treeSettings.edgeColor)
-							ctx.setLineWidth(treeSettings.edgeWidth)
-
-					clipsToBounds=false
-
-								// draw the dotted line between image and image icon
-								//let imageAnchorPt = CGPoint(x:frame.origin.x+frame.width,y:frame.minY) // upper right of image rect
-								let imageAnchorPt = CGPoint(x:400,y:-5000) // upper right of image rect
-								//let imageIconPt = CGPoint(x: 800, y: associatedNode!.coord.y)
-								let imageIconPt = CGPoint(x: 400, y: +5000)
-								ctx.move(to:imageAnchorPt)
-								ctx.addLine(to:imageIconPt)
-								ctx.setStrokeColor(treeSettings.imageToIconLineColor) // restore stroke color
-								ctx.setLineDash(phase: 0, lengths: [1,3])
-								ctx.strokePath()
-								ctx.setLineDash(phase: 0, lengths: [])
-					print (imageAnchorPt,imageIconPt)
-								}
-							}
-					*/
+		func rectInPaneCoordsDoesIntersectWithWindow(paneRect rect:CGRect, ofTreeView treeView:DrawTreeView) -> Bool
+			{
+			let pt = rect.origin
+			let p = convert(panePt:pt, toTreeView:treeView)
+			let convertedRect = CGRect(origin:p, size:rect.size)
+			let r = treeView.decoratedTreeRect!
+			if r.intersects(convertedRect)
+				{ return true }
+			else
+				{ return false }
+			}
 
 
 	}
@@ -422,16 +423,18 @@ class DiagonalLineView: UIView
 		override func draw(_ rect: CGRect)
 			{
 			var start,end:CGPoint
+return
+			if bounds.width == 0 || bounds.height == 0
+				{ return }
 
-if let sv = superview as? ImagePaneView
-	{
-//print ("Fetching parent center = ",sv.center.y)
-	if sv.center.y - sv.bounds.midY > 0
-		{ diagonalToUpperRight = true }
-	else
-		{ diagonalToUpperRight = false }
+			if let sv = superview as? ImagePaneView
+				{
+				if sv.center.y - sv.bounds.midY > 0
+					{ diagonalToUpperRight = true }
+				else
+					{ diagonalToUpperRight = false }
 
-	}
+				}
 
 			if diagonalToUpperRight
 				{

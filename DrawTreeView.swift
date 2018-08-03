@@ -90,8 +90,6 @@ class DrawTreeView: UIView
 	var xCenterImageIcon:CGFloat!				// the x coord of center of image icon
 	let topBorderInsetFromFrame:CGFloat=0.0	// Space for info at top and bottom of drawTree frame
 	let bottomBorderInsetFromFrame:CGFloat=0.0
-	//let rightBorderInsetFromFrame:CGFloat=10.0
-	//let leftBorderInsetFromFrame:CGFloat=10.0
 	let rightBorderInsetFromFrame:CGFloat=10.0
 	let leftBorderInsetFromFrame:CGFloat=10.0
 	let labelSpacingFactor:CGFloat=1.1		// factor controlling vertical space between leaf labels (bigger=more space)
@@ -102,8 +100,8 @@ class DrawTreeView: UIView
 	var decoratedTreeRectCentered:CGRect!			// ...centered about y=0
 	var nakedTreeRect:CGRect!					// Just the nodes edges of the tree
 	var nakedTreeRectCentered:CGRect!
-	var decoratedTreeRectMinusImages:CGRect!	// decorated rect minus the right column containing image icons
-	var imagesRect:CGRect!						// Just the rectangle containing the image icons on right of screen
+	var decoratedTreeRectMinusImageIcons:CGRect!	// decorated rect minus the right column containing image icons
+	var imageIconsRect:CGRect!						// Just the rectangle containing the image icons on right of screen
 	var bottomInfoRect:CGRect!					// Rectangle below tree containing information
 
 	var panTranslateTree:CGFloat=0.0			// realtime translation of y-axis of tree for panning
@@ -116,20 +114,6 @@ class DrawTreeView: UIView
 
 	var previousBounds:CGRect = .zero
 
-/*
-	override var frame:CGRect
-		{
-		didSet {
-			if true // xTreeIsSetup
-				{
-			//setupViewDependentTreeParameters()
-print ("Setter....",frame)
-			setNeedsDisplay()
-				}
-			}
-		}
-var xTreeIsSetup:Bool = false
-*/
 
 	var treeInfo:TreeInfoPackage?
 
@@ -146,14 +130,6 @@ var xTreeIsSetup:Bool = false
 		setup()
 		}
 	
-/*
-	init(frame: CGRect, using treeInfoPackage:TreeInfoPackage)
-		{
-		super.init(frame:frame)
-		treeInfo = treeInfoPackage
-		setup()
-		}
-*/
 	
 	init(using treeInfoPackage:TreeInfoPackage)
 		{
@@ -196,8 +172,8 @@ var xTreeIsSetup:Bool = false
 
 	func setupViewDependentImageCollectionGeometry()
 		{
-		xTree.imageCollection.imageMaximumWidth = decoratedTreeRectMinusImages.width // clunky place to init this but has to be in this order...
-		xTree.imageCollection.imageXCenter=decoratedTreeRectMinusImages.midX //ditto
+		xTree.imageCollection.imageMaximumWidth = decoratedTreeRectMinusImageIcons.width // clunky place to init this but has to be in this order...
+		xTree.imageCollection.imageXCenter=decoratedTreeRectMinusImageIcons.midX //ditto
 		}
 
 	func setupViewDependentTreeParameters()
@@ -218,23 +194,36 @@ var xTreeIsSetup:Bool = false
 		// when we redraw the tree. Sheesh
 
 
-		decoratedTreeRect = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame,right:rightBorderInsetFromFrame,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
+		//decoratedTreeRect = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame,right:rightBorderInsetFromFrame,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
 
-		decoratedTreeRectMinusImages = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame,right:rightBorderInsetFromFrame+imageIconWidth,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
+		decoratedTreeRect = UIEdgeInsetsInsetRect(bounds, UIEdgeInsets(top: 0, left: leftBorderInsetFromFrame, bottom: 0, right: rightBorderInsetFromFrame))
+
+		//decoratedTreeRectMinusImageIcons = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame,right:rightBorderInsetFromFrame+imageIconWidth,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
+
+		decoratedTreeRectMinusImageIcons = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: 0, left: 0, bottom: 0, right: imageIconWidth))
+
+
+
 		// the treeRect and derived rectangles are used solely to provide bounds for the initial layout of
 		// coordinates of the tree edges and labels. 
+
+
+
 		decoratedTreeRectCentered = decoratedTreeRect.offsetBy(dx: 0, dy: -decoratedTreeRect.midY)
 
-		imagesRect = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame+decoratedTreeRectMinusImages.width,right:rightBorderInsetFromFrame,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
+		//imageIconsRect = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame+decoratedTreeRectMinusImageIcons.width,right:rightBorderInsetFromFrame,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
+
+		imageIconsRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: 0, left: decoratedTreeRectMinusImageIcons.width, bottom: 0, right: 0))
+
+
 
 		let neededTopBottomGap = max(maxStringHeight/2.0,treeSettings.imageIconRadius) // to make room for labels and image icon space
-		//nakedTreeRect = CGRect(x:decoratedTreeRect.origin.x,y:decoratedTreeRect.origin.y+maxStringHeight/2.0,width:decoratedTreeRect.size.width-(maxStringLength+imageIconWidth),height:decoratedTreeRect.size.height-maxStringHeight)
-		nakedTreeRect = CGRect(x:decoratedTreeRect.origin.x,y:decoratedTreeRect.origin.y+neededTopBottomGap,width:decoratedTreeRect.size.width-(maxStringLength+imageIconWidth),height:decoratedTreeRect.size.height-2*neededTopBottomGap)
-		nakedTreeRectCentered = nakedTreeRect.offsetBy(dx: 0, dy: -nakedTreeRect.midY)
 
-// IMPORTANT! THE FOLLOWING RECT IS IN THE FRAME OF THE SUPERVIEW, SO I CAN USE IT IN THE VIEW CONTROLLER FOR VIEW RATHER THAN TREEVIEW
-		bottomInfoRect = CGRect(x:frame.origin.x,y:decoratedTreeRect.maxY, width: frame.width, height: bottomBorderInsetFromFrame)
-		bottomInfoRect = bottomInfoRect.offsetBy(dx: 0, dy: treeSettings.treeViewInsetY)
+		//nakedTreeRect = CGRect(x:decoratedTreeRect.origin.x,y:decoratedTreeRect.origin.y+neededTopBottomGap,width:decoratedTreeRect.size.width-(maxStringLength+imageIconWidth),height:decoratedTreeRect.size.height-2*neededTopBottomGap)
+
+		nakedTreeRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: neededTopBottomGap, left: 0, bottom: neededTopBottomGap, right: maxStringLength+imageIconWidth))
+
+		nakedTreeRectCentered = nakedTreeRect.offsetBy(dx: 0, dy: -nakedTreeRect.midY)
 
 		xTree.root.setupNodeCoordinates (in: nakedTreeRectCentered, forTreeType : TreeType.cladogram)
 
@@ -253,22 +242,6 @@ var xTreeIsSetup:Bool = false
 		}
 
 
-	func drawTopBottomInformation()
-		{
-		let scaleString = String(format: "%.1f", scaleTreeBy)
-		//let topInfo = String(xTree.numDescLvs) + " taxa" + "     Magnification=" + scaleString + "x"
-		let topInfo = treeName + " (" + String(xTree.numDescLvs) + " taxa)" + "     Mag:" + scaleString + "x"
-
-		//let bottomInfo = treeName + "    (" + treeSource + ")"
-
-
-		let topText = NSString(string:topInfo)
-		let leftInset:CGFloat = 5.0
-		//let bottomStartPt = CGPoint(x:leftInset,y:decoratedTreeRect.maxY+(bottomBorderInsetFromFrame-bottomTextHeight)/2)
-		let topStartPt = CGPoint(x:leftInset,y:decoratedTreeRect.minY-topBorderInsetFromFrame)
-		topText.draw(at:topStartPt, withAttributes: infoTextAttributes)
-		}
-
 	override func draw(_ rect: CGRect)
 		{
 //print ("4..calling draw in drawTreeView")
@@ -277,9 +250,7 @@ var xTreeIsSetup:Bool = false
 		ctx.setLineWidth(treeSettings.edgeWidth)
 
 
-//		drawTopBottomInformation()
-
-		// This clipping lets me be lazy about the code controlling the vertical edges of the tree crashing into the upper and lower 
+		// This clipping lets me be lazy about the code controlling the vertical edges of the tree crashing into the upper and lower
 		// borders of the decoratedTreeRectangle. Otherwise, I would have to clip these exactly...see drawClade code...
 
 		ctx.clip(to:decoratedTreeRect)
@@ -294,23 +265,14 @@ var xTreeIsSetup:Bool = false
 //
 		let everyNthLabel=floorPow2(UInt(labelScaleFactor/scaleTreeBy))	// complicated but guarantees that this is an integer on [1,2,4,8..] which means once a label appears on screen it will stay on screen as we zoom in
 
-		xTree.root.drawClade(inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ nakedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
+			xTree.root.drawClade(inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ decoratedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
+			// NB. Jult 31,2018: this got corrected to pass decoratedTreeRect instead of nakedTreeRect, but note I haven't changed parameter id yet. This makes the upper/lower border behavior of tree/labels clean now.
 		
 		if cladeNamesAreVisible && xTree.hasCladeNames
 			{
 			xTree.root.drawInternalLabels(havingNodeArray:xTree.nodeArray,inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ nakedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
 			}
 		
-// THIS WILL BE DEPRECATED!
-
-		//if xTree.imageCollection.hasImages
-		//	{ xTree.imageCollection.display(inTreeView:self) }  // NB! This used to be NECESSARY 5/15/18
-/*
-		if imagesAreVisible // ...should add boolean check for hasImages...just as for cladeNames
-			{
-			xTree.imageCollection.display(inTreeView:self, using:xTree)
-			}
-*/
 		}
 
 
@@ -324,14 +286,16 @@ var xTreeIsSetup:Bool = false
 			let imagePane = subview as! ImagePaneView
 			if !imagePane.isHidden && imagePane.isAttachedToNode
 				{
+// SHOULD IMBED THIS TEST IN THE SETLOC FUNC
 				if let treeCoordY = imagePane.associatedNode?.coord.y
 					{
 					//imagePane.setLocationRelativeToTreeTo(0,panTranslateTree + treeCoordY + decoratedTreeRect.midY)
 					
-					imagePane.upDateDiagonalFrame(iconX:xCenterImageIcon)
-	let newFrame = imagePane.upDateDiagonalFrame(usingFrame: imagePane.frame, iconX:xCenterImageIcon)
-	imagePane.diagonalLineView?.frame = newFrame
+					//imagePane.upDateDiagonalFrame(iconX:xCenterImageIcon)
+					//let newFrame = imagePane.upDateDiagonalFrame(usingFrame: imagePane.frame, iconX:xCenterImageIcon)
+					//imagePane.diagonalLineView?.frame = newFrame
 					imagePane.setLocationRelativeToTreeTo(0,WindowCoord(fromTreeCoord: treeCoordY , inTreeView: self))
+setNeedsDisplay()
 					}
 				}
 			}

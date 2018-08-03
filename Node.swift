@@ -630,14 +630,15 @@ ctx.drawPath(using: .stroke)
 */
 	// **********************************************************************
 
-	/*
+
 	func drawLineToImage(inContext ctx:CGContext, fromX xImageCenter:CGFloat)
 		{
 			ctx.setLineWidth(treeSettings.edgeWidth)
 
 
 			let imageIconPt = CGPoint(x:xImageCenter, y:coord.y)
-			let imagePaneUpperRight = CGPoint(x: imagePaneView!.frame.maxX, y: coord.y-imagePaneView!.frame.height/2.0 + imagePaneView!.relativePaneCenter.y)
+			//let imagePaneUpperRight = CGPoint(x: imagePaneView!.frame.maxX, y: coord.y-imagePaneView!.frame.height/2.0 + imagePaneView!.relativePaneCenter.y)
+			let imagePaneUpperRight = CGPoint(x: imagePaneView!.frame.maxX, y: coord.y-imagePaneView!.frame.height/2.0 + imagePaneView!.center.y)
 
 			ctx.move(to:imageIconPt)
 			ctx.addLine(to:imagePaneUpperRight)
@@ -648,7 +649,7 @@ ctx.drawPath(using: .stroke)
 			ctx.setLineDash(phase: 0, lengths: [])
 			ctx.setLineWidth(treeSettings.edgeWidth)
 		}
-*/
+
 	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat)
 			{
 		let radius:CGFloat=3 // Adjust this to change roundedness of corners
@@ -659,6 +660,15 @@ ctx.drawPath(using: .stroke)
 		let labelSpacing:CGFloat=6 // horizontal distance from tip to label start
 		if isLeaf()
 			{
+					if isDisplayingImage // at the moment this is true even when all images have been turned off en masse
+										// which is why need the following test. Should stick with one
+						{
+						if imagePaneView!.isHidden == false
+							{
+							drawLineToImage(inContext:ctx, fromX:xImageCenter)
+							
+							}
+						}
 
 			// I do some optimizations here to avoid writing offscreen. Maybe not necessary; maybe also do it
 			// when the lines are very faint
@@ -674,12 +684,19 @@ ctx.drawPath(using: .stroke)
 					else
 						{fillColor = treeSettings.imageIconColor}
 					drawImageIcon(inContext:ctx, atX:xImageCenter, atY:self.coord.y, withRadius:treeSettings.imageIconRadius,withFillColor:fillColor)
-
-//if isDisplayingImage
-//	{ drawLineToImage(inContext:ctx, fromX:xImageCenter) }
+/*
+					if isDisplayingImage // at the moment this is true even when all images have been turned off en masse
+										// which is why need the following test. Should stick with one
+						{
+						if imagePaneView!.isHidden == false
+							{
+							drawLineToImage(inContext:ctx, fromX:xImageCenter)
+							
+							}
+						}
+*/
 
 					}
-
 				let aText=NSAttributedString(string:self.label!,attributes: textAttributes)
 				let vertCenteredPt = CGPoint(x:self.coord.x+labelSpacing,y:self.coord.y-yOffset)
 
@@ -751,6 +768,7 @@ ctx.drawPath(using: .stroke)
 					// Only draw the horizontal line of the edges if they are onscreen (vertical ones still drawn at moment) THIS COULD BE IMPROVED LATER IF WARRANTED
 					// this is done relative to treeViewRect, which is not corrected for label heights
 					if treeCoordIsInRect(coord: child.coord.y, theRect: nakedTreeRect, withPanTranslate: panTranslate)
+					//if treeCoordIsInRect(coord: child.coord.y, theRect: decoratedTreeRect, withPanTranslate: panTranslate)
 						{
 						ctx.addLine(to:child.coord) // plus the horizontal line
 						}

@@ -56,6 +56,10 @@ var treesData:TreesData! // Initializes this once when the view controller is in
 
 var panGesture:UIPanGestureRecognizer?
 
+var panningImagePane:ImagePaneView?
+var panningImagePaneStartPt:CGPoint?
+var panningImagePaneEndPt:CGPoint?
+
 //Utilities
 
 func infoButtonAction(sender: UIButton!) {
@@ -217,16 +221,15 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 
 		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
 		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
-		//treeView.bottomAnchor.constraint(equalTo:view.bottomAnchor, constant: -bottomBarHeight).isActive = true
-
-
 
 	// Implement a simple help page pop up along with the information "i" button at bottom of screen
 		let hvWidth = treeSettings.helpViewSize.width
 		let hvHeight = treeSettings.helpViewSize.height
 		let hvOrigin = CGPoint(x: view.frame.midX-hvWidth/2, y: view.frame.midY-hvHeight/2)
 		let helpFrame=CGRect(origin: hvOrigin, size: treeSettings.helpViewSize)
+		// init with an actual frame makes sure that text is top justified...prob better way to do this to make init not necessary
 		helpView = UITextView(frame: helpFrame)
+		helpView = UITextView()
 		helpView.attributedText = HTMLFileToAttributedString(fromHTMLFilePrefix:treeSettings.helpFileNamePrefix)
 		helpView.isHidden=true
 		helpView.isEditable=false // careful, sometimes seems to throw constraint errors
@@ -235,6 +238,13 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 		helpView.layer.borderWidth=2.0
 		helpView.layer.cornerRadius=10
 		self.view.addSubview(helpView)
+		helpView.translatesAutoresizingMaskIntoConstraints=false
+		helpView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+		helpView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+		helpView.widthAnchor.constraint(equalToConstant: hvWidth).isActive = true
+		helpView.heightAnchor.constraint(equalToConstant: hvHeight).isActive = true
+
+
 
 		infoButton = UIButton(type: .infoDark)
 		infoButton.addTarget(self, action: #selector(infoButtonAction), for: .touchUpInside)
@@ -483,7 +493,7 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 
 		let location = gesture.location(in: treeView)
 
-		if treeView.decoratedTreeRectMinusImages.contains(location) // tap is in tree+taxa zone; check if an image
+		if treeView.decoratedTreeRectMinusImageIcons.contains(location) // tap is in tree+taxa zone; check if an image
 			{ //...and move to front then
 			let treeLocation = treePoint(fromWindowPoint:location)
 			let leafIndex = treeView.xTree.imageCollection.getFrontmostImageView(atTreeCoord:treeLocation, inTreeView:treeView)
@@ -493,7 +503,7 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 				}
 			}
 		else
-		if treeView.imagesRect.contains(location)	// tap is in image icon zone, handle
+		if treeView.imageIconsRect.contains(location)	// tap is in image icon zone, handle
 			{
 
 
@@ -661,9 +671,10 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		let translation = recognizer.translation(in: imagePane)
 	//let treeLocation = treePoint(fromWindowPoint:location)
 
-//		if recognizer.state == UIGestureRecognizerState.began
-//			{
-//			}
+		if recognizer.state == UIGestureRecognizerState.began
+			{
+			//imagePane.diagonalIsHidden = true
+			}
 		if recognizer.state == UIGestureRecognizerState.changed
 			{
 			imagePane.translate(dx: translation.x, dy: translation.y, inTreeView: treeView)
@@ -675,6 +686,11 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			}
 		if recognizer.state == UIGestureRecognizerState.ended
 			{
+
+//imagePane.diagonalIsHidden = true
+
+//self.treeView.setNeedsDisplay()
+
 				let velocity = recognizer.velocity(in: imagePane)
 
 let magnitude = sqrt(velocity.x*velocity.x + velocity.y*velocity.y)
@@ -685,25 +701,27 @@ let slideFactor = 0.1 * slideMultiplier
 				let targetY = velocity.y * slideFactor
 var finalCenter = CGPoint(x:imagePane.center.x+targetX, y:imagePane.center.y+targetY)
 //finalCenter.x = clamp(finalCenter.x, between:0, and:treeView.bounds.size.width)
-//finalCenter.y = clamp(finalCenter.y, between:0, and:treeView.bounds.size.height)
+
 
 				imagePane.relativePaneCenter.x += targetX
 				imagePane.relativePaneCenter.y += targetY // only do this in .ended right now since above we use old translate() func
-let newPaneViewFrame = imagePane.frame.offsetBy(dx: targetX, dy: targetY)
-let newDiagonalFrame = imagePane.upDateDiagonalFrame(usingFrame: newPaneViewFrame, iconX:804)
+//let newPaneViewFrame = imagePane.frame.offsetBy(dx: targetX, dy: targetY)
 
+/*
 					UIView.animate(withDuration: Double(slideFactor*2),
 							delay: 0,
 							options: UIViewAnimationOptions.curveEaseOut,
 							animations:
-							{
-							//self.imageView.transform = transform
-							imagePane.center = finalCenter
-					//imagePane.diagonalLineView!.frame = newDiagonalFrame
-							} )
+								{
+								//self.imageView.transform = transform
+								imagePane.center = finalCenter
+								},
+							completion: {finished in
+								self.treeView.setNeedsDisplay()
+					} )
+*/
 
-
-				//createDisplayLink()
+			createDisplayLink2(forImagePane:imagePane, toTargetPt:finalCenter)
 			}
 		}
 // ***********************************************************************************
@@ -730,7 +748,7 @@ let newDiagonalFrame = imagePane.upDateDiagonalFrame(usingFrame: newPaneViewFram
 								panningLeafIndex = leafIndex
 								imageIsPanning=true
 								}
-							else if treeView.imagesRect.contains(location)
+							else if treeView.imageIconsRect.contains(location)
 								{
 								imageIconsArePanning=true
 								lastPanningIconLeafIndex = windowYToNearestLeafIndex(windowY:location.y)
@@ -881,6 +899,48 @@ let newDiagonalFrame = imagePane.upDateDiagonalFrame(usingFrame: newPaneViewFram
 			treeView.panTranslateTree = startAnimationY + CGFloat(tTransform) * targetY
 			treeView.setNeedsDisplay()
 
+			}
+	// Thanks to Ben Dietzkis' web site
+	func createDisplayLink2(forImagePane ip:ImagePaneView, toTargetPt targetPt:CGPoint)
+		{
+		timer?.invalidate()
+		timer=nil
+		timer = CADisplayLink(target: self, selector: #selector(step2))
+		startAnimation = Date.timeIntervalSinceReferenceDate
+		endAnimation  = Date.timeIntervalSinceReferenceDate + animateDuration
+		self.panningImagePane = ip
+		self.panningImagePaneStartPt = ip.center
+		self.panningImagePaneEndPt = targetPt
+		lastUpdate = Date.timeIntervalSinceReferenceDate
+		
+		timer?.add(to: .current, forMode: .defaultRunLoopMode)
+		}
+	
+	func step2(displaylink: CADisplayLink)
+			{
+			let now: TimeInterval = Date.timeIntervalSinceReferenceDate
+
+			let t = Float( (now-startAnimation)/animateDuration  )
+			let tTransform = 1-powf((1-t),3.0) // easing out
+
+			//print (now, startAnimation, endAnimation, t)
+		
+			if now >= endAnimation
+				{
+				killTheAnimationTimer()	// If in the middle of a pan animation, kill the animation and go
+				}
+			if let ip = panningImagePane
+				{
+
+				if !ip.isPanePointWithinWindow(panePt:ip.center, ofTreeView:treeView)
+					{ return } // prob should kill the animation!
+
+				let dx = CGFloat(tTransform) * (self.panningImagePaneEndPt!.x - ip.center.x)
+				let dy = CGFloat(tTransform) * (self.panningImagePaneEndPt!.y - ip.center.y)
+
+				ip.translate(dx: dx, dy: dy, inTreeView: treeView)
+				treeView.setNeedsDisplay()
+				}
 			}
 
 	
