@@ -613,7 +613,8 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		{
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
-		let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
+		//let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
+let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
 		let scale:CGFloat = 2.0
 		imagePane.scale(by:scale, around:location, inTreeView: treeView)
 		}
@@ -626,7 +627,8 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
 
-		let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
+		//let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
+let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
 		// killTheAnimationTimer()	// don't SEEM to need this but need it in handleImagePanePan(), so why not here?
 
 
@@ -636,6 +638,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 
 			case UIGestureRecognizerState.changed:
 				imagePane.scale(by:scale, around:location, inTreeView: treeView)
+				self.treeView.setNeedsDisplay() // needed to update the diagonal lines
 
 /*
 			case UIGestureRecognizerState.ended:
@@ -678,7 +681,8 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		if recognizer.state == UIGestureRecognizerState.changed
 			{
 			imagePane.translate(dx: translation.x, dy: translation.y, inTreeView: treeView)
-	treeView.layoutSubviews()
+	//treeView.layoutSubviews()
+			self.treeView.setNeedsDisplay() // needed to update the diagonal lines
 			recognizer.setTranslation(CGPoint(x:0,y:0), in: imagePane) // reset
 
 //print ("ImagePane current frame and center = ", imagePane.frame, imagePane.center)
@@ -703,8 +707,8 @@ var finalCenter = CGPoint(x:imagePane.center.x+targetX, y:imagePane.center.y+tar
 //finalCenter.x = clamp(finalCenter.x, between:0, and:treeView.bounds.size.width)
 
 
-				imagePane.relativePaneCenter.x += targetX
-				imagePane.relativePaneCenter.y += targetY // only do this in .ended right now since above we use old translate() func
+				//imagePane.relativePaneCenter.x += targetX
+				//imagePane.relativePaneCenter.y += targetY // only do this in .ended right now since above we use old translate() func
 //let newPaneViewFrame = imagePane.frame.offsetBy(dx: targetX, dy: targetY)
 
 /*
@@ -721,7 +725,8 @@ var finalCenter = CGPoint(x:imagePane.center.x+targetX, y:imagePane.center.y+tar
 					} )
 */
 
-			createDisplayLink2(forImagePane:imagePane, toTargetPt:finalCenter)
+			//createDisplayLink2(forImagePane:imagePane, toTargetPt:finalCenter)
+	//NB! This animation messes up the point-based image scale function. After panning, it no longer scales relative to point in bounds. I don't know why, but disable at the moment.
 			}
 		}
 // ***********************************************************************************

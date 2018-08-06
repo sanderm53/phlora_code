@@ -57,6 +57,7 @@ class htmlFileTextViewController: UIViewController {
 		navigationController!.setNavigationBarHidden(false, animated: false)
         navigationController!.setToolbarHidden(true,
              animated: false)
+        view.backgroundColor=UIColor.black
 		// view.translatesAutoresizingMaskIntoConstraints=false !!!! DO NOT DO THIS!!!!! INVALIDATES CONSTRAINT LAYOUT SOMEHOW....
 	// Implement a simple help page pop up along with the information "i" button at bottom of screen
 		//textView = UITextView(frame: view.frame)

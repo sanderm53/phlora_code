@@ -155,8 +155,8 @@ print ("Observing center",center.y)
 				imageView = UIImageView(image: image)
 				imageView.contentMode = .scaleAspectFit
 				imageView.isUserInteractionEnabled=true
-				imageView.center = CGPoint(x:initialImageSize.width/2,y:initialImageSize.height/2)
-				imageView.bounds.size = initialImageSize
+				//imageView.center = CGPoint(x:initialImageSize.width/2,y:initialImageSize.height/2)
+				//imageView.bounds.size = initialImageSize
 
 				self.addSubview(imageView)
 
@@ -164,6 +164,11 @@ print ("Observing center",center.y)
 //transform = CGAffineTransform.identity.translatedBy(x: 100, y: 100)
 //print ("Transformed pane frame, center = ", frame, center)
 
+				imageView.translatesAutoresizingMaskIntoConstraints = false
+				imageView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+				imageView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+				imageView.topAnchor.constraint(equalTo: topAnchor).isActive = true
+				imageView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
 
 				self.isUserInteractionEnabled=true
 				layer.borderColor=UIColor.white.cgColor
@@ -180,93 +185,43 @@ print ("Observing center",center.y)
 
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
 				{
-				// This lets us pinch to a point in the imageView; thanks to stackoverflow (B. Paulino)
-				
 
-// begin new code...
-//  NOTE DOES NOT YET UPDATE THE DIAGONAL LINE SMOOTHELY; SAME GUNK AS LABEL NO DOUBT
-let oldCenter = center
-let rect = imageView.frame
-let theTransform = CGAffineTransform.identity.translatedBy(x: pt.x, y: pt.y).scaledBy(x: scale, y: scale).translatedBy(x: -pt.x, y: -pt.y) // note that this order is reversed from how you'd apply them to curren transform (I think)
-let newRect = rect.applying(theTransform)
-let deltaOrigin = newRect.origin
-let newSize = newRect.size
-let newFrameOrigin = CGPoint(x: frame.origin.x+deltaOrigin.x, y: frame.origin.y+deltaOrigin.y)
-let newPaneViewFrame = CGRect(origin: newFrameOrigin, size: newSize)
-let newImageViewFrame = CGRect(origin: CGPoint(x:0,y:0), size: newSize)
-let newLabelCenter = CGPoint(x:newPaneViewFrame.width/2,y:imageLabel.frame.height/2 + newPaneViewFrame.height)
-//diagonalLineView?.isHidden = true
+				let theTransform = CGAffineTransform.identity.translatedBy(x: pt.x, y: pt.y).scaledBy(x: scale, y: scale).translatedBy(x: -pt.x, y: -pt.y) // note that this order is reversed from how you'd apply them to current transform (I think)
+				let newBounds = bounds.applying(theTransform)
+				let deltaOrigin = newBounds.origin // since original bounds was just 0,0
 
+				let newSize = newBounds.size
+				let newFrameOrigin = CGPoint(x: frame.origin.x+deltaOrigin.x, y: frame.origin.y+deltaOrigin.y)
+				let newFrame = CGRect(origin: newFrameOrigin, size: newSize)
 
-	let newDiagonalFrame = upDateDiagonalFrame(usingFrame: newPaneViewFrame, iconX:804)
+				let newLabelCenter = CGPoint(x:newSize.width/2,y:imageLabel.frame.height/2 + newSize.height)
 
-
-
-					UIView.animate(withDuration:0.2, animations:
-							{
-							//self.imageView.transform = transform
-							self.imageView.frame = newImageViewFrame
-							self.frame = newPaneViewFrame
-							self.imageLabel.center = newLabelCenter
-				//self.diagonalLineView!.frame = newDiagonalFrame
-							}
-/*							,
-							completion:
-								{
-								finished in
-								//self.diagonalLineView?.isHidden = false
-								}
-*/
-							)
-				self.scale *= scale
-/* OLD CODE
-				let pinchCenter = CGPoint(x:pt.x-imageView.bounds.midX,y:pt.y-imageView.bounds.midY)
-				let transform = imageView.transform.translatedBy(x: pinchCenter.x, y: pinchCenter.y).scaledBy(x: scale, y: scale).translatedBy(x: -pinchCenter.x, y: -pinchCenter.y)
-				imageView.transform = transform
+				frame = newFrame
+				imageLabel.center = newLabelCenter
 
 				self.scale *= scale
-
-				// This wraps the superview (imagePane) around the imageview. Kind of a pain. Must be a cleverer way, but
-				// pinchCenter above seems to get scaled by transforms, so can't use that directly
-				// Also Apple docs claim that frame is undefined when we use transforms...but here it is bounds that stays constant
-
-
-				let newImageOrigin = imageView.frame.origin
-				let oldCenter = center
-				frame = frame.offsetBy(dx: newImageOrigin.x, dy: newImageOrigin.y)
-				frame.size = CGSize(width:imageView.frame.width,height:imageView.frame.height)
-				imageView.frame = imageView.frame.offsetBy(dx: -newImageOrigin.x, dy: -newImageOrigin.y)
-*/
-
-				relativePaneCenter.x += (center.x-oldCenter.x)
-				relativePaneCenter.y += (center.y-oldCenter.y) // update the position of this relative pane center based on new frame calcs
-
-				//treeView.setNeedsDisplay() // needed so we update the connector line to the node
 				}
 
-		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:DrawTreeView) // Don't use transforms, because they mess with the pane frame, which I need in scale
+		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:DrawTreeView)
 				{
-				//frame = frame.offsetBy(dx: x, dy: y)
-					let newCenter = CGPoint(x: center.x+x, y: center.y+y)
-let newRect = centeredRect(center: newCenter, size: bounds.size)
-if rectInPaneCoordsDoesIntersectWithWindow(paneRect:newRect, ofTreeView:treeView)
-					{
-
-					center = newCenter
-					relativePaneCenter.x += x
-					relativePaneCenter.y += y // update the position of this relative pane center based on new frame calcs
-	//...really affects pans and scaling: noticably flickers
-					//treeView.setNeedsDisplay() // needed so we update the connector line to the node
-					}
+				let newCenter = CGPoint(x: center.x+x, y: center.y+y)
+				center = newCenter
+							/* ...useful when/if animating potentially offscreen
+							let newRect = centeredRect(center: newCenter, size: bounds.size)
+							if rectInPaneCoordsDoesIntersectWithWindow(paneRect:newRect, ofTreeView:treeView)
+												{
+												center = newCenter
+												}
+							*/
 				}
 	
 
 		func setLocationRelativeToTreeTo(_ x:CGFloat, _ y:CGFloat)
 				{
 				self.transform = CGAffineTransform.identity.translatedBy(x: x, y: y)
-				//self.transform = CGAffineTransform.identity.translatedBy(x: x, y: y).translatedBy(x: relativePaneCenter.x, y: relativePaneCenter.y)
 				}
 
+/*
 		func setLocationRelativeToTreeTo()
 				{
 				if let node = associatedNode
@@ -275,11 +230,18 @@ if rectInPaneCoordsDoesIntersectWithWindow(paneRect:newRect, ofTreeView:treeView
 					let centerX = self.center.x
 					center = CGPoint(x:centerX,y:centerY)
 
-
-					//self.transform = CGAffineTransform.identity.translatedBy(x: centerX, y: centerY)
-					//self.transform = CGAffineTransform.identity.translatedBy(x: x, y: y)
-					//self.transform = CGAffineTransform.identity.translatedBy(x: x, y: y).translatedBy(x: relativePaneCenter.x, y: relativePaneCenter.y)
 					}
+				}
+*/
+		func setLocationRelativeTo(treeView t:DrawTreeView)
+				{
+				if let node = associatedNode
+					{
+					let centerY = WindowCoord(fromTreeCoord: node.coord.y, inTreeView: t)
+					//let centerX = center.x
+					self.transform = CGAffineTransform.identity.translatedBy(x:0,y:centerY)
+					}
+
 				}
 
 //  not using this yet...

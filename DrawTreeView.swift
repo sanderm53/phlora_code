@@ -287,6 +287,9 @@ class DrawTreeView: UIView
 			if !imagePane.isHidden && imagePane.isAttachedToNode
 				{
 // SHOULD IMBED THIS TEST IN THE SETLOC FUNC
+
+imagePane.setLocationRelativeTo(treeView:self) //... didn't work; i need the frame for gesture recogz, diagonal, etc...
+/*
 				if let treeCoordY = imagePane.associatedNode?.coord.y
 					{
 					//imagePane.setLocationRelativeToTreeTo(0,panTranslateTree + treeCoordY + decoratedTreeRect.midY)
@@ -297,6 +300,7 @@ class DrawTreeView: UIView
 					imagePane.setLocationRelativeToTreeTo(0,WindowCoord(fromTreeCoord: treeCoordY , inTreeView: self))
 setNeedsDisplay()
 					}
+*/
 				}
 			}
 		}
