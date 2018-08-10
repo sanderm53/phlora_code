@@ -19,12 +19,12 @@ func resizeUIImage(image theImage:UIImage, toSize size:CGSize) -> UIImage?
 			}
 
 
-class MainViewController: UIViewController, UIDocumentPickerDelegate {
+class MainViewController: UIViewController {
 
 	var imagePane:ImagePaneView!
 	var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
-	let treesData = TreesData() // Initializes this once when the view controller is instantiated
+	//let treesData = TreesData() // Initializes this once when the view controller is instantiated
 	var pickedRowIndex:Int = 0
 	var safeFrame:CGRect!
 	var studyViewController:StudyViewController?
@@ -48,25 +48,6 @@ class MainViewController: UIViewController, UIDocumentPickerDelegate {
 
 // NEW TEST OF IMPORT FEATURES ...***********
 
-	func importButtonAction(sender: UIButton!) {
-
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
-		//navigationController!.setNavigationBarHidden(false, animated: false)
-		// Need to make frame smaller to adjust to show navigation bar...
-		//self.navigationController?.pushViewController(vc, animated: true)
-		vc.delegate = self
-		present(vc, animated: true)
-	}
-
-func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
-	{
-	dismiss(animated: true)
-	}
-
-func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
-	{
-	print (urls)
-	}
 
 // **************
 
@@ -154,19 +135,8 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
    		aboutButton.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
 
 		
-		let importButton = UIButton(type: .roundedRect) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		importButton.addTarget(self, action: #selector(importButtonAction), for: .touchUpInside)
-		importButton.frame.size = CGSize(width: 200, height: 50)
-		importButton.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
-		importButton.layer.borderColor=UIColor.white.cgColor
-		importButton.layer.borderWidth=2.0
-		importButton.layer.cornerRadius=10
-		importButton.frame = CGRect(origin: CGPoint(x:0,y:0), size: aboutButton.frame.size)
-		importButton.setTitleColor(UIColor.black, for: .normal)
-		mySelectedAttributedTitle = NSAttributedString(string: "Import", attributes: myAttributes)
-   		importButton.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
 
-		let stackView = UIStackView(arrangedSubviews:[studyButton,aboutButton,importButton])
+		let stackView = UIStackView(arrangedSubviews:[studyButton,aboutButton])
 		stackView.axis = .vertical
 		stackView.distribution = .fillEqually
 		stackView.alignment = .fill

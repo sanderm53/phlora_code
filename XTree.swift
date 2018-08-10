@@ -29,10 +29,10 @@ let nwktokensTilde = nameTokens + "|" + puncTokensPlusTilde // tilde not part of
 
 
 // Wrapper for regex match; should put in utility file (thanks to StackOverflow!)
-func matches(for regex: String, in text: String) -> [String] {
+func matches(for regex: String, in text: String, withOptions options:NSRegularExpression.Options) -> [String] {
 
 	do {
-		let regex = try NSRegularExpression(pattern: regex)
+		let regex = try NSRegularExpression(pattern: regex, options:options)
 		let nsString = text as NSString
 		let results = regex.matches(in: text, range: NSRange(location: 0, length: nsString.length))
 		return results.map { nsString.substring(with: $0.range)}
@@ -75,7 +75,7 @@ class XTree {
 		{
 		treeInfo = data
 
-		tokens = matches(for: nwktokens, in: treeInfo.treeDescription)
+		tokens = matches(for: nwktokens, in: treeInfo.treeDescription, withOptions:[])
 		//print(tokens)
 		tok=tokens[0]
 		root = makeClade()						// Make the tree structure from nwk string
@@ -173,7 +173,7 @@ class XTree {
 			{
 			tokix+=1
 			tok = tokens[tokix]
-			if ( matches(for:nameTokens,in : tok).isEmpty) // this is not a name
+			if ( matches(for:nameTokens,in : tok, withOptions:[]).isEmpty) // this is not a name
 				{
 				switch tok
 					{

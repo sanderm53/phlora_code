@@ -17,14 +17,20 @@ class TreesData
 
 
 
-	init()
+	init() throws
 		{
 		let nexusFilenames = getNexusFilenamesFromBundle()
 		for nexFile in nexusFilenames
 			{
-			let treeInfo = TreeInfoPackage(fromFileName: nexFile)
-			treeInfoDictionary[treeInfo.treeName]=treeInfo
+			let treeInfo = try TreeInfoPackage(fromFileName: nexFile)
+			treeInfoDictionary[(treeInfo.treeName)]=treeInfo
 			}
+		treeInfoNamesSortedArray = Array(treeInfoDictionary.keys).sorted(by: <)
+		}
+
+	func appendTreesData(withTreeInfo treeInfo: TreeInfoPackage)
+		{
+		treeInfoDictionary[(treeInfo.treeName)]=treeInfo
 		treeInfoNamesSortedArray = Array(treeInfoDictionary.keys).sorted(by: <)
 		}
 
@@ -57,7 +63,7 @@ class TreesData
 				for file in files
 					{
 			//print (file)
-					let matchesAr = matches(for: "\\.nex", in: file)
+					let matchesAr = matches(for: "\\.nex", in: file, withOptions:[.caseInsensitive])
 					if matchesAr.count == 1
 						{
 			//print ("Matched")
@@ -84,19 +90,37 @@ class TreesData
 
 class TreeInfoPackage
 	{
-	var treeName:String;
-	var treeDescription:String;
-	var treeSource:String;
+	var treeName:String
+	var treeDescription:String
+	var treeSource:String
 	var mrcaArray: [Dictionary<String, String>] = []
 	var treeViewController:TreeViewController?
 	var treeView:DrawTreeView?
 	var isHidden:Bool = true
 	var nLeaves:Int=0
 
-	init(fromFileName file:String)
+	init(fromFileName file:String) throws
 		{
-		(nLeaves, treeName, treeDescription, treeSource, mrcaArray)=parseNexusFile(fromFileName:file)
+//		(nLeaves, treeName, treeDescription, treeSource, mrcaArray)=parseNexusFile(fromFileName:file)
 		//treeSource = ""
+
+//		do 	{
+			let nexusString = try String(contentsOfFile: file)
+			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
+//			}
+//		catch
+//			{
+//			print ("Error in file opening or parsing")
+//			return nil
+//			}
+
+		}
+
+	init(fromURL url : URL) throws
+		{
+			let nexusString = try String(contentsOf: url)
+			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
+//print (nLeaves,treeName,treeDescription)
 		}
 	}
 
@@ -123,7 +147,7 @@ class TreeInfoPackage
 			for command in commands
 				{
 				//let chomped = command.drop(while: {$0 == "\n"}) ...working inconsistently
-				let ctokens = matches(for: nwktokensTilde, in: String(command))
+				let ctokens = matches(for: nwktokensTilde, in: String(command),withOptions:[.caseInsensitive])
 
 				if ctokens.count >= 3 // could be a valid line; there might be others that just have white space or crap
 					{
@@ -166,27 +190,59 @@ class TreeInfoPackage
 		return (nLeaves, treeName, treeDescription, treeSource, mrcaArray)
 		}
 
+	func nexusParser(fromString nexusString:String) throws ->(Int,String,String,String, [[String:String]])
+		{
+		var mrca: [String:String] = [:]
+		var mrcaArray: [Dictionary<String, String>] = []
+		var treeDescription:String = ""
+		var treeSource = ""
+		var treeName:String = ""
+		var nLeaves = 1
+		
+		let commands = nexusString.split(whereSeparator: { $0 == ";" })
+		for command in commands
+			{
+			//let chomped = command.drop(while: {$0 == "\n"}) ...working inconsistently
+			let ctokens = matches(for: nwktokensTilde, in: String(command),withOptions:[.caseInsensitive])
+
+			if ctokens.count >= 3 // could be a valid line; there might be others that just have white space or crap
+				{
+				if ctokens[0] == "mrca" && ctokens[2] == "=" && ctokens.count == 6
+					{
+					//print ("Taxa = ",ctokens[1],ctokens[3],ctokens[5])
+					mrca["cladeName"] = ctokens[1]
+					mrca["specifierA"] = ctokens[3]
+					mrca["logic"] = ctokens[4]	// this is either a ',' or a '~'
+					mrca["specifierB"] = ctokens[5]
+					mrcaArray.append(mrca)
+					}
+
+				if ctokens[0] == "tree" && ctokens[2] == "=" && ctokens.count >= 4
+					{
+					treeName = ctokens[1]
+					for token in ctokens[3...ctokens.count-1]
+						{
+						if token == ","
+							{
+							nLeaves += 1 // counting the number of leaves as commas+1
+							}
+						}
+					treeDescription = ctokens[3...ctokens.count-1].joined()
+					}
+
+				if ctokens[0] == "reference" && ctokens[1] == "=" && ctokens.count >= 3
+					{
+					treeSource = ctokens[2...ctokens.count-1].joined()
+					treeSource = treeSource.replacingOccurrences(of: "'", with: "")
+					}
 
 
+				}
 
 
-	//let treeTitle:String = "Leguminosae (Simon 2009)"
-	//let treeTitle:String = "Cactaceae (Hernandez-Hernandez et al. 2011)"
-	//let treeSource:String = "J. Charboneau, 2017: Families of the Arizona Flora"
-	//let treeName:String = "Flowering Plants"
-	let treeSource:String = "Donoghue, pers.comm."
-	let treeName:String = "Viburnum"
+			}
 
 
+		return (nLeaves, treeName, treeDescription, treeSource, mrcaArray)
+		}
 
-let nwkAZFamilies="(Nymphaeaceae,((Aristolochiaceae,Saururaceae),(((Araceae,(Hydrocharitaceae,(Alismataceae,(Juncaginaceae,(Ruppiaceae,Potamogetonaceae))))),((Melanthiaceae,Liliaceae),((Orchidaceae,(Hypoxidaceae,(Iridaceae,(Xanthorrhoeaceae,(Amaryllidaceae,Asparagaceae))))),(Arecaceae,((Commelinaceae,Pontederiaceae),((Typhaceae,Bromeliaceae),(Poaceae,(Juncaceae,Cyperaceae)))))))),(Ceratophyllaceae,((Papaveraceae,(Menispermaceae,(Berberidaceae,Ranunculaceae))),(Platanaceae,((((Crassulaceae,Haloragaceae),(Grossulariaceae,Saxifragaceae)),(Vitaceae,(((Krameriaceae,Zygophyllaceae),((Celastraceae,(Oxalidaceae,(Hypericaceae,(Elatinaceae,Malpighiaceae),((Violaceae,(Passifloraceae,Salicaceae)),(Euphorbiaceae,(Linaceae,(Phyllanthaceae,Picrodendraceae))))))),((Polygalaceae,Fabaceae),((Rosaceae,((Rhamnaceae,Elaeagnaceae),(Ulmaceae,(Cannabaceae,(Moraceae,Urticaceae))))),((Apodanthaceae,Cucurbitaceae),(Fagaceae,(Juglandaceae,Betulaceae))))))),((Geraniaceae,(Myrtaceae,(Onagraceae,Lythraceae))),(Crossosomataceae,((Nitrariaceae,((Burseraceae,Anacardiaceae),(Sapindaceae,(Rutaceae,(Simaroubaceae,Meliaceae))))),((Bixaceae,Malvaceae),(Koeberliniaceae,(Resedaceae,(Capparaceae,(Cleomaceae,Brassicaceae))))))))))),(Santalaceae,(((Tamaricaceae,(Plumbaginaceae,Polygonaceae)),(Simmondsiaceae,((Caryophyllaceae,Amaranthaceae),((Aizoaceae,(Phytolaccaceae,(Sarcobataceae,Nyctaginaceae))),(Molluginaceae,(Montiaceae,(Talinaceae,(Portulacaceae,Cactaceae)))))))),((Cornaceae,(Loasaceae,Hydrangeaceae)),(((Polemoniaceae,Fouquieriaceae),(Ericaceae,(Sapotaceae,Primulaceae))),((Garryaceae,((Rubiaceae,(Apocynaceae,Gentianaceae)),((Convolvulaceae,Solanaceae),(Boraginaceae,(Oleaceae,(Plantaginaceae,(Scrophulariaceae,(Linderniaceae,((Martyniaceae,Acanthaceae),(Bignoniaceae,((Lentibulariaceae,Verbenaceae),(Lamiaceae,(Phrymaceae,Orobanchaceae))))))))))))),((Campanulaceae,(Menyanthaceae,Asteraceae)),((Araliaceae,Apiaceae),(Adoxaceae,Caprifoliaceae)))))))))))))));"
-
-
-let nwkAZOrders="(Nympheales,(Piperales,(((Alismatales,(Liliales,Asparagales)),(Arecales,(Commelinales,Poales))),(Ceratophyllales,(Ranunculales,(Proteales,((Saxifragales,(Vitales,(Zygophyllales,(((Celastrales,(Oxalidales,Malpighiales)),(Fabales,(Rosales,(Cucurbitales,Fagales)))),((Geraniales,Myrtales),(Crossosomatales,(Sapindales,(Malvales,Brassicales)))))))),(Santalales,(Caryophyllales,(Cornales,(Ericales,((Garryales,(Gentianales,(Lamiales,(Solanales,Boraginales)))),(Asterales,(Apiales,Dipsacales))))))))))))));"
-
-
-
-
-
-
-	

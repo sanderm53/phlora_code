@@ -10,12 +10,13 @@ import UIKit
 
 
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate {
 
 	var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
 	// NO SHOULDN"T DO THE FOLLOWING HERE: GETS REDONE EVERY TIME WE LAUNCH STUDY VIEW...
-	let treesData = TreesData() // Initializes this once when the view controller is instantiated
+//	let treesData = TreesData() // Initializes this once when the view controller is instantiated
+var treesData:TreesData!
 	var pickedRowIndex:Int = 0
 //	var safeFrame:CGRect!
 	//var treeViewController = TreeViewController()
@@ -33,9 +34,47 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 		//navigationController!.setNavigationBarHidden(false, animated: false)
 		}
 
+	func addButtonAction(sender: UIBarButtonItem!) {
+
+		let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
+		//navigationController!.setNavigationBarHidden(false, animated: false)
+		// Need to make frame smaller to adjust to show navigation bar...
+		//self.navigationController?.pushViewController(vc, animated: true)
+		vc.delegate = self
+		present(vc, animated: true)
+	}
+func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
+	{
+	dismiss(animated: true)
+	}
+
+func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
+	{
+	print (urls.first)
+	if let url = urls.first
+		{
+		do
+			{
+			let treeInfo = try TreeInfoPackage(fromURL: url)
+			treesData.appendTreesData(withTreeInfo: treeInfo)
+print (treesData.treeInfoNamesSortedArray.count	)
+studyTableView.reloadData()
+		}
+		catch {print ("Failed to read file or parse file")}
+		
+		}
+	}
+
 	override func viewDidLoad()
 		{
 		super.viewDidLoad()
+
+	do {
+		treesData = try TreesData() // Initializes this once when the view controller is instantiated
+		}
+	catch
+		{ print ("Error instantiating treesData")}
+
 
 		self.title = "Studies" // This will be displayed in middle button of navigation bar at top
 
@@ -47,9 +86,8 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
         navigationController!.setToolbarHidden(true,
              animated: false)
 
-	//	let topBarY = self.navigationController!.navigationBar.frame.maxY // self.nav.. is the nearest ancestor that is a nav controller (i.e. here the parent of self); note this rect is below the iOS status bar stuff, so have to use position of its maxY
-	//	let bottomBarHeight = self.navigationController!.toolbar.frame.height
-	//safeFrame = CGRect(x: view.frame.minX, y: topBarY, width: view.frame.width, height: view.frame.height - topBarY - bottomBarHeight) // need this crap until i fix constraints for treeview
+self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
+
 
 // table view
 		studyTableView = UITableView()
@@ -73,18 +111,6 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 		studyTableView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
 
 
-
-/* Have to work on the alignment of this header to the table cells, which are being automatically squished toward center
-		let headerFooterColor = UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)
-		let headerLabel = UILabel()
-		headerLabel.frame = CGRect(origin:CGPoint(x:200,y:3*headerFooterHeight), size:CGSize(width: studyTableView.frame.width, height: headerFooterHeight))
-		headerLabel.text = "Study"
-		headerLabel.textAlignment = .left
-		headerLabel.font = UIFont(name:"Helvetica", size:20)
-		headerLabel.backgroundColor = headerFooterColor
-		headerLabel.textColor=UIColor.white
-		view.addSubview(headerLabel)
-*/
 
 
  		}
@@ -138,48 +164,6 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 
 		cell.treeInfo = treesData.treeInfoDictionary[treeName]
 
-/*
-		let imageFile = "Cardon50x50"
-	
-// QUESTION: Should I be reiniting these subviews every time? If I subclass it then I can store subviews as properties and query whether or not they have already been initialized...if so don't forget to update constraints (I think), since we can leave these fixed from cell to cell also
-
-		let iv = UIImageView(image: UIImage(named:imageFile))
-		cell.addSubview(iv)
-
-		iv.translatesAutoresizingMaskIntoConstraints=false
-		iv.centerYAnchor.constraint(equalTo: cell.centerYAnchor).isActive = true
-		iv.leftAnchor.constraint(equalTo: cell.leftAnchor).isActive = true
-		iv.heightAnchor.constraint(equalToConstant: 100.0).isActive = true
-		iv.widthAnchor.constraint(equalToConstant: 100.0).isActive = true
-
-		let studyLabel = UILabel()
-		studyLabel.textColor = UIColor.white
-		studyLabel.font = UIFont(name:"Helvetica", size:24)
-        studyLabel.text = treesData.treeInfoNamesSortedArray[indexPath.row]
-		cell.addSubview(studyLabel)
-		studyLabel.translatesAutoresizingMaskIntoConstraints=false
-		studyLabel.centerYAnchor.constraint(equalTo: cell.centerYAnchor).isActive = true
-		studyLabel.leftAnchor.constraint(equalTo: iv.rightAnchor, constant:20.0).isActive = true
-
-		let nLeafLabel = UILabel()
-		nLeafLabel.textColor = UIColor.white
-		nLeafLabel.font = UIFont(name:"Helvetica", size:18)
-        nLeafLabel.text = "\(nLeaves) taxa"
-		cell.addSubview(nLeafLabel)
-		nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
-		nLeafLabel.centerYAnchor.constraint(equalTo: cell.centerYAnchor).isActive = true
-		nLeafLabel.rightAnchor.constraint(equalTo: cell.rightAnchor,constant:-50.0).isActive = true
-
-*/
-
-/*
-		cell.imageView!.image = UIImage(named:imageFile)
-		cell.imageView!.translatesAutoresizingMaskIntoConstraints=false
-		cell.imageView!.centerYAnchor.constraint(equalTo: cell.centerYAnchor).isActive = true
-		cell.imageView!.leftAnchor.constraint(equalTo: cell.leftAnchor).isActive = true
-		cell.imageView!.heightAnchor.constraint(equalToConstant: 100.0).isActive = true
-		cell.imageView!.widthAnchor.constraint(equalToConstant: 100.0).isActive = true
-*/
 
 
 		if indexPath.row == pickedRowIndex
@@ -196,15 +180,6 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
 		{
 		tableView.deselectRow(at: indexPath, animated: true)
-/*
-print ("**", indexPath.row)
-for row in (0...4)
-{
-let cell = tableView.cellForRow(at: IndexPath(row:row, section:0))
-print (row,"\t",cell!.imageView!.frame)
-
-}
-*/
 		if indexPath.row != pickedRowIndex
 			{
 			var cell = tableView.cellForRow(at: IndexPath(row:pickedRowIndex, section:0))
