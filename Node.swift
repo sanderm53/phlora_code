@@ -710,6 +710,7 @@ ctx.drawPath(using: .stroke)
 		let labelSpacing:CGFloat=6 // horizontal distance from tip to label start
 		if isLeaf()
 			{
+			// Draw the dashed line from imageIcon to imagePaneView
 			if let imagePane = imagePaneView
 				{
 				if imagePane.isHidden == false
@@ -717,23 +718,7 @@ ctx.drawPath(using: .stroke)
 					drawLineToImage(inContext:ctx, fromX:xImageCenter)
 					}
 				}
-/*
-			if let imagePane = imagePaneView
-				{
-				if imagePane.isHidden == false
-					{
-					if imagePane.hasImage == false
-						{
-						drawImageIcon(ofType:.openCircle(treeSettings.imageIconColor,1.0), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
-						}
-					}
-				}
-			else // no imagepane
-				{
-				drawImageIcon(ofType:.addSymbol(UIColor.blue.cgColor,1.0), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 
-				}
-*/
 			// I do some optimizations here to avoid writing offscreen. Maybe not necessary; maybe also do it
 			// when the lines are very faint
 			// Only handle label writing if it will be visible!
@@ -752,7 +737,7 @@ ctx.drawPath(using: .stroke)
 				// as we go vertically down the labels in the view. Note the labels are guaranteed to be
 				// ordered vertically by the way the initialization of label ids works
 
-				nodeIsMaximallyVisible = false // every leafID will be false except for following condition
+				nodeIsMaximallyVisible = false // every leafID will be false except for following condition. Used in view controller to avoid adding paneView for faded or invisible nodes
 				if (leafID! % (2*everyNthLabel)==0)
 					{
 					curAlpha = 1.0
@@ -761,30 +746,16 @@ ctx.drawPath(using: .stroke)
 				if (leafID! % (2*everyNthLabel) == everyNthLabel)
 					{
 					curAlpha = 1-alphaComplement
-					if curAlpha > 0.95
+					if curAlpha > 0.95 // so, nearly fully opaque
 						{ nodeIsMaximallyVisible = true }
 					}
 				// That was tricky; remember there are other leafIDs than match the prev two conditions!
-
-
-				if hasImageFile &&  (leafID! % everyNthLabel) == 0  // draw the icon possibly before loading image as long as there is a known image file for this image
-					// As configured, this will fade out the image icons along with the labels, not sure this is what I want, but it looks better than displaying all of them at the same time in a large tree with many images...
-// TO DO: Check if there are just a few images in a large tree, such that perhaps we don't see ANY icons on first view, even though they are there: in that case, display all?
-					{
-					var fillColor:CGColor
-					// Switch the color of the image icon depending on if it is displaying
-					if isDisplayingImage
-						{fillColor = treeSettings.imageFontColor.cgColor}
-					else
-						{fillColor = treeSettings.imageIconColor}
-					//drawImageIcon(inContext:ctx, atX:xImageCenter, atY:self.coord.y, withRadius:treeSettings.imageIconRadius,withFillColor:fillColor,alpha: curAlpha, isFilled:true)
-					drawImageIcon(ofType:.filledCircle(fillColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
-					}
 
 				ctx.setAlpha(curAlpha)
 
 				if  (leafID! % everyNthLabel) == 0
 					{
+					// Draw the labels
 					if treeSettings.truncateLabels
 						{
 						let textRect = CGRect(origin: vertCenteredPt, size: CGSize(width: treeSettings.truncateLabelsLength, height: 2*yOffset))
@@ -792,37 +763,49 @@ ctx.drawPath(using: .stroke)
 						}
 					else
 						{
-						//text.draw(at:vertCenteredPt, withAttributes: textAttributes)
 						aText.draw(at:vertCenteredPt)
 						}
 
+					// Now do all the image icon possibilities
 
-
-				if  (leafID! % everyNthLabel) == 0
-					{
-					if let imagePane = imagePaneView
+					// First, filled circles of two possible colors when we know there is an image file
+					
+					if hasImageFile  // draw the icon possibly before loading image as long as there is a known image file for this image
+						// As configured, this will fade out the image icons along with the labels, not sure this is what I want, but it looks better than displaying all of them at the same time in a large tree with many images...
+						// TO DO: Check if there are just a few images in a large tree, such that perhaps we don't see ANY icons on first view, even though they are there: in that case, display all?
 						{
-						if imagePane.isHidden == false
-							{
-							if imagePane.hasImage == false
-								{
-								drawImageIcon(ofType:.openCircle(treeSettings.imageIconColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
-								}
-							}
+						var fillColor:CGColor
+						// Switch the color of the image icon depending on if it is displaying
+						if isDisplayingImage
+							{fillColor = treeSettings.imageFontColor.cgColor}
+						else
+							{fillColor = treeSettings.imageIconColor}
+						drawImageIcon(ofType:.filledCircle(fillColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 						}
-					else // no imagepane
+					else // no image file; handle case when we are prompting for a new file
 						{
-						if hasImageFile == false  // pane might not be initialized yet even though it has a file
+						if imagePaneView != nil // I already instantiated the view, waiting for adding of image, show open circle
 							{
-							drawImageIcon(ofType:.addSymbol(UIColor.blue.cgColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+							drawImageIcon(ofType:.openCircle(treeSettings.imageIconColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+							}
+						else // haven't even instantiated view yet, show add symbol
+							{
+							if gShowingImageAddButtons
+								{ drawImageIcon(ofType:.addSymbol(UIColor.blue.cgColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius) }
 							}
 						}
 					}
-					ctx.setStrokeColor(treeSettings.edgeColor) // restore stroke color
-					ctx.strokePath()
-					}
-				}
-			}
+				ctx.setStrokeColor(treeSettings.edgeColor) // restore stroke color
+				ctx.strokePath()
+				   
+				} // end ifTreeCoordInRect
+			} // end isLeaf
+
+
+
+
+
+
 		else
 			{
 			for child in children

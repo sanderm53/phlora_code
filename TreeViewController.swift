@@ -8,6 +8,7 @@
 
 import UIKit
 
+var gShowingImageAddButtons:Bool = false
 
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
 class TreeViewController: UIViewController, UIGestureRecognizerDelegate {
@@ -60,7 +61,14 @@ var panningImagePane:ImagePaneView?
 var panningImagePaneStartPt:CGPoint?
 var panningImagePaneEndPt:CGPoint?
 
+var showingImageAddButtons:Bool = false
+
 //Utilities
+
+func addButtonAction(sender: UIBarButtonItem!) {
+	gShowingImageAddButtons = !gShowingImageAddButtons
+	treeView.setNeedsDisplay()
+	}
 
 func infoButtonAction(sender: UIButton!) {
     helpView.isHidden = !helpView.isHidden
@@ -138,7 +146,7 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
 
         navigationController!.setToolbarHidden(false, animated: false)
 		//navigationController!.setNavigationBarHidden(false, animated: false) // has to be here
-
+		self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
 		// Where to put this when we have multiple view controllers down the road?
 		deviceType = UIDevice.current.userInterfaceIdiom
 		switch deviceType
@@ -541,7 +549,10 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 						{
 //	print (pickedNode.label, pickedNode.nodeIsMaximallyVisible)
 						if pickedNode.nodeIsMaximallyVisible
-							{ addImagePane(atNode:pickedNode) }
+							{
+							if pickedNode.hasImageFile || gShowingImageAddButtons
+								{ addImagePane(atNode:pickedNode) }
+							}
 						}
 
 					}
