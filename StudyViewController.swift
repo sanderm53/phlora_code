@@ -36,10 +36,7 @@ var treesData:TreesData!
 
 	func addButtonAction(sender: UIBarButtonItem!) {
 
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
-		//navigationController!.setNavigationBarHidden(false, animated: false)
-		// Need to make frame smaller to adjust to show navigation bar...
-		//self.navigationController?.pushViewController(vc, animated: true)
+		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
 		vc.delegate = self
 		present(vc, animated: true)
 	}
@@ -57,10 +54,40 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			{
 			let treeInfo = try TreeInfoPackage(fromURL: url)
 			treesData.appendTreesData(withTreeInfo: treeInfo)
-print (treesData.treeInfoNamesSortedArray.count	)
-studyTableView.reloadData()
+			//studyTableView.reloadData()
+			studyTableView.beginUpdates()
+			studyTableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .right)
+			studyTableView.endUpdates()
+
+			let fileManager = FileManager.default
+			if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+				{
+				//print (docsDir)
+				let studyDir = docsDir.appendingPathComponent("Studies")
+				if fileManager.fileExists(atPath: studyDir.path) == false  // create Studies folder if needed
+					{
+					try? fileManager.createDirectory(at: studyDir, withIntermediateDirectories: false, attributes: nil)
+			// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
+					}
+				let studyName = treeInfo.treeName
+				let treeDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Tree")
+				try? fileManager.createDirectory(at: treeDir, withIntermediateDirectories: true, attributes: nil)
+					let imagesDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Images")
+				try? fileManager.createDirectory(at: imagesDir, withIntermediateDirectories: true, attributes: nil)
+
+				let srcFilename = url.lastPathComponent
+				let destURL = treeDir.appendingPathComponent(srcFilename)
+				try fileManager.copyItem(at: url, to: destURL)
+				}
+
 		}
-		catch {print ("Failed to read file or parse file")}
+		catch
+			{
+			//print ("Failed to read file or parse file")
+			let alert = UIAlertController(title:"Error accessing tree file",message:"Failed to read, parse or save tree file", preferredStyle: .alert)
+			alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
+			self.present(alert,animated:true,completion:nil)
+			}
 		
 		}
 	}
@@ -144,27 +171,9 @@ self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .a
 
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
-		//let cell = UITableViewCell(style: UITableViewCellStyle.subtitle, reuseIdentifier: "cell")
-		//let backgroundView = UIView()
-		//backgroundView.backgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
-		//cell.selectedBackgroundView = backgroundView
-
-		//cell.backgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0) // doesn't inherit this from tableview
-
-
-
-
-		//cell.textLabel!.textColor = UIColor.white
-		//cell.textLabel!.font = UIFont(name:"Helvetica", size:24)
-        //cell.textLabel!.text = treesData.treeInfoNamesSortedArray[indexPath.row]
-		//cell.textLabel!.textAlignment = .center
-
 		let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
-
+// I set up the cell using a property observer in cell controller, which watches treeInfo property
 		cell.treeInfo = treesData.treeInfoDictionary[treeName]
-
-
 
 		if indexPath.row == pickedRowIndex
 			{

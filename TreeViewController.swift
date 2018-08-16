@@ -532,19 +532,18 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 					}
 				else // open one or more
 					{
-//					treeView.xTree.imageCollection.setLeafImageIsOpen(withLeafIndex:ix, to:true)
-					if pickedNode.hasLoadedImage == false
+					if let imagePane = pickedNode.imagePaneView
 						{
-						addImagePane(atNode:pickedNode)
+						imagePane.isHidden = false
+						pickedNode.isDisplayingImage = true
 						}
 					else
 						{
-						if let imagePane = pickedNode.imagePaneView
-							{
-							imagePane.isHidden = false
-							pickedNode.isDisplayingImage = true
-							}
+//	print (pickedNode.label, pickedNode.nodeIsMaximallyVisible)
+						if pickedNode.nodeIsMaximallyVisible
+							{ addImagePane(atNode:pickedNode) }
 						}
+
 					}
 				treeView.setNeedsDisplay() // only needed to update the imageIcons! Fix later by making them view objects?
 				}
@@ -561,34 +560,37 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 // ***********************************************************************************
 func addImagePane(atNode node:Node)
 	{
-	//let aFrame = centeredRect(center: CGPoint(x:treeView.decoratedTreeRect.midX,y:treeView.decoratedTreeRect.midY), size: CGSize(width:0,height:0))
-// Instantiate frame at y = 0, which will place its center at tree coord y=0
+	/*
+	An imagePane may be instantiated with or without an image. However, we set all its VC functionality the same, but
+	note that the tap gesture is handled differently in the two cases (see handlePaneSingleTap)
+	*/
+	// Instantiate frame at y = 0, which will place its center at tree coord y=0
 	let aFrame = centeredRect(center: CGPoint(x:treeView.decoratedTreeRect.midX,y:0), size: CGSize(width:0,height:0))
-	if let imagePane = ImagePaneView(usingFrame:aFrame, atNode:node, onTree:treeView.xTree)
+	let imagePane = ImagePaneView(usingFrame:aFrame, atNode:node, onTree:treeView.xTree)
+	treeView.addSubview(imagePane)
+	//node.hasInstantiatedImagePane = true //  have to do this here after pane is init
+	node.imagePaneView = imagePane // have to do this here after pane is init
+	if imagePane.hasImage
 		{
-		node.hasLoadedImage = true //  have to do this here after pane is init
 		node.isDisplayingImage = true //  have to do this here after pane is init
- 		node.imagePaneView = imagePane // have to do this here after pane is init
-		treeView.addSubview(imagePane)
-		let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handleImagePanePinch(recognizer:)))
-pinchGesture.delegate = self // doesn't seem to matter
-		imagePane.addGestureRecognizer(pinchGesture)
-		let imagePanGesture =  UIPanGestureRecognizer(target: self, action: #selector(handleImagePanePan(recognizer:)))
-		imagePane.addGestureRecognizer(imagePanGesture)
-		self.panGesture!.require(toFail: imagePanGesture) // ensures gestures sequenced right
-
-		let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleImagePaneSingleTap(recognizer:)))
-		tapGesture.cancelsTouchesInView = false
-		imagePane.addGestureRecognizer(tapGesture)
-
-		let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleImagePaneDoubleTap(recognizer:)))
-		doubleTapGesture.cancelsTouchesInView = false
-		doubleTapGesture.numberOfTapsRequired = 2
-
-		imagePane.addGestureRecognizer(doubleTapGesture)
-
 		}
+	
+	let imagePanGesture =  UIPanGestureRecognizer(target: self, action: #selector(handleImagePanePan(recognizer:)))
+	imagePane.addGestureRecognizer(imagePanGesture)
+	self.panGesture!.require(toFail: imagePanGesture) // ensures gestures sequenced right
 
+	let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handleImagePanePinch(recognizer:)))
+	pinchGesture.delegate = self // doesn't seem to matter
+	imagePane.addGestureRecognizer(pinchGesture)
+
+	let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleImagePaneSingleTap(recognizer:)))
+	tapGesture.cancelsTouchesInView = false
+	imagePane.addGestureRecognizer(tapGesture)
+
+	let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleImagePaneDoubleTap(recognizer:)))
+	doubleTapGesture.cancelsTouchesInView = false
+	doubleTapGesture.numberOfTapsRequired = 2
+	imagePane.addGestureRecognizer(doubleTapGesture)
 	}
 // ***********************************************************************************
 
@@ -607,6 +609,11 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		{
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
+		if imagePane.hasImage == false
+			{
+			print ("Add an new image now please...")
+			}
+
 		}
 
 func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
@@ -617,7 +624,9 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
 		let scale:CGFloat = 2.0
 		imagePane.scale(by:scale, around:location, inTreeView: treeView)
-		}
+self.treeView.setNeedsDisplay()
+
+	}
 
 
 // ***********************************************************************************

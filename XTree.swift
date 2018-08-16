@@ -9,38 +9,6 @@
 import UIKit
 
 
-/* Comments on newick parser
-	1. Taxon names must begin with a letter and can only have letters, digits and underscores after that.
-	2. Branch lengths can be in scientific notation but must be positive
-*/
-
-//let nameTokens = "[\\w\\d\\_\\.]+|\\'.*?\\'"
-let nameTokens = "[A-Za-z]\\w*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore
-//let nameTokens = "[\\w\\d\\_]+|\\'.*?\\'"
-//let puncTokens = "\\=|\\,|\\(|\\)|\\;|\\:"
-let puncTokens = "[=\\,\\(\\)\\;\\:]"
-//let numberTokens = "[\\-\\+]*\\d+\\.*\\d*(E[\\-\\+]\\d+)*"
-//let numberTokens = "[-+]?[0-9]*\\.[0-9]+([eE][-+]?[0-9]+)?"
-let numberTokens = "[0-9]+\\.?[0-9]+([eE][-+]\\d+)?"
-//let nwktokens = nameTokens + "|" + puncTokens
-let nwktokens = nameTokens + "|" + puncTokens   + "|" + numberTokens
-let puncTokensPlusTilde = "[~=\\,\\(\\)\\;\\:]"
-let nwktokensTilde = nameTokens + "|" + puncTokensPlusTilde // tilde not part of nwk specifications?
-
-
-// Wrapper for regex match; should put in utility file (thanks to StackOverflow!)
-func matches(for regex: String, in text: String, withOptions options:NSRegularExpression.Options) -> [String] {
-
-	do {
-		let regex = try NSRegularExpression(pattern: regex, options:options)
-		let nsString = text as NSString
-		let results = regex.matches(in: text, range: NSRange(location: 0, length: nsString.length))
-		return results.map { nsString.substring(with: $0.range)}
-	} catch let error {
-		print("invalid regex: \(error.localizedDescription)")
-		return []
-	}
-}
 
 enum TreeType {
 	case cladogram

@@ -44,34 +44,19 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
         {
 		var imageView: UIImageView!
         var imageLabel=UILabel()
-        var diagonalLineView: DiagonalLineView? 	// not always present perhaps
+        var addImageLabel:UILabel?
         var associatedNode:Node?
         //var imageNameForDisplay:String!
 
 		var paneCenter : CGPoint!
-		var relativePaneCenter = CGPoint(x:0,y:0)	// distance pane has moved from original point which was center of frame,
+		//var relativePaneCenter = CGPoint(x:0,y:0)	// distance pane has moved from original point which was center of frame,
 		//var scale:CGFloat = 1.0
 		var isAttachedToNode:Bool = false
 		var scale:CGFloat = 1.0
-		var maxScale:CGFloat = 1.0
-		var maxTransform:CGAffineTransform = CGAffineTransform.identity
-		var diagonalIsHidden:Bool = false
-/*
-		override var center:CGPoint  // I need this to set up the right direction of the diag line depending on position of pane above or below the latitude of the taxon label (which is always at center=0 in the superviews coord system
-			{
-			didSet {
-print ("Observing center",center.y)
-					if let dlview = self.diagonalLineView
-						{
-						if super.center.y > 0
-							{ dlview.diagonalToUpperRight = true }
-						else
-							{ dlview.diagonalToUpperRight = false }
-						}
-					
-					}
-			}
-*/
+		//var maxScale:CGFloat = 1.0
+		//var maxTransform:CGAffineTransform = CGAffineTransform.identity
+		//var diagonalIsHidden:Bool = false
+		var hasImage:Bool = false
 
 // Default position of this view is centered on the frame provided to it
         init? (usingFrame f:CGRect,withFileNamePrefix name:String, atTreeDirectoryNamed tree:String)
@@ -88,23 +73,20 @@ print ("Observing center",center.y)
 				addLabel(withName:name)
             }
 
-        init? (usingFrame f:CGRect, atNode node:Node, onTree tree:XTree)
+        init (usingFrame f:CGRect, atNode node:Node, onTree tree:XTree)
                 {
                 var imageName:String
 				isAttachedToNode = true
 				paneCenter = CGPoint(x:f.midX,y:f.midY)
 				associatedNode = node
                super.init(frame:f)
-                guard let image = getImageFromFile(withFileNamePrefix:node.originalLabel!, atTreeDirectoryNamed:tree.treeInfo.treeName)
-               	else
-                        {return nil}
+                let image = getImageFromFile(withFileNamePrefix:node.originalLabel!, atTreeDirectoryNamed:tree.treeInfo.treeName)
 				layoutPaneForImage(image)
 				if let name = node.label
  					{imageName = name}
 				else
 					{imageName="Unlabeled node"}
 				addLabel(withName:imageName)
-				addDiagonal()
 				}
 
 		func addLabel(withName name:String)
@@ -122,28 +104,31 @@ print ("Observing center",center.y)
 			//imageLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
 			}
 
-		func addDiagonal()
-			{
-			diagonalLineView = DiagonalLineView(point1: CGPoint(x:frame.width,y:0), point2: CGPoint(x:400,y:bounds.midY))
-			// remember this frame is in coords of paneView because it is a subview of it!
-//print (frame, frame.origin, associatedNode!.coord)
-			self.addSubview(diagonalLineView!)
-			}
 
-		func layoutPaneForImage(_ image:UIImage)
+		func layoutPaneForImage(_ image:UIImage?)
 			{
 
 				var rectMult:CGFloat
 				let L=treeSettings.initialImageSize
-				let aspect = image.size.height/image.size.width
-				if aspect >= 1.0
-					{ rectMult=L/image.size.height }
-				else
-					{ rectMult=L/image.size.width }
-				let initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+				var initialImageSize:CGSize
 
-				maxScale = 1/rectMult
-				maxTransform = CGAffineTransform.identity.scaledBy(x: maxScale, y: maxScale)
+				if let image = image
+					{
+					let aspect = image.size.height/image.size.width
+					if aspect >= 1.0
+						{ rectMult=L/image.size.height }
+					else
+						{ rectMult=L/image.size.width }
+					initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+					hasImage = true // well, it should anyway, after loading it below
+					}
+				else
+					{
+					initialImageSize = CGSize(width:L ,height:L)
+					hasImage = false // default empty image
+					addAddImageLabel()
+					}
+
 
 				frame = centeredRect(center:paneCenter,size:initialImageSize)
 
@@ -155,14 +140,8 @@ print ("Observing center",center.y)
 				imageView = UIImageView(image: image)
 				imageView.contentMode = .scaleAspectFit
 				imageView.isUserInteractionEnabled=true
-				//imageView.center = CGPoint(x:initialImageSize.width/2,y:initialImageSize.height/2)
-				//imageView.bounds.size = initialImageSize
 
 				self.addSubview(imageView)
-
-//print ("Initial pane frame, center = ", frame, center)
-//transform = CGAffineTransform.identity.translatedBy(x: 100, y: 100)
-//print ("Transformed pane frame, center = ", frame, center)
 
 				imageView.translatesAutoresizingMaskIntoConstraints = false
 				imageView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
@@ -175,9 +154,32 @@ print ("Observing center",center.y)
 				layer.borderWidth=2.0
 				//imageView.layer.borderColor=UIColor.red.cgColor
 				//imageView.layer.borderWidth=2.0
+				
+				
 			}
 
+func addImageButtonAction(sender: UIButton!) {
+	
+}
+func addAddImageLabel()
+	{
+	addImageLabel = UILabel()
 
+	//referenceLabel.font = UIFont(name:"Helvetica", size:14)
+
+	addImageLabel!.textColor = UIColor.blue
+	addImageLabel!.text = "Add an image"
+	addImageLabel!.textAlignment = .center
+	addImageLabel!.backgroundColor = UIColor.white
+	addSubview(addImageLabel!)
+
+	addImageLabel!.translatesAutoresizingMaskIntoConstraints=false
+	addImageLabel!.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+	addImageLabel!.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+	addImageLabel!.topAnchor.constraint(equalTo: topAnchor).isActive = true
+	addImageLabel!.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
+
+	}
 
 //==> NEED TO UPDATE THIS SO THAT FRAME STAYS CENTERED AT SAME PLACE ALWAYS, REGARDLESS OF IMAGEVIEW; NEEDED SO THAT
 //POSITION OF PANE STAYS THE SAME WRT TREEVIEW. ELSE PANE SHIFTS AS WE ZOOM IN ON IMAGE. JUST MAKE THE FRAME
@@ -221,18 +223,6 @@ print ("Observing center",center.y)
 				self.transform = CGAffineTransform.identity.translatedBy(x: x, y: y)
 				}
 
-/*
-		func setLocationRelativeToTreeTo()
-				{
-				if let node = associatedNode
-					{
-					let centerY = WindowCoord(fromTreeCoord: node.coord.y + relativePaneCenter.y, inTreeView: superview as! DrawTreeView)
-					let centerX = self.center.x
-					center = CGPoint(x:centerX,y:centerY)
-
-					}
-				}
-*/
 		func setLocationRelativeTo(treeView t:DrawTreeView)
 				{
 				if let node = associatedNode
@@ -244,65 +234,6 @@ print ("Observing center",center.y)
 
 				}
 
-//  not using this yet...
-		func shouldDisplayDiagonal()->Bool
-			{
-			if let sv = superview
-				{
-				if self.frame.width < sv.frame.width * 0.6
-					{ return true }
-				else
-					{ return false }
-				}
-			else
-				{ return false }
-			}
-
-		func upDateDiagonalFrame(iconX icx:CGFloat)
-			{
-			// want pt1 and pt2 in paneView's coordinates...
-			let pt1 = CGPoint(x:frame.width,y:0)
-			
-			let xDist = icx - frame.maxX // distance to right side of frame
-			let pt2 = CGPoint(x:pt1.x+xDist, y:-relativePaneCenter.y+frame.height/2)
-			
-			
-			if let dlview = diagonalLineView
-				{
-				if pt1.x > pt2.x // pane moving past imageIcon to right, stop displaying
-					{
-					dlview.isHidden = true
-					return
-					}
-				else
-					{ dlview.isHidden = false }
-				if (pt1.y>pt2.y)
-					{dlview.diagonalToUpperRight = true}
-				else
-					{dlview.diagonalToUpperRight = false}
-
-				dlview.frame = rectFromTwoPoints(pt1,pt2)
-				
-				//dlview.setNeedsDisplay() // yes to avoid drawing the actual line via some wonky xformation
-				}
-			}
-
-		func upDateDiagonalFrame(usingFrame f:CGRect,  iconX icx:CGFloat)->CGRect
-			{
-			// want pt1 and pt2 in paneView's coordinates...
-			let pt1 = CGPoint(x:f.width,y:0)
-			
-			let xDist = icx - f.maxX // distance to right side of frame
-			let pt2 = CGPoint(x:pt1.x+xDist, y:-center.y+f.height/2)
-			
-			if pt1.x > pt2.x // pane moving past imageIcon to right, stop displaying
-				{ return CGRect() }
-			
-
-			let newFrame = rectFromTwoPoints(pt1,pt2)
-				
-			return newFrame
-			}
 
         // Used if view is called programmatically
 
@@ -350,76 +281,4 @@ print ("Observing center",center.y)
 
 	}
 
-//*******************************************************************************************************
-//*******************************************************************************************************
 
-class DiagonalLineView: UIView
-        {
-		var diagonalToUpperRight:Bool!
-
-        init?(point1 pt1:CGPoint, point2 pt2:CGPoint)
-        		{
-                super.init(frame:CGRect()) // zero frame
-                self.isOpaque = false // this may slow rendering
-                self.contentMode = .redraw // need this, otherwise when frame is changed, it does NOT call draw(), and bitmap of diagonal gets distorted by default content scale mode
-				frame = rectFromTwoPoints(pt1,pt2)
-/*
-				if (pt1.y>pt2.y)
-					{diagonalToUpperRight = true}
-				else
-					{diagonalToUpperRight = false}
-*/
-				//layer.borderColor=UIColor.red.cgColor
-				//layer.borderWidth=2.0
-                }
-
-        override init(frame: CGRect)
-        		{
-                super.init(frame:frame)
-                }
-        required init?(coder aDecoder: NSCoder)
-        		{
-                super.init(coder:aDecoder)
-        		}
-
-		override func draw(_ rect: CGRect)
-			{
-			var start,end:CGPoint
-return
-			if bounds.width == 0 || bounds.height == 0
-				{ return }
-
-			if let sv = superview as? ImagePaneView
-				{
-				if sv.center.y - sv.bounds.midY > 0
-					{ diagonalToUpperRight = true }
-				else
-					{ diagonalToUpperRight = false }
-
-				}
-
-			if diagonalToUpperRight
-				{
-				start = CGPoint(x: bounds.minX, y: bounds.maxY)
-				end = CGPoint(x: bounds.maxX, y: bounds.minY)
-				}
-			else
-				{
-				start = CGPoint(x: bounds.minX, y: bounds.minY)
-				end = CGPoint(x: bounds.maxX, y: bounds.maxY)
-				}
-
-			let ctx = UIGraphicsGetCurrentContext()!
-			ctx.setLineWidth(treeSettings.edgeWidth)
-
-			ctx.move(to:start)
-			ctx.addLine(to:end)
-			ctx.setStrokeColor(treeSettings.imageToIconLineColor) // restore stroke color
-			ctx.setLineDash(phase: 0, lengths: [1,3])
-			ctx.strokePath()
-			ctx.setLineDash(phase: 0, lengths: [])
-
-			}
-
-
-		}

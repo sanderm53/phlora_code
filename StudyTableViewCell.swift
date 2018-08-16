@@ -25,9 +25,9 @@ var treeInfo: TreeInfoPackage? {
 			referenceLabel.text = t.treeSource
 			// fetch an image file with the same filename prefix as the treeName (e.g., "Cactaceae.png" )
 			if let image = getImageFromFile(withFileNamePrefix:t.treeName, atTreeDirectoryNamed:t.treeName)
-				{
-        		studyImageView.image = image
-        		}
+				{ studyImageView.image = image }
+			else
+				{ studyImageView.image = nil } // ...when we dequeue cell, we need to make sure to delete image if not present for the new cell
             setNeedsLayout()
         }
     }

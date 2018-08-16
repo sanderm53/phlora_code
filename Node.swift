@@ -47,9 +47,10 @@ class Node {
   var coord: CGPoint		//anything not optional must be initialized in inits below
   weak var parent: Node?
   //var leafImage: UIImage?
-  var isDisplayingImage: Bool = false
-  var hasLoadedImage: Bool = false
-  var hasImage: Bool?
+  var isDisplayingImage: Bool = false  // image is on or off, except can be overridden by turning off all images with button
+  //var hasInstantiatedImagePane: Bool = false
+  var nodeIsMaximallyVisible:Bool = false
+  var hasImage: Bool?  // maybe totally deprecated??????
   var hasImageFile: Bool = false // This is initially set to false because at the moment we draw the tree before doing any initializations about images; once tree is drawn we initialize nodes to either have or not have image files and then clean up drawing the image icons appropriately. If I change the order of drawing we can set this initially to optional
   var imageView:MyImageView?
   var imagePaneView:ImagePaneView?
@@ -369,19 +370,25 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 	// **********************************************************************
 
-	func drawImageIcon(inContext ctx:CGContext, atX xCenter:CGFloat, atY yCenter:CGFloat,withRadius radius:CGFloat,withFillColor fillColor:CGColor)
+	func drawImageIcon(inContext ctx:CGContext, atX xCenter:CGFloat, atY yCenter:CGFloat,withRadius radius:CGFloat,withFillColor fillColor:CGColor, alpha alpha:CGFloat, isFilled filled:Bool)
 		{
 		let squareSize:CGSize=CGSize(width:2*radius,height:2*radius)
 		let imageIconOrigin=CGPoint(x:xCenter-radius, y:yCenter-radius)
 		let imageIconRect = CGRect(origin:imageIconOrigin, size:squareSize)
 		// that's the point to left of node on horiz line, offset a little by the arc
-		ctx.setAlpha(treeSettings.imageIconAlpha)
+		ctx.setAlpha(alpha)
 		ctx.move(to:imageIconOrigin)
-		ctx.setFillColor(fillColor)
-		ctx.fillEllipse(in:imageIconRect)
-		//ctx.setStrokeColor(treeSettings.imageIconColor) // restore stroke color
+		if filled
+			{
+			ctx.setFillColor(fillColor)
+			ctx.fillEllipse(in:imageIconRect)
+			}
+		else
+			{
+			ctx.setStrokeColor(treeSettings.imageIconColor)
+			ctx.strokeEllipse(in:imageIconRect)
+			}
 		//ctx.strokePath()
-		
 		ctx.setStrokeColor(treeSettings.edgeColor) // restore stroke color
 		
 		
@@ -637,9 +644,9 @@ ctx.drawPath(using: .stroke)
 
 
 			let imageIconPt = CGPoint(x:xImageCenter, y:coord.y)
-			//let imagePaneUpperRight = CGPoint(x: imagePaneView!.frame.maxX, y: coord.y-imagePaneView!.frame.height/2.0 + imagePaneView!.relativePaneCenter.y)
 			let imagePaneUpperRight = CGPoint(x: imagePaneView!.frame.maxX, y: coord.y-imagePaneView!.frame.height/2.0 + imagePaneView!.center.y)
 
+			ctx.setAlpha(1.0)
 			ctx.move(to:imageIconPt)
 			ctx.addLine(to:imagePaneUpperRight)
 			ctx.setStrokeColor(treeSettings.imageToIconLineColor) // restore stroke color
@@ -650,8 +657,51 @@ ctx.drawPath(using: .stroke)
 			ctx.setLineWidth(treeSettings.edgeWidth)
 		}
 
+	enum ImageIconType {
+		case blank
+		case addSymbol(CGColor,CGFloat)
+		case openCircle(CGColor,CGFloat)
+		case filledCircle(CGColor,CGFloat)
+		}
+
+	func drawImageIcon(ofType iconType:ImageIconType, inContext ctx:CGContext, atPointCenter pt:CGPoint,withRadius radius:CGFloat)
+		{
+		let squareSize:CGSize=CGSize(width:2*radius,height:2*radius)
+		let imageIconOrigin=CGPoint(x:pt.x-radius, y:pt.y-radius)
+		let imageIconRect = CGRect(origin:imageIconOrigin, size:squareSize)
+		switch iconType {
+			case .blank: return
+
+			case let .addSymbol(color,alpha):
+				let insetRectangleBy:CGFloat = 4.0
+				let smallerRect = imageIconRect.insetBy(dx: insetRectangleBy, dy: insetRectangleBy)
+				ctx.setAlpha(alpha)
+				ctx.setStrokeColor(color)
+				ctx.move(to: CGPoint(x:smallerRect.minX, y:pt.y))
+				ctx.addLine(to: CGPoint(x:smallerRect.maxX, y:pt.y))
+				ctx.move(to: CGPoint(x:pt.x, y:smallerRect.minY))
+				ctx.addLine(to: CGPoint(x:pt.x, y:smallerRect.maxY))
+				ctx.strokePath()
+
+			case let .filledCircle(color,alpha):
+				ctx.setAlpha(alpha)
+				ctx.setFillColor(color)
+				ctx.fillEllipse(in:imageIconRect)
+
+			case let .openCircle(color,alpha):
+				ctx.setAlpha(alpha)
+				ctx.setStrokeColor(color)
+				ctx.strokeEllipse(in:imageIconRect)
+			}
+		// that's the point to left of node on horiz line, offset a little by the arc
+
+		ctx.setStrokeColor(treeSettings.edgeColor) // restore stroke color
+		}
+
+
 	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat)
 			{
+		var curAlpha:CGFloat = 0.0 // need this default below!
 		let radius:CGFloat=3 // Adjust this to change roundedness of corners
 		var direction:Bool
 		let startAngle:CGFloat = CGFloat.pi
@@ -660,43 +710,35 @@ ctx.drawPath(using: .stroke)
 		let labelSpacing:CGFloat=6 // horizontal distance from tip to label start
 		if isLeaf()
 			{
-					if isDisplayingImage // at the moment this is true even when all images have been turned off en masse
-										// which is why need the following test. Should stick with one
+			if let imagePane = imagePaneView
+				{
+				if imagePane.isHidden == false
+					{
+					drawLineToImage(inContext:ctx, fromX:xImageCenter)
+					}
+				}
+/*
+			if let imagePane = imagePaneView
+				{
+				if imagePane.isHidden == false
+					{
+					if imagePane.hasImage == false
 						{
-						if imagePaneView!.isHidden == false
-							{
-							drawLineToImage(inContext:ctx, fromX:xImageCenter)
-							
-							}
+						drawImageIcon(ofType:.openCircle(treeSettings.imageIconColor,1.0), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 						}
+					}
+				}
+			else // no imagepane
+				{
+				drawImageIcon(ofType:.addSymbol(UIColor.blue.cgColor,1.0), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 
+				}
+*/
 			// I do some optimizations here to avoid writing offscreen. Maybe not necessary; maybe also do it
 			// when the lines are very faint
 			// Only handle label writing if it will be visible!
 			if treeCoordIsInRect(coord: coord.y, theRect: nakedTreeRect, withPanTranslate: panTranslate)
 				{
-				if hasImageFile  // draw the icon possibly before loading image as long as there is a known image file for this image
-					{
-					var fillColor:CGColor
-					// Switch the color of the image icon depending on if it is displaying
-					if isDisplayingImage
-						{fillColor = treeSettings.imageFontColor.cgColor}
-					else
-						{fillColor = treeSettings.imageIconColor}
-					drawImageIcon(inContext:ctx, atX:xImageCenter, atY:self.coord.y, withRadius:treeSettings.imageIconRadius,withFillColor:fillColor)
-/*
-					if isDisplayingImage // at the moment this is true even when all images have been turned off en masse
-										// which is why need the following test. Should stick with one
-						{
-						if imagePaneView!.isHidden == false
-							{
-							drawLineToImage(inContext:ctx, fromX:xImageCenter)
-							
-							}
-						}
-*/
-
-					}
 				let aText=NSAttributedString(string:self.label!,attributes: textAttributes)
 				let vertCenteredPt = CGPoint(x:self.coord.x+labelSpacing,y:self.coord.y-yOffset)
 
@@ -709,10 +751,37 @@ ctx.drawPath(using: .stroke)
 				// In a fairly obtuse way, the following two lines make the fading and nonfading leaf alternate
 				// as we go vertically down the labels in the view. Note the labels are guaranteed to be
 				// ordered vertically by the way the initialization of label ids works
+
+				nodeIsMaximallyVisible = false // every leafID will be false except for following condition
 				if (leafID! % (2*everyNthLabel)==0)
-					{ctx.setAlpha(1.0)}				// doesn't fade
+					{
+					curAlpha = 1.0
+					nodeIsMaximallyVisible = true
+					}				// doesn't fade
 				if (leafID! % (2*everyNthLabel) == everyNthLabel)
-					{ctx.setAlpha(1-alphaComplement)}
+					{
+					curAlpha = 1-alphaComplement
+					if curAlpha > 0.95
+						{ nodeIsMaximallyVisible = true }
+					}
+				// That was tricky; remember there are other leafIDs than match the prev two conditions!
+
+
+				if hasImageFile &&  (leafID! % everyNthLabel) == 0  // draw the icon possibly before loading image as long as there is a known image file for this image
+					// As configured, this will fade out the image icons along with the labels, not sure this is what I want, but it looks better than displaying all of them at the same time in a large tree with many images...
+// TO DO: Check if there are just a few images in a large tree, such that perhaps we don't see ANY icons on first view, even though they are there: in that case, display all?
+					{
+					var fillColor:CGColor
+					// Switch the color of the image icon depending on if it is displaying
+					if isDisplayingImage
+						{fillColor = treeSettings.imageFontColor.cgColor}
+					else
+						{fillColor = treeSettings.imageIconColor}
+					//drawImageIcon(inContext:ctx, atX:xImageCenter, atY:self.coord.y, withRadius:treeSettings.imageIconRadius,withFillColor:fillColor,alpha: curAlpha, isFilled:true)
+					drawImageIcon(ofType:.filledCircle(fillColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+					}
+
+				ctx.setAlpha(curAlpha)
 
 				if  (leafID! % everyNthLabel) == 0
 					{
@@ -726,6 +795,29 @@ ctx.drawPath(using: .stroke)
 						//text.draw(at:vertCenteredPt, withAttributes: textAttributes)
 						aText.draw(at:vertCenteredPt)
 						}
+
+
+
+				if  (leafID! % everyNthLabel) == 0
+					{
+					if let imagePane = imagePaneView
+						{
+						if imagePane.isHidden == false
+							{
+							if imagePane.hasImage == false
+								{
+								drawImageIcon(ofType:.openCircle(treeSettings.imageIconColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+								}
+							}
+						}
+					else // no imagepane
+						{
+						if hasImageFile == false  // pane might not be initialized yet even though it has a file
+							{
+							drawImageIcon(ofType:.addSymbol(UIColor.blue.cgColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+							}
+						}
+					}
 					ctx.setStrokeColor(treeSettings.edgeColor) // restore stroke color
 					ctx.strokePath()
 					}

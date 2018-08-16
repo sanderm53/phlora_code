@@ -19,7 +19,13 @@ class TreesData
 
 	init() throws
 		{
-		let nexusFilenames = getNexusFilenamesFromBundle()
+		var nexusFilenames = getNexusFilenamesFromBundle()
+
+		let nexusFilenamesFromDocDir = getNexusFilenamesFromDocumentsDir()
+		//print (nexusFilenamesFromDocDir)
+
+		nexusFilenames += nexusFilenamesFromDocDir
+
 		for nexFile in nexusFilenames
 			{
 			let treeInfo = try TreeInfoPackage(fromFileName: nexFile)
@@ -31,14 +37,14 @@ class TreesData
 	func appendTreesData(withTreeInfo treeInfo: TreeInfoPackage)
 		{
 		treeInfoDictionary[(treeInfo.treeName)]=treeInfo
-		treeInfoNamesSortedArray = Array(treeInfoDictionary.keys).sorted(by: <)
+		treeInfoNamesSortedArray.insert(treeInfo.treeName, at:0)
+	
 		}
 
-	//func selectTreeView(forTreeName treeName:String, usingSameFrameAs frame:CGRect)->DrawTreeView
 	func selectTreeView(forTreeName treeName:String)->DrawTreeView
 		{
 		// make all trees that have had a treeView at sometime in past be hidden in prep for selecting a new one
-		for (tree,treeInfo) in treeInfoDictionary
+		for treeInfo in treeInfoDictionary.values
 			{
 			if treeInfo.treeView != nil
 				{treeInfo.isHidden = true}
@@ -84,6 +90,39 @@ class TreesData
 			return matchingFileNames
 			}
 
+	func getNexusFilenamesFromDocumentsDir()->[String]
+			{
+			var matchingFileNames = [String]()
+			let fileManager = FileManager.default
+			if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+				{
+				let studyDir = docsDir.appendingPathComponent("Studies")
+				if let studyFolders = try? fileManager.contentsOfDirectory(at: studyDir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+					{
+					for studyFolder in studyFolders
+						{
+						let treeDir = studyFolder.appendingPathComponent("Tree")
+						if let fileURLs = try? fileManager.contentsOfDirectory(at: treeDir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+							{
+							for fileURL in fileURLs
+								{
+	//print (treeDir,fileURLs)
+								if fileURLs.count == 1
+									{
+									matchingFileNames.append(fileURL.path)
+									}
+								else
+									{ print ("Failed to find exactly one nexus file in Tree directory")}}
+								}
+							}
+						}
+					}
+			return matchingFileNames
+			}
+
+
+
+
 	}
 
 //*************************************************************************
@@ -101,94 +140,19 @@ class TreeInfoPackage
 
 	init(fromFileName file:String) throws
 		{
-//		(nLeaves, treeName, treeDescription, treeSource, mrcaArray)=parseNexusFile(fromFileName:file)
-		//treeSource = ""
-
-//		do 	{
 			let nexusString = try String(contentsOfFile: file)
 			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
-//			}
-//		catch
-//			{
-//			print ("Error in file opening or parsing")
-//			return nil
-//			}
-
 		}
 
 	init(fromURL url : URL) throws
 		{
 			let nexusString = try String(contentsOf: url)
 			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
-//print (nLeaves,treeName,treeDescription)
 		}
 	}
 
+//*************************************************************************
 
-
-
-		
-	func parseNexusFile(fromFileName file:String)->(Int,String,String,String, [[String:String]]) // returns an array of hashes of three taxon names
-		{
-		//var mrca = [String:String]()
-		var mrca: [String:String] = [:]
-		var mrcaArray: [Dictionary<String, String>] = []
-		//let nexusFilePath = Bundle.main.bundlePath + "/" + file
-		let nexusFilePath =  file
-		var treeDescription:String = ""
-		var treeSource = ""
-		var treeName:String = ""
-		var nLeaves = 1
-		
-		do {
-			let nexusString = try String(contentsOfFile: nexusFilePath)
-
-			let commands = nexusString.split(whereSeparator: { $0 == ";" })
-			for command in commands
-				{
-				//let chomped = command.drop(while: {$0 == "\n"}) ...working inconsistently
-				let ctokens = matches(for: nwktokensTilde, in: String(command),withOptions:[.caseInsensitive])
-
-				if ctokens.count >= 3 // could be a valid line; there might be others that just have white space or crap
-					{
-					if ctokens[0] == "mrca" && ctokens[2] == "=" && ctokens.count == 6
-						{
-						//print ("Taxa = ",ctokens[1],ctokens[3],ctokens[5])
-						mrca["cladeName"] = ctokens[1]
-						mrca["specifierA"] = ctokens[3]
-						mrca["logic"] = ctokens[4]	// this is either a ',' or a '~'
-						mrca["specifierB"] = ctokens[5]
-						mrcaArray.append(mrca)
-						}
-
-					if ctokens[0] == "tree" && ctokens[2] == "=" && ctokens.count >= 4
-						{
-						treeName = ctokens[1]
-						for token in ctokens[3...ctokens.count-1]
-							{
-							if token == ","
-								{
-								nLeaves += 1 // counting the number of leaves as commas+1
-								}
-							}
-						treeDescription = ctokens[3...ctokens.count-1].joined()
-						}
-
-					if ctokens[0] == "reference" && ctokens[1] == "=" && ctokens.count >= 3
-						{
-						treeSource = ctokens[2...ctokens.count-1].joined()
-						treeSource = treeSource.replacingOccurrences(of: "'", with: "")
-						}
-
-
-					}
-
-
-				}
-			}
-		catch {print ("mrca file read or process error")}
-		return (nLeaves, treeName, treeDescription, treeSource, mrcaArray)
-		}
 
 	func nexusParser(fromString nexusString:String) throws ->(Int,String,String,String, [[String:String]])
 		{
@@ -198,6 +162,8 @@ class TreeInfoPackage
 		var treeSource = ""
 		var treeName:String = ""
 		var nLeaves = 1
+		var nLeftParens = 0
+		var nRightParens = 0
 		
 		let commands = nexusString.split(whereSeparator: { $0 == ";" })
 		for command in commands
@@ -222,9 +188,16 @@ class TreeInfoPackage
 					treeName = ctokens[1]
 					for token in ctokens[3...ctokens.count-1]
 						{
-						if token == ","
+						switch token
 							{
-							nLeaves += 1 // counting the number of leaves as commas+1
+							case ",":
+								nLeaves += 1 // counting the number of leaves as commas+1
+							case "(":
+								nLeftParens += 1 // counting the number of leaves as commas+1
+							case ")":
+								nRightParens += 1 // counting the number of leaves as commas+1
+							default:
+								break
 							}
 						}
 					treeDescription = ctokens[3...ctokens.count-1].joined()
@@ -235,14 +208,46 @@ class TreeInfoPackage
 					treeSource = ctokens[2...ctokens.count-1].joined()
 					treeSource = treeSource.replacingOccurrences(of: "'", with: "")
 					}
-
-
 				}
-
-
 			}
 
+		guard nLeaves>2 else {throw parserError.invalidTreeDescription}
+		guard treeName != "" else {throw parserError.invalidTreeDescription}
+		guard nRightParens == nLeftParens else {throw parserError.invalidTreeDescription}
 
 		return (nLeaves, treeName, treeDescription, treeSource, mrcaArray)
 		}
 
+enum parserError: Error
+	{
+	case invalidTreeDescription
+	}
+
+/* Comments on parser
+	1. Taxon names must begin with a letter and can only have letters, digits and underscores after that.
+	2. Branch lengths can be in scientific notation but must be positive
+*/
+
+let nexusToken = "#nexus"
+let commentTokens = "\\[.*?\\]"
+let nameTokens = "[A-Za-z]\\w*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore
+let puncTokens = "[=\\,\\(\\)\\;\\:]"
+let numberTokens = "[0-9]+\\.?[0-9]+([eE][-+]\\d+)?"
+let nwktokens = nameTokens + "|" + puncTokens   + "|" + numberTokens
+let puncTokensPlusTilde = "[~=\\,\\(\\)\\;\\:]"
+let nwktokensTilde = nameTokens + "|" + puncTokensPlusTilde // tilde not part of nwk specifications?
+
+
+// Wrapper for regex match;  (thanks to StackOverflow!)
+func matches(for regex: String, in text: String, withOptions options:NSRegularExpression.Options) -> [String] {
+
+	do {
+		let regex = try NSRegularExpression(pattern: regex, options:options)
+		let nsString = text as NSString
+		let results = regex.matches(in: text, range: NSRange(location: 0, length: nsString.length))
+		return results.map { nsString.substring(with: $0.range)}
+	} catch let error {
+		print("invalid regex: \(error.localizedDescription)")
+		return []
+	}
+}
