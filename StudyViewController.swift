@@ -36,7 +36,7 @@ var treesData:TreesData!
 
 	func addButtonAction(sender: UIBarButtonItem!) {
 
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
+		let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
 		vc.delegate = self
 		present(vc, animated: true)
 	}

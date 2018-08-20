@@ -120,6 +120,7 @@ class DrawTreeView: UIView
 // Defaults
 	var imagesAreVisible = true					// used to toggle images (not image icons) all on or all off
 	var cladeNamesAreVisible = false				// used to toggle whether all (available) clade names
+	var showingImageAddButtons:Bool = false
 
 
 
@@ -265,7 +266,7 @@ class DrawTreeView: UIView
 //
 		let everyNthLabel=floorPow2(UInt(labelScaleFactor/scaleTreeBy))	// complicated but guarantees that this is an integer on [1,2,4,8..] which means once a label appears on screen it will stay on screen as we zoom in
 
-			xTree.root.drawClade(inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ decoratedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
+		xTree.root.drawClade(inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ decoratedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon, showingAddButtons:showingImageAddButtons)
 			// NB. Jult 31,2018: this got corrected to pass decoratedTreeRect instead of nakedTreeRect, but note I haven't changed parameter id yet. This makes the upper/lower border behavior of tree/labels clean now.
 		
 		if cladeNamesAreVisible && xTree.hasCladeNames

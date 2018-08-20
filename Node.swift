@@ -673,7 +673,7 @@ ctx.drawPath(using: .stroke)
 			case .blank: return
 
 			case let .addSymbol(color,alpha):
-				let insetRectangleBy:CGFloat = 4.0
+				let insetRectangleBy:CGFloat = 6.0
 				let smallerRect = imageIconRect.insetBy(dx: insetRectangleBy, dy: insetRectangleBy)
 				ctx.setAlpha(alpha)
 				ctx.setStrokeColor(color)
@@ -699,7 +699,7 @@ ctx.drawPath(using: .stroke)
 		}
 
 
-	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat)
+	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat, showingAddButtons   showingImageAddButtons:Bool)
 			{
 		var curAlpha:CGFloat = 0.0 // need this default below!
 		let radius:CGFloat=3 // Adjust this to change roundedness of corners
@@ -790,8 +790,8 @@ ctx.drawPath(using: .stroke)
 							}
 						else // haven't even instantiated view yet, show add symbol
 							{
-							if gShowingImageAddButtons
-								{ drawImageIcon(ofType:.addSymbol(UIColor.blue.cgColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius) }
+							if showingImageAddButtons
+								{ drawImageIcon(ofType:.addSymbol(appleBlue,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius) }
 							}
 						}
 					}
@@ -853,7 +853,7 @@ ctx.drawPath(using: .stroke)
 				}
 			for child in children
 				{
-				child.drawClade(inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter)
+				child.drawClade(inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter, showingAddButtons:showingImageAddButtons)
 				}
 			}
 		}

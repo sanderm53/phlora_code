@@ -161,13 +161,14 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 func addImageButtonAction(sender: UIButton!) {
 	
 }
+
 func addAddImageLabel()
 	{
 	addImageLabel = UILabel()
 
 	//referenceLabel.font = UIFont(name:"Helvetica", size:14)
 
-	addImageLabel!.textColor = UIColor.blue
+	addImageLabel!.textColor = UIColor(cgColor: appleBlue)
 	addImageLabel!.text = "Add an image"
 	addImageLabel!.textAlignment = .center
 	addImageLabel!.backgroundColor = UIColor.white

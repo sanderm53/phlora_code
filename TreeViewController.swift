@@ -8,10 +8,11 @@
 
 import UIKit
 
-var gShowingImageAddButtons:Bool = false
+
+var appleBlue = UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0).cgColor
 
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class TreeViewController: UIViewController, UIGestureRecognizerDelegate {
+class TreeViewController: UIViewController, UIGestureRecognizerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 
 var timer: CADisplayLink?
 var startAnimation: TimeInterval = 0
@@ -66,7 +67,7 @@ var showingImageAddButtons:Bool = false
 //Utilities
 
 func addButtonAction(sender: UIBarButtonItem!) {
-	gShowingImageAddButtons = !gShowingImageAddButtons
+	treeView.showingImageAddButtons = !treeView.showingImageAddButtons
 	treeView.setNeedsDisplay()
 	}
 
@@ -550,7 +551,7 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 //	print (pickedNode.label, pickedNode.nodeIsMaximallyVisible)
 						if pickedNode.nodeIsMaximallyVisible
 							{
-							if pickedNode.hasImageFile || gShowingImageAddButtons
+							if pickedNode.hasImageFile || treeView.showingImageAddButtons
 								{ addImagePane(atNode:pickedNode) }
 							}
 						}
@@ -602,6 +603,7 @@ func addImagePane(atNode node:Node)
 	doubleTapGesture.cancelsTouchesInView = false
 	doubleTapGesture.numberOfTapsRequired = 2
 	imagePane.addGestureRecognizer(doubleTapGesture)
+	tapGesture.require(toFail: doubleTapGesture) // ensures gestures sequenced right
 	}
 // ***********************************************************************************
 
@@ -623,21 +625,75 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		if imagePane.hasImage == false
 			{
 			print ("Add an new image now please...")
+			showChoosePhotoSourceAlert(forImagePane:imagePane)
 			}
-
 		}
+
+func imagePickerControllerDidCancel(_ controller: UIImagePickerController)
+	{
+	dismiss(animated: true)
+	}
+func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+	print (info["UIImagePickerControllerImageURL"])
+	// other keys : UIImagePickerControllerReferenceURL , UIImagePickerControllerOriginalImage
+	dismiss(animated: true)
+}
+
+func showChoosePhotoSourceAlert(forImagePane imagePane:ImagePaneView)
+	{
+	let alert = UIAlertController(title:"Choose source of image",message:"", preferredStyle: .alert)
+
+	let action1 = UIAlertAction(title: "Cancel", style: .cancel)
+		{ (action:UIAlertAction) in print("You've pressed cancel") }
+	let action2 = UIAlertAction(title: "Photo library", style: .default)
+		{ (action:UIAlertAction) in
+		print("You've pressed pl")
+		self.choosePhotoFromLibrary(forImagePane:imagePane)
+		}
+	let action3 = UIAlertAction(title: "Files", style: .default)
+		{ (action:UIAlertAction) in print("You've pressed files") }
+	alert.addAction(action1)
+	alert.addAction(action2)
+	alert.addAction(action3)
+	self.present(alert,animated:true,completion:nil)
+	}
+
+
+func choosePhotoFromLibrary(forImagePane imagePane:ImagePaneView)
+	{
+	let imagePicker = UIImagePickerController()
+	imagePicker.sourceType = .photoLibrary
+	imagePicker.delegate = self
+	imagePicker.allowsEditing = true
+	if UIDevice.current.userInterfaceIdiom == .pad
+		{
+		imagePicker.modalPresentationStyle = .popover
+		let imagePickerPopoverPresentationController = imagePicker.popoverPresentationController
+		imagePickerPopoverPresentationController?.permittedArrowDirections = .right
+		imagePickerPopoverPresentationController?.sourceView = treeView
+		if let coord = imagePane.associatedNode?.coord
+			{
+			let origin = CGPoint(x:coord.x, y:WindowCoord(fromTreeCoord:coord.y, inTreeView: treeView)  )
+
+			print ("origin=",origin)
+			imagePickerPopoverPresentationController?.sourceRect = CGRect(origin:origin, size:CGSize(width:0, height:0))
+			present(imagePicker, animated: true, completion: nil)
+			}
+		}
+	
+	}
 
 func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		{
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
 		//let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
-let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
+		let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
 		let scale:CGFloat = 2.0
 		imagePane.scale(by:scale, around:location, inTreeView: treeView)
-self.treeView.setNeedsDisplay()
+		self.treeView.setNeedsDisplay()
 
-	}
+		}
 
 
 // ***********************************************************************************
