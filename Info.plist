@@ -4,6 +4,8 @@
 <dict>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>&apos;Phlora&apos; would like to import from your Photo Library to display on a tree</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

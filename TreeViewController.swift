@@ -625,7 +625,9 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		if imagePane.hasImage == false
 			{
 			print ("Add an new image now please...")
-			showChoosePhotoSourceAlert(forImagePane:imagePane)
+			let fic = fetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
+fic.showChoosePhotoSourceAlert(forImagePane:imagePane)
+			//showChoosePhotoSourceAlert(forImagePane:imagePane)
 			}
 		}
 
@@ -633,6 +635,7 @@ func imagePickerControllerDidCancel(_ controller: UIImagePickerController)
 	{
 	dismiss(animated: true)
 	}
+
 func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
 	print (info["UIImagePickerControllerImageURL"])
 	// other keys : UIImagePickerControllerReferenceURL , UIImagePickerControllerOriginalImage
