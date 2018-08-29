@@ -36,7 +36,8 @@ var treesData:TreesData!
 
 	func addButtonAction(sender: UIBarButtonItem!) {
 
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
+		//let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
+		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
 		vc.delegate = self
 		present(vc, animated: true)
 	}
@@ -53,34 +54,15 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 		do
 			{
 			let treeInfo = try TreeInfoPackage(fromURL: url)
+			treeInfo.dataLocation = .inDocuments // have to initialize this here when loading new tree on the fly
 			treesData.appendTreesData(withTreeInfo: treeInfo)
 			//studyTableView.reloadData()
 			studyTableView.beginUpdates()
-			studyTableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .right)
+			studyTableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .right) // maybe should insert alphabetically?
 			studyTableView.endUpdates()
 
-			let fileManager = FileManager.default
-			if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-				{
-				//print (docsDir)
-				let studyDir = docsDir.appendingPathComponent("Studies")
-				if fileManager.fileExists(atPath: studyDir.path) == false  // create Studies folder if needed
-					{
-					try? fileManager.createDirectory(at: studyDir, withIntermediateDirectories: false, attributes: nil)
-			// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
-					}
-				let studyName = treeInfo.treeName
-				let treeDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Tree")
-				try? fileManager.createDirectory(at: treeDir, withIntermediateDirectories: true, attributes: nil)
-					let imagesDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Images")
-				try? fileManager.createDirectory(at: imagesDir, withIntermediateDirectories: true, attributes: nil)
-
-				let srcFilename = url.lastPathComponent
-				let destURL = treeDir.appendingPathComponent(srcFilename)
-				try fileManager.copyItem(at: url, to: destURL)
-				}
-
-		}
+			_ = try copyURLToDocs(src:url, srcFileType: .treeFile, forStudy: treeInfo.treeName, atNode:nil)
+			}
 		catch
 			{
 			//print ("Failed to read file or parse file")
@@ -91,6 +73,7 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 		
 		}
 	}
+
 
 	override func viewDidLoad()
 		{

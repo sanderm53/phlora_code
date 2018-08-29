@@ -305,7 +305,8 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 			{
 			buttonArray += [it1,spacer]
 			}
-		if treeView.xTree.imageCollection.hasImageFiles
+		//if treeView.xTree.imageCollection.hasImageFiles
+		if treeView.xTree.hasImageFiles
 			{
 			buttonArray += [it2,spacer]
 			}
@@ -625,8 +626,8 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		if imagePane.hasImage == false
 			{
 			print ("Add an new image now please...")
-			let fic = fetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
-fic.showChoosePhotoSourceAlert(forImagePane:imagePane)
+			let fic = FetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
+fic.launch()
 			//showChoosePhotoSourceAlert(forImagePane:imagePane)
 			}
 		}

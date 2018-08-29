@@ -79,14 +79,21 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				isAttachedToNode = true
 				paneCenter = CGPoint(x:f.midX,y:f.midY)
 				associatedNode = node
-               super.init(frame:f)
-                let image = getImageFromFile(withFileNamePrefix:node.originalLabel!, atTreeDirectoryNamed:tree.treeInfo.treeName)
-				layoutPaneForImage(image)
-				if let name = node.label
+               	super.init(frame:f)
+ 				if let name = node.label
  					{imageName = name}
 				else
 					{imageName="Unlabeled node"}
 				addLabel(withName:imageName)
+               //let image = getImageFromFile(withFileNamePrefix:node.originalLabel!, atTreeDirectoryNamed:tree.treeInfo.treeName)
+
+				if let url = node.imageFileURL
+					{
+					layoutPaneForImage(UIImage(contentsOfFile:url.path))
+					}
+				else
+					{ layoutPaneForImage(nil) }
+				
 				}
 
 		func addLabel(withName name:String)

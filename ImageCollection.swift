@@ -8,6 +8,8 @@
 
 import UIKit
 
+// **** NEED TO KEEP THIS CLASS FOR NOW!! EVEN WITH NEW CODE. NEED NODEARRAY and ASSOCIATED CODE. EVENTUALLY MOVE TO SOMEWHERE...
+
 
 func getImageFromFile(withFileNamePrefix fileNamePrefix:String, atTreeDirectoryNamed treeDir:String)->UIImage?
 	// treeDir is commonly just named from the treeName
@@ -61,6 +63,7 @@ class ImageCollection {
 
 	// Either preload all available images (slow), or just check if image files exist so we can draw image
 	// icons and wait to init the imageViews later when needed
+
 	func setup()
 		{
 		let root = xTree.root!
@@ -72,7 +75,8 @@ class ImageCollection {
 			}
 		else
 			{
-			hasImageFiles = root.initImageFilesExistence(usingTreeNameAsDirName:xTree.treeInfo.treeName) // determine whether image file exists for each node
+// **** THE FOLLOWING IS NOW REDUNDANT WITH HOW I INIT THE IMAGES...
+//hasImageFiles = root.initImageFilesExistence(usingTreeNameAsDirName:xTree.treeInfo.treeName) // determine whether image file exists for each node
 			if treeSettings.preLoadImages
 				{
 				root.initImages(onTree:xTree)

@@ -57,7 +57,9 @@ class Node {
   var descendantRangeOfIDs:(UInt,UInt) = (0,0)
   var alphaModifier:CGFloat = 1.0
   var nodeFlag:Bool = false
-
+  
+  var imageFileURL:URL?
+  
   init()
 	{
 	self.coord=CGPoint()

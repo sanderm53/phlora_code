@@ -37,6 +37,7 @@ class XTree {
 	var imageCollection:ImageCollection!
 	var treeInfo:TreeInfoPackage
 	var hasCladeNames:Bool=false
+	var hasImageFiles:Bool=false
 
 	//init(withNwkStr nwktree : String)
 	init(withTreeInfoPackage data : TreeInfoPackage)
@@ -60,11 +61,66 @@ class XTree {
 		//print (mrcaArray)
 		assignLabels(fromMRCAList:mrcaArray)
 		imageCollection=ImageCollection(forTree:self)
+checkForImageFiles()
 //		imageCollection.setup(withNode:root)
 
 
 		}
 
+
+	func checkForImageFiles()
+		{
+		// If a data package is annotated as being .inDocuments its image files are ONLY in that location,
+		// but if they are .inBundle, they might be in either place because user may have added their own images
+		// to a bundle data set.
+
+		let fileManager = FileManager.default
+		// So first always check in docs folder for user added images
+		if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+			{
+			//print (docsDir)
+			let studyDir = docsDir.appendingPathComponent("Studies")
+			if fileManager.fileExists(atPath: studyDir.path) == false
+				{
+				return
+				}
+			let studyName = treeInfo.treeName
+			let imagesDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Images")
+			if let fileURLs = try? fileManager.contentsOfDirectory(at: imagesDir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+					{
+					for fileURL in fileURLs
+						{
+						let fileNameBase = fileURL.deletingPathExtension().lastPathComponent
+						if let node = nodeHash[fileNameBase]
+							{
+							//print ("\(fileNameBase) exists in tree")
+							node.hasImageFile = true
+							node.imageFileURL = fileURL
+							hasImageFiles=true
+							}
+						}
+					}
+			}
+		// Then if it is a bundle data location, also check there
+		if treeInfo.dataLocation! == .inBundle
+			{
+			let imageBundleURL = Bundle.main.bundleURL.appendingPathComponent(treeSettings.imageBundleLoc).appendingPathComponent(treeInfo.treeName)
+			if let fileURLs = try? fileManager.contentsOfDirectory(at: imageBundleURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+						{
+						for fileURL in fileURLs
+							{
+							let fileNameBase = fileURL.deletingPathExtension().lastPathComponent
+							if let node = nodeHash[fileNameBase]
+								{
+								//print ("\(fileNameBase) exists in tree")
+								node.hasImageFile = true
+								node.imageFileURL = fileURL
+								hasImageFiles=true
+								}
+							}
+						}
+			}
+		}
 
 
 	func assignLabels(fromMRCAList list:[Dictionary<String, String>])

@@ -19,16 +19,19 @@ class TreesData
 
 	init() throws
 		{
-		var nexusFilenames = getNexusFilenamesFromBundle()
-
+		let nexusFilenamesFromBundle = getNexusFilenamesFromBundle()
 		let nexusFilenamesFromDocDir = getNexusFilenamesFromDocumentsDir()
-		//print (nexusFilenamesFromDocDir)
 
-		nexusFilenames += nexusFilenamesFromDocDir
-
-		for nexFile in nexusFilenames
+		for nexFile in nexusFilenamesFromBundle
 			{
 			let treeInfo = try TreeInfoPackage(fromFileName: nexFile)
+			treeInfo.dataLocation = .inBundle
+			treeInfoDictionary[(treeInfo.treeName)]=treeInfo
+			}
+		for nexFile in nexusFilenamesFromDocDir
+			{
+			let treeInfo = try TreeInfoPackage(fromFileName: nexFile)
+			treeInfo.dataLocation = .inDocuments
 			treeInfoDictionary[(treeInfo.treeName)]=treeInfo
 			}
 		treeInfoNamesSortedArray = Array(treeInfoDictionary.keys).sorted(by: <)
@@ -137,6 +140,7 @@ class TreeInfoPackage
 	var treeView:DrawTreeView?
 	var isHidden:Bool = true
 	var nLeaves:Int=0
+	var dataLocation:PhloraDataLocation?
 
 	init(fromFileName file:String) throws
 		{
@@ -218,6 +222,12 @@ class TreeInfoPackage
 		return (nLeaves, treeName, treeDescription, treeSource, mrcaArray)
 		}
 
+
+enum PhloraDataLocation {
+	case inBundle
+	case inDocuments
+	}
+
 enum parserError: Error
 	{
 	case invalidTreeDescription
@@ -251,3 +261,46 @@ func matches(for regex: String, in text: String, withOptions options:NSRegularEx
 		return []
 	}
 }
+
+enum DataFileType {
+	case treeFile
+	case imageFile
+	}
+
+func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy studyName:String, atNode node:Node?) throws -> URL?
+	// Copy a treefile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.
+	// If an image file, rename its copy based on the leaf label for that node.
+	{
+	var targetDir:URL
+	var destURL:URL?
+	// May need to creat Studies dir, StudyName dir and either Tree/Images directory as needed
+	let fileManager = FileManager.default
+	if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+		{
+		targetDir = docsDir.appendingPathComponent("Studies").appendingPathComponent(studyName)
+		let srcFilename = srcURL.lastPathComponent
+		switch fileType
+			{
+			case .treeFile:
+				targetDir = targetDir.appendingPathComponent("Tree")
+				destURL = targetDir.appendingPathComponent(srcFilename)
+			case .imageFile:
+				targetDir = targetDir.appendingPathComponent("Images")
+				if let node = node
+					{
+					let fileExtension = srcURL.pathExtension
+					let fileName = node.originalLabel!
+					destURL = targetDir.appendingPathComponent(fileName).appendingPathExtension(fileExtension)
+					}
+			}
+		if fileManager.fileExists(atPath: targetDir.path) == false  // create the correct Study folder (and ancestors) if needed
+			{
+			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+	// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
+			}
+		try fileManager.copyItem(at: srcURL, to: destURL!)
+		return destURL
+		}
+	return nil
+	}
+
