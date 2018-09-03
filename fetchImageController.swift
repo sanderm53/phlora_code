@@ -28,13 +28,13 @@ class FetchImageController : NSObject, UIImagePickerControllerDelegate, UINaviga
 			{ (action:UIAlertAction) in print("You've pressed cancel") }
 		let action2 = UIAlertAction(title: "Photo library", style: .default)
 			{ (action:UIAlertAction) in
-			print("You've pressed pl")
+			//print("You've pressed pl")
 			//self.choosePhotoFromLibrary(forImagePane:imagePane)
 			self.choosePhotoFromLibrary()
 			}
 		let action3 = UIAlertAction(title: "Files", style: .default)
 			{ (action:UIAlertAction) in
-			print("You've pressed files")
+			//print("You've pressed files")
 			self.choosePhotoFromFiles()
 			}
 		alert.addAction(action1)
@@ -107,11 +107,14 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			imagePane.associatedNode!.hasImageFile = true
 
 			viewController!.addImagePane(atNode:imagePane.associatedNode!)
+			viewController!.treeView.xTree.setupNearestImageIconPositions(for: viewController!.treeView.xTree.nodeArray)
+			// ugh that seems like a overly special place to insert that code
 			imagePane.removeFromSuperview()
 			viewController!.treeView.setNeedsDisplay()
 			}
 		catch
 			{
+// Need to dismiss alert before presentig this one??
 	print ("Catch an image import error here")
 			let alert = UIAlertController(title:"Error importing image file",message:nil, preferredStyle: .alert)
 			alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
@@ -145,6 +148,10 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 					imagePickerPopoverPresentationController?.sourceRect = CGRect(origin:origin, size:CGSize(width:0, height:0))
 					viewController!.present(pickerController, animated: true, completion: nil)
 					}
+				}
+			else
+				{ // haven't tested this on iPhone yet
+					viewController!.present(pickerController, animated: true, completion: nil)
 				}
 			}
 		

@@ -22,6 +22,19 @@ enum LadderizeType {
 	case asis
 	}
 
+struct Position {
+	var pos:Int
+	var nearestLeft:Int
+	var nearestRight:Int
+	
+	init(at pos:Int)
+		{
+		self.pos = pos
+		nearestLeft = -10000
+		nearestRight = +10000
+		}
+	
+	}
 
 class XTree {
 
@@ -56,17 +69,58 @@ class XTree {
 		for node in nodeArray { nodeHash [node.originalLabel!] = node }
 
 		root.prepareLabels()					// This edits labels as requested, copying originallable->label
-		root.setEdgeAlphaModifier(haveSeenInternalLabel: root.isLabelPresent()) // works on label, so prepare must be done first
+		//root.setEdgeAlphaModifier(haveSeenInternalLabel: root.isLabelPresent()) // works on label, so prepare must be done first
 		let mrcaArray = treeInfo.mrcaArray
 		//print (mrcaArray)
 		assignLabels(fromMRCAList:mrcaArray)
 		imageCollection=ImageCollection(forTree:self)
 checkForImageFiles()
+
+setupNearestImageIconPositions(for:nodeArray) // also called in process_images() in fetchImageController when adding a new image
+
 //		imageCollection.setup(withNode:root)
 
 
 		}
+	func setupNearestImageIconPositions(for nodeArray:[Node]) // the integer distance between the closer image icon above and below;
+		{
+		var curPos:Position?
+		var prevPos:Position
+		curPos = Position(at:0)
+		if nodeArray[0].hasImageFile
+			{
+			curPos = Position(at:0)
+			}
+		else
+			{
+			curPos = nextPos(for:nodeArray,after:0)
+			}
+		while curPos != nil
+			{
+			prevPos = curPos!
+			curPos = nextPos(for:nodeArray,after:curPos!.pos)
+			if curPos != nil
+				{
+				prevPos.nearestRight = curPos!.pos
+				curPos!.nearestLeft = prevPos.pos
 
+				}
+			nodeArray[prevPos.pos].closestImageIconNeighberDistance = min(abs(prevPos.pos-prevPos.nearestLeft),abs(prevPos.pos-prevPos.nearestRight))
+//print ("NNd ",prevPos.pos, nodeArray[prevPos.pos].closestImageIconNeighberDistance)
+			}
+		}
+	func nextPos(for nodeArray:[Node], after pos:Int)->Position?
+		{
+		if pos+1 <= nodeArray.count-1
+			{
+			for i in pos+1...nodeArray.count-1
+				{
+				if nodeArray[i].hasImageFile
+					{ return Position(at:i)}
+				}
+			}
+		return nil
+		}
 
 	func checkForImageFiles()
 		{

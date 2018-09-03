@@ -55,9 +55,9 @@ class Node {
   var imageView:MyImageView?
   var imagePaneView:ImagePaneView?
   var descendantRangeOfIDs:(UInt,UInt) = (0,0)
-  var alphaModifier:CGFloat = 1.0
+  //var alphaModifier:CGFloat = 1.0
   var nodeFlag:Bool = false
-  
+  var closestImageIconNeighberDistance:Int = 10000
   var imageFileURL:URL?
   
   init()
@@ -167,6 +167,7 @@ class Node {
 // Set a node parameter that will be used to dim edges within named clades
 // Must be called after prepareLabels has been initialized first
 // As the clade is expanded, the effect tends to diminish, since edges get brighter then anyway.
+/*
 func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		{
 		let dimFactor:CGFloat = 0.1
@@ -181,7 +182,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		for child in children
 			{ child.setEdgeAlphaModifier(haveSeenInternalLabel:haveSeenLabelAlready) }
 		}
-
+*/
 	// **********************************************************************
 	
 	func putNodeArray(into nodeAr:inout [Node])
@@ -232,6 +233,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 	// Given any node lacking an imageView, try to load an image for it.
 	// Must run initImageFilesExistence() first!
 	// Sets the node's hasImage field to true if an image was properly instantiated
+
 	func initImage(onTree xTree:XTree)
 		{
 		if hasImageFile
@@ -268,6 +270,8 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 			}
 		
 		}
+
+
 
 	// check if image file is present for each leaf taxon name and note that for the node and for the image collection as a whole (via return val)
 	func initImageFilesExistence(usingTreeNameAsDirName treeNameDir:String)->Bool
@@ -652,7 +656,7 @@ ctx.drawPath(using: .stroke)
 			ctx.move(to:imageIconPt)
 			ctx.addLine(to:imagePaneUpperRight)
 			ctx.setStrokeColor(treeSettings.imageToIconLineColor) // restore stroke color
-			ctx.setLineWidth(4.0)
+			ctx.setLineWidth(3.0)
 			ctx.setLineDash(phase: 0, lengths: [1,3])
 			ctx.strokePath()
 			ctx.setLineDash(phase: 0, lengths: [])
@@ -755,7 +759,7 @@ ctx.drawPath(using: .stroke)
 
 				ctx.setAlpha(curAlpha)
 
-				if  (leafID! % everyNthLabel) == 0
+				if  (leafID! % everyNthLabel) == 0  // Always want to be displaying at this regular position, esp when dense
 					{
 					// Draw the labels
 					if treeSettings.truncateLabels
@@ -773,8 +777,16 @@ ctx.drawPath(using: .stroke)
 					// First, filled circles of two possible colors when we know there is an image file
 					
 					if hasImageFile  // draw the icon possibly before loading image as long as there is a known image file for this image
-						// As configured, this will fade out the image icons along with the labels, not sure this is what I want, but it looks better than displaying all of them at the same time in a large tree with many images...
-						// TO DO: Check if there are just a few images in a large tree, such that perhaps we don't see ANY icons on first view, even though they are there: in that case, display all?
+/* When there is an image file present, I display an icon according to a delicate algorithm that trades off the fadeout-
+behavior that I want for the labels (which are densely arrayed vertically), with the actual density of images vertically (which
+may or may not be dense, but will be less or equal in density to the labels. When the icons are dense, basically I want them
+to fade like labels, but when they are sparse I want them to be visible in some negativemonotonic relation to their density.
+When the leaf node is at the everyNthLabel positions, there is a computed alpha value based on the same criteria as labels.
+For every leaf node there is also a density based alpha value. When the leaf node is inbetween everyNthLabel, use the density
+based alpha only. When the leaf node is at one of those everyNthLabel positions, use the maximum of the two alpha values to
+ensure visiblity as appropriate.
+!! NEED TO FIGURE OUT HOW TO UPDATE THIS AS IMAGES ARE ADDED...!!
+*/
 						{
 						var fillColor:CGColor
 						// Switch the color of the image icon depending on if it is displaying
@@ -782,7 +794,10 @@ ctx.drawPath(using: .stroke)
 							{fillColor = treeSettings.imageFontColor.cgColor}
 						else
 							{fillColor = treeSettings.imageIconColor}
-						drawImageIcon(ofType:.filledCircle(fillColor,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+
+						let densityBasedAlpha = 1 - 1/CGFloat(closestImageIconNeighberDistance)
+						let finalAlpha = max(curAlpha,densityBasedAlpha)
+						drawImageIcon(ofType:.filledCircle(fillColor,finalAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 						}
 					else // no image file; handle case when we are prompting for a new file
 						{
@@ -796,6 +811,20 @@ ctx.drawPath(using: .stroke)
 								{ drawImageIcon(ofType:.addSymbol(appleBlue,curAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius) }
 							}
 						}
+					}
+				else
+					{
+						if hasImageFile  // draw tiny icons everywhere else
+							{
+							var fillColor:CGColor
+							if isDisplayingImage
+								{fillColor = treeSettings.imageFontColor.cgColor}
+							else
+								{fillColor = treeSettings.imageIconColor}
+							let densityBasedAlpha = 1 - 1/CGFloat(closestImageIconNeighberDistance)
+							drawImageIcon(ofType:.filledCircle(fillColor,densityBasedAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
+							}
+
 					}
 				ctx.setStrokeColor(treeSettings.edgeColor) // restore stroke color
 				ctx.strokePath()

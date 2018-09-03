@@ -51,12 +51,18 @@ class MainViewController: UIViewController {
 
 // **************
 
-	func aboutButtonAction(sender: UIButton!) {
-
+	func aboutButtonAction(sender: UIButton!)
+		{
 		let vc = htmlFileTextViewController()
 		vc.htmlFilePrefix="About"
 		self.navigationController?.pushViewController(vc, animated: true)
-	}
+		}
+	func helpButtonAction(sender: UIButton!)
+		{
+		let vc = htmlFileTextViewController()
+		vc.htmlFilePrefix="HelpGuide"
+		self.navigationController?.pushViewController(vc, animated: true)
+		}
 
 
 
@@ -98,45 +104,14 @@ class MainViewController: UIViewController {
 		navigationController!.setNavigationBarHidden(true, animated: false)
 		let margins = view.layoutMarginsGuide
 		imageView.translatesAutoresizingMaskIntoConstraints=false
-		//imageView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
 		imageView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-		//imageView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
-		//imageView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
 		imageView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
-		//imageView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true // no nav toolbar on bottom in this window
 
+		let studyButton = button(title:"Studies",fontSize:30,action:#selector(studyButtonAction))
+		let aboutButton = button(title:"About/Credits",fontSize:30,action:#selector(aboutButtonAction))
+		let helpButton = button(title:"Help",fontSize:30,action:#selector(helpButtonAction))
 
-		let studyButton = UIButton(type: .roundedRect) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		studyButton.addTarget(self, action: #selector(studyButtonAction), for: .touchUpInside)
-		studyButton.frame.size = CGSize(width: 200, height: 50)
-		studyButton.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
-		studyButton.layer.borderColor=UIColor.white.cgColor
-		studyButton.layer.borderWidth=2.0
-		studyButton.layer.cornerRadius=10
-		studyButton.frame = CGRect(origin: CGPoint(x:0,y:0), size: studyButton.frame.size)
-		studyButton.setTitleColor(UIColor.black, for: .normal)
-		let myAttributes = [
-			NSForegroundColorAttributeName : UIColor.white,
-			NSFontAttributeName : UIFont(name:"Helvetica", size:30)!
-			]
-   		var mySelectedAttributedTitle = NSAttributedString(string: "Trees", attributes: myAttributes)
-    	studyButton.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
-
-		let aboutButton = UIButton(type: .roundedRect) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		aboutButton.addTarget(self, action: #selector(aboutButtonAction), for: .touchUpInside)
-		aboutButton.frame.size = CGSize(width: 200, height: 50)
-		aboutButton.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
-		aboutButton.layer.borderColor=UIColor.white.cgColor
-		aboutButton.layer.borderWidth=2.0
-		aboutButton.layer.cornerRadius=10
-		aboutButton.frame = CGRect(origin: CGPoint(x:0,y:0), size: aboutButton.frame.size)
-		aboutButton.setTitleColor(UIColor.black, for: .normal)
-		mySelectedAttributedTitle = NSAttributedString(string: "About", attributes: myAttributes)
-   		aboutButton.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
-
-		
-
-		let stackView = UIStackView(arrangedSubviews:[studyButton,aboutButton])
+		let stackView = UIStackView(arrangedSubviews:[studyButton,helpButton,aboutButton])
 		stackView.axis = .vertical
 		stackView.distribution = .fillEqually
 		stackView.alignment = .fill
@@ -149,11 +124,29 @@ class MainViewController: UIViewController {
 		//stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
 		stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
 		stackView.widthAnchor.constraint(equalToConstant: 300.0).isActive = true
-		stackView.heightAnchor.constraint(equalToConstant: 300.0).isActive = true
+		stackView.heightAnchor.constraint(equalToConstant: 400.0).isActive = true
  		}
 
 
-
+	func button (title t:String, fontSize fs:CGFloat, action act: Selector)->UIButton
+		{
+		let button = UIButton(type: .roundedRect) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		button.addTarget(self, action: act, for: .touchUpInside)
+		button.frame.size = CGSize(width: 200, height: 50)
+		button.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
+		button.layer.borderColor=UIColor.white.cgColor
+		button.layer.borderWidth=2.0
+		button.layer.cornerRadius=10
+		button.frame = CGRect(origin: CGPoint(x:0,y:0), size: button.frame.size)
+		button.setTitleColor(UIColor.black, for: .normal)
+		let myAttributes = [
+			NSForegroundColorAttributeName : UIColor.white,
+			NSFontAttributeName : UIFont(name:"Helvetica", size:fs)!
+			]
+		let mySelectedAttributedTitle = NSAttributedString(string: t, attributes: myAttributes)
+   		button.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
+		return button
+		}
 
 
 	override func didReceiveMemoryWarning() {

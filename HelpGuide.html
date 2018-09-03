@@ -1,0 +1,85 @@
+<html>
+<head>
+<style>
+body
+{
+font-size:20px;
+font-family:helvetica;
+color:white;
+
+}
+</style>
+</head>
+
+
+<body>
+<p style="font-size:30px;"><b><i>Phlora</i> Help</b></p>
+
+<p>Phlora is designed to display phylogenetic trees showing the evolutionary relationships of species. Each "leaf" of a tree represents a species or other taxonomic entity. In Phlora each leaf can be annotated with a zoomable image provided by the user. Collections of leaves can be given names to form a higher level classification scheme. Such higher level group names are shown as yellow rounded boxes around parts of the tree.</p>
+
+
+<p><b>Navigating the Phlora interface</b></p>
+
+<p>The "Trees" button on the main page presents a "Studies" table view of the data included in the app. Each study includes a single tree, optional images, and an optional classification scheme. Tapping a study presents the tree view for that study.</p>
+
+<p>The tree view displays the phylogenetic tree and labels for all leaves of the tree. The tree can be zoomed and panned with the usual pinch and swipe gestures. A gray dot next to a leaf indicates that an image is present. A single tap on the dot will display the image. Pinch and swipe gestures on the image act as expected to move and zoom the image.</p>
+
+<p>The toolbar at the bottom of the screen has a help button, which provides further information about manipulating the tree and images. Optionally it may display other buttons. If images are present a white-outline square button is present. This can be used to toggle currently open images on screen on or off all at once. Optionally there may also be a yellow-outline rounded button. If present, tapping this button will display the higher level classification scheme for the tree.</p>
+
+
+<p><b>Importing your own data</b></p>
+
+<p>Several studies are included in the app, but you may wish to add your own trees and images. The general procedure for adding a new study is to prepare a text file containing the tree in a specific format and deposit it in your iCloud Drive folder or move it directly to your mobile device.</p>
+
+<p><i>Preparing the tree file.</i> On your desktop/laptop prepare a plain text file in what I will call a "near-nexus" format (based on a long-standing standard format in the phylogenetic biology literature). Some iOS apps exist to create plain text files on your device, but I find it easier to work on this file elsewhere. Below is an example of a simple file:</p>
+	<p><ul style="list-style: none;">
+	<li>tree Cats = (house_cat,(lion, tiger));
+	<li>reference = 'I made this tree up';
+	<li>mrca roaring_cats = lion, tiger;
+	</ul></p>
+	
+<p>Only the first line is required. This is a tree description and has a tree/study name (Cats) and a description of the tree proper (to the right of the parens, up to the semi-colon). The second line is optional and presents information about the source of the tree. Place all text between single quotes. Finally the third line is a so-called node-based definition of a group name (roaring_cats) for the optional classification scheme. There can be more than one mrca line. See below under 'Classification scheme' for more details.</p>
+
+<p>Use only simple leaf labels consisting of alphanumeric characters and underscores, such as 'house_cat' above. Do not use white space within the labels. The parser in the app is still primitive.</p>
+
+<p>It is worth testing your tree description line in some other tree visualization software before attempting an import into Phlora. Once you are sure of the file, move it to your iCloud Drive folder or move it to your device directly.</p>
+
+
+<p><i>Importing the tree file.</i> On the "Studies" page click the "+" button, which will launch a view that will let you pick the tree file from either iCloud Drive or some folder on your device where you have placed the file. If the file is correct a new entry will appear in the table and you may then access the tree. If an error message is displayed you will have to return to edit the file and correct any format problems. Note the comments above on leaf labels.</p>
+
+<p><i>Adding images one at a time.</i> On the tree view click the "+" in the upper right, which will then display "+" by each leaf label. Click on one of these to bring up a dialog to allow importing of an image for that leaf. Images can be imported from the device's Photo Library or from a file found on the device or in iCloud Drive. If you choose to import from the device Photo Library please note that you have to explicitly allow this. The first time this is attempted the app should present an alert that asks permission to import from your Library. The app does nothing with your images other than present them on screen within Phlora, and make a copy in the Phlora Documents directory on the device. Alternatively, you can set this permission under iOS 'Settings'. Select the settings for 'Phlora' and then set the 'Photos' permissions to allow Phlora to access your photos. Once you have added an image it will be included the next time you launch Phlora.</p>
+
+<p><i>Adding many images at once.</i> You may wish to add a large set of images associated with a tree. The efficient way to do this is to copy the appropriately prepared set of image files to the Phlora folder's Documents folder. I recommend the following. First, prepare a folder of images on your desktop/laptop. Each image should be named to match the leaf label on the tree for that image, plus the appropriate extension indicating the kind of image format. So, for the tree above, for example, the following names are examples of what are expected:</p>
+
+	<p><ul style="list-style: none;">
+	<li>house_cat.jpg
+	<li>lion.png
+	<li>tiger.jpeg
+	</ul></p>
+	
+<p>These labels are case sensitive. When the folder has all the images you want, upload it to iCloud Drive.</p>
+
+<p>You can browse the directory/folders/file hierarchy of your device with the 'Files' app, which comes with iOS 11+ by default. Make sure you have already loaded a treefile for your 'Cats' tree. You will then see when browsing files with Files app that there is a Phora folder with a 'Studies' folder within it. Within 'Studies' is a folder for each of your user-added studies, such as 'Cats' or the like. Within a study folder like 'Cats' there will be two folders called 'Tree' and 'Images'. Use the Files app to copy or move all your image files into the device 'Images' folder. Launch Phlora to check to see if it loads all your images.</p>
+
+<p><i>Adding an image for a new study, to appear in the Study table view.</i> At the moment this has to be done manually. For some new study name, such as 'StudyName', you can add an image called 'StudyName.jpg' (or other format extension) to the 'Images' folder in the 'StudyName' folder in 'Studies'. This will be loaded the next time Phlora is launched.</p>
+
+<p><b>Classification schemes</b></p>
+
+<p>Some experience in phylogenetic biology is helpful if you want to add a classification scheme for your phylogenetic tree. Group names can be applied to clades in your tree by writing 'mrca' statements into the tree file. The format for a 'node-based' definition of a clade is</p>
+	<p><ul style="list-style: none;">
+	<li>mrca roaring_cats = lion, tiger;
+	</ul></p>
+
+<p>In this line 'mrca' stands for 'most recent common ancestor'; the label 'roaring_cats' will be assigned to the clade that comprises the most recent common ancestor of lion and tiger and all of its descendants. Only two specifiers to the right of the '=' sign can be included.</p>
+
+<p>The syntax for a stem-based definition is slightly unconventional. For example</p>
+	<p><ul style="list-style: none;">
+	<li>mrca roaring_cats = lion ~ house_cat;
+	</ul></p>
+
+<p>is the "clade comprising all leaves more closely related to lion than to house_cat". The order of the specifiers on the right of the '=' is important, and only two specifiers can be given.</p>
+
+
+
+</body>
+</html>
