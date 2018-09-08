@@ -44,6 +44,11 @@ struct Settings
 	let treeViewInsetY:CGFloat
 	let helpViewSize:CGSize
 	let helpFileNamePrefix:String // .html file with Phlora help information as HTML text
+	let studyTableRowHeight:CGFloat
+	let studyTableImageHeight:CGFloat
+	let studyTableLabelFontSize:CGFloat
+	let studyTableReferenceFontSize:CGFloat
+	let studyTableNLeafFontSize:CGFloat
 	}
 
 let iPhoneTreeSettings=Settings(
@@ -80,7 +85,12 @@ let iPhoneTreeSettings=Settings(
 	treeViewInsetX:15,
 	treeViewInsetY:15, // program sets X=Y anyway because of device rotations
 	helpViewSize:CGSize(width: 250, height: 400),
-	helpFileNamePrefix:String("helpDocPhone")
+	helpFileNamePrefix:String("helpDocPhone"),
+	studyTableRowHeight:125,
+	studyTableImageHeight:100,
+	studyTableLabelFontSize:16,
+	studyTableReferenceFontSize:12,
+	studyTableNLeafFontSize:12
 	)
 
 	let iPadTreeSettings=Settings(
@@ -117,7 +127,12 @@ let iPhoneTreeSettings=Settings(
 	treeViewInsetX:15,
 	treeViewInsetY:15, // program sets X=Y anyway because of device rotations
 	helpViewSize:CGSize(width: 500, height: 400),
-	helpFileNamePrefix:String("helpDoc")
+	helpFileNamePrefix:String("helpDoc"),
+	studyTableRowHeight:200,
+	studyTableImageHeight:150,
+	studyTableLabelFontSize:24,
+	studyTableReferenceFontSize:14,
+	studyTableNLeafFontSize:18
 	)
 
 	var treeSettings = iPadTreeSettings // as a default

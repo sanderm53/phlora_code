@@ -107,7 +107,7 @@ self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .a
 		studyTableView.register(StudyTableViewCell.self, forCellReuseIdentifier: "cell") // This is calling a class name for the cell, but here it is just the root UITableViewCell class; if I want to init this to a different default style prob have to subclass it
 		studyTableView.isHidden=false
 		studyTableView.backgroundColor=studyPUBackgroundColor
-		studyTableView.rowHeight=200.0
+		studyTableView.rowHeight=treeSettings.studyTableRowHeight
 		//studyTableView.separatorStyle = .none
 		//studyTableView.sectionIndexColor = UIColor.white
 		view.addSubview(studyTableView)
@@ -138,7 +138,6 @@ self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .a
 
 
 
-// ********************************** I have disabled device rotations in info.plist!, so the following is mute and not current
 
 	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
 	

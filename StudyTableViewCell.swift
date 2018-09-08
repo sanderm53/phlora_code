@@ -42,35 +42,57 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 	studyImageView = UIImageView()
 	studyImageView.contentMode = .scaleAspectFit // important
 	contentView.addSubview(studyImageView)
-	studyImageView.translatesAutoresizingMaskIntoConstraints=false
-	studyImageView.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-	studyImageView.leftAnchor.constraint(equalTo: leftAnchor).isActive = true
-	studyImageView.heightAnchor.constraint(equalToConstant: 150.0).isActive = true
-	studyImageView.widthAnchor.constraint(equalToConstant: 150.0).isActive = true
 
 	studyLabel = UILabel()
 	studyLabel.textColor = UIColor.white
-	studyLabel.font = UIFont(name:"Helvetica", size:24)
+	studyLabel.font = UIFont(name:"Helvetica", size:treeSettings.studyTableLabelFontSize)
 	contentView.addSubview(studyLabel)
-	studyLabel.translatesAutoresizingMaskIntoConstraints=false
-	studyLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-	studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:20.0).isActive = true
 
 	nLeafLabel = UILabel()
 	nLeafLabel.textColor = UIColor.white
-	nLeafLabel.font = UIFont(name:"Helvetica", size:18)
+	nLeafLabel.font = UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)
 	contentView.addSubview(nLeafLabel)
-	nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
-	nLeafLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-	nLeafLabel.rightAnchor.constraint(equalTo: rightAnchor,constant:-50.0).isActive = true
 
 	referenceLabel = UILabel()
 	referenceLabel.textColor = UIColor.white
-	referenceLabel.font = UIFont(name:"Helvetica", size:14)
+	referenceLabel.font = UIFont(name:"Helvetica", size:treeSettings.studyTableReferenceFontSize)
 	contentView.addSubview(referenceLabel)
-	referenceLabel.translatesAutoresizingMaskIntoConstraints=false
-	referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+30.0).isActive = true
-	referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor,constant:20.0).isActive = true
+
+
+// setup constraints differently on ipad vs phone
+	studyImageView.translatesAutoresizingMaskIntoConstraints=false
+	studyImageView.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+	studyImageView.leftAnchor.constraint(equalTo: leftAnchor).isActive = true
+	studyImageView.heightAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+	studyImageView.widthAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+
+	if UIDevice.current.userInterfaceIdiom == .pad
+		{ // Spread out and take advantage of horiz space
+
+		studyLabel.translatesAutoresizingMaskIntoConstraints=false
+		studyLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:20.0).isActive = true
+		nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
+		nLeafLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+		nLeafLabel.rightAnchor.constraint(equalTo: rightAnchor,constant:-50.0).isActive = true
+		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
+		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+30.0).isActive = true
+		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor,constant:20.0).isActive = true
+
+		}
+	else
+		{ // put all text in vert column
+		studyLabel.translatesAutoresizingMaskIntoConstraints=false
+		studyLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+		nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
+		nLeafLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:-20.0).isActive = true
+		nLeafLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
+		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+20.0).isActive = true
+		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+
+		}
 
 
 }

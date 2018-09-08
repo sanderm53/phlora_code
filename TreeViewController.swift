@@ -148,19 +148,6 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
         navigationController!.setToolbarHidden(false, animated: false)
 		//navigationController!.setNavigationBarHidden(false, animated: false) // has to be here
 		self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
-		// Where to put this when we have multiple view controllers down the road?
-		deviceType = UIDevice.current.userInterfaceIdiom
-		switch deviceType
-			{
-			case .phone:
-				//print ("This is an iPhone\n")
-				treeSettings = iPhoneTreeSettings
-			case .pad:
-				//print ("This is an iPad\n")
-				treeSettings = iPadTreeSettings
-			default:
-				break
-			}
 
 	// Add gesture recognizers NOTE I'M NOW ATTACHING THESE TO THE VIEW RATHER THAN THE treeView
 
@@ -477,9 +464,69 @@ func addImagePane(atNode node:Node)
 	doubleTapGesture.numberOfTapsRequired = 2
 	imagePane.addGestureRecognizer(doubleTapGesture)
 	tapGesture.require(toFail: doubleTapGesture) // ensures gestures sequenced right
+	
+	let longTapGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleImagePaneLongPress(recognizer:)))
+	longTapGesture.delegate = self
+	imagePane.addGestureRecognizer(longTapGesture)
+	longTapGesture.minimumPressDuration = 1.0
+
+
 	}
 // ***********************************************************************************
 
+var alert: UIAlertController?
+
+func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
+		{
+		switch recognizer.state
+			{
+			case UIGestureRecognizerState.began:
+				break
+			case UIGestureRecognizerState.changed:
+				break
+			case UIGestureRecognizerState.ended:
+				let imagePane = recognizer.view as! ImagePaneView
+				treeView.bringSubview(toFront: imagePane)
+				if imagePane.hasImage
+					{
+					alert = UIAlertController(title:"Delete user-added image from Phlora?",message:"", preferredStyle: .alert)
+					let action1 = UIAlertAction(title: "Cancel", style: .cancel)
+						{ (action:UIAlertAction) in self.dismiss(animated:true) }
+					let action2 = UIAlertAction(title: "Delete", style: .default)
+						{ (action:UIAlertAction) in
+						self.deleteImagePane(imagePane)
+						}
+					alert!.addAction(action1)
+					alert!.addAction(action2)
+					present(alert!, animated: true, completion: nil)
+					}
+			default:
+				break
+			}
+		}
+func deleteImagePane(_ imagePane:ImagePaneView)
+	{
+		if let node = imagePane.associatedNode
+			{
+			node.hasImage = false
+			node.hasImageFile = false
+			node.imagePaneView = nil
+			guard let url = node.imageFileURL else { return }
+			do 	{
+				try FileManager.default.removeItem(at:url)
+				}
+			catch
+				{
+				print ("Error removing file")
+				return
+				}
+			node.imageFileURL = nil
+			treeView.xTree.setupNearestImageIconPositions(for : treeView.xTree.nodeArray) // have to recompute this now
+	
+			}
+		imagePane.removeFromSuperview()
+		self.treeView.setNeedsDisplay()
+	}
 
 // Minimally bring imagepane to front; if no image, go on add one!
 func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)

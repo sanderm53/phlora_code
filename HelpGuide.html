@@ -20,7 +20,7 @@ color:white;
 
 <p><b>Navigating the Phlora interface</b></p>
 
-<p>The "Trees" button on the main page presents a "Studies" table view of the data included in the app. Each study includes a single tree, optional images, and an optional classification scheme. Tapping a study presents the tree view for that study.</p>
+<p>The "Studies" button on the main page presents a table view of the data included in the app. Each study includes a single tree, optional images, and an optional classification scheme. Tapping a study presents the tree view for that study.</p>
 
 <p>The tree view displays the phylogenetic tree and labels for all leaves of the tree. The tree can be zoomed and panned with the usual pinch and swipe gestures. A gray dot next to a leaf indicates that an image is present. A single tap on the dot will display the image. Pinch and swipe gestures on the image act as expected to move and zoom the image.</p>
 
@@ -63,16 +63,18 @@ color:white;
 
 <p><i>Adding an image for a new study, to appear in the Study table view.</i> At the moment this has to be done manually. For some new study name, such as 'StudyName', you can add an image called 'StudyName.jpg' (or other format extension) to the 'Images' folder in the 'StudyName' folder in 'Studies'. This will be loaded the next time Phlora is launched.</p>
 
+<p><i>Deleting images, trees, or entire studies.</i>This has to be done manually using the 'Files' app under iOS 11+. Just select an image and delete it to remove images. To delete the tree, delete the near nexus file in the study's 'Tree' folder. If you want to delete the entire study you can remove the study folder and its Images and Tree subfolders. ] </p>
+
 <p><b>Classification schemes</b></p>
 
-<p>Some experience in phylogenetic biology is helpful if you want to add a classification scheme for your phylogenetic tree. Group names can be applied to clades in your tree by writing 'mrca' statements into the tree file. The format for a 'node-based' definition of a clade is</p>
+<p>Some background knowledge in phylogenetic biology is helpful if you want to add a classification scheme for your phylogenetic tree. The following is a quick start set of instructions. Group names can be applied to clades in your tree by writing 'mrca' statements into the tree file. The format for a 'node-based' definition of a clade is</p>
 	<p><ul style="list-style: none;">
 	<li>mrca roaring_cats = lion, tiger;
 	</ul></p>
 
 <p>In this line 'mrca' stands for 'most recent common ancestor'; the label 'roaring_cats' will be assigned to the clade that comprises the most recent common ancestor of lion and tiger and all of its descendants. Only two specifiers to the right of the '=' sign can be included.</p>
 
-<p>The syntax for a stem-based definition is slightly unconventional. For example</p>
+<p>The syntax for a stem-based definition is slightly unconventional relative to the literature. For example</p>
 	<p><ul style="list-style: none;">
 	<li>mrca roaring_cats = lion ~ house_cat;
 	</ul></p>

@@ -111,6 +111,22 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			//imageLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
 			}
 
+		func addImage (_ image:UIImage) // add image to existing pane, get rid of addAdd label
+			{
+				var rectMult:CGFloat
+				let L=treeSettings.initialImageSize
+				var initialImageSize:CGSize
+				let aspect = image.size.height/image.size.width
+				if aspect >= 1.0
+					{ rectMult=L/image.size.height }
+				else
+					{ rectMult=L/image.size.width }
+				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+				hasImage = true
+				imageView.image = image
+				frame.size = initialImageSize
+				addImageLabel = nil
+			}
 
 		func layoutPaneForImage(_ image:UIImage?)
 			{
@@ -144,7 +160,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				//imageView = UIImageView(image: thumb)
 
 
-				imageView = UIImageView(image: image)
+				imageView = UIImageView(image: image) // works even if image == nil
 				imageView.contentMode = .scaleAspectFit
 				imageView.isUserInteractionEnabled=true
 

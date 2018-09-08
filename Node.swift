@@ -797,6 +797,8 @@ ensure visiblity as appropriate.
 
 						let densityBasedAlpha = 1 - 1/CGFloat(closestImageIconNeighberDistance)
 						let finalAlpha = max(curAlpha,densityBasedAlpha)
+						if finalAlpha > 0.95 // so, nearly fully opaque
+								{ nodeIsMaximallyVisible = true }
 						drawImageIcon(ofType:.filledCircle(fillColor,finalAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 						}
 					else // no image file; handle case when we are prompting for a new file
@@ -822,6 +824,8 @@ ensure visiblity as appropriate.
 							else
 								{fillColor = treeSettings.imageIconColor}
 							let densityBasedAlpha = 1 - 1/CGFloat(closestImageIconNeighberDistance)
+							if densityBasedAlpha > 0.95 // so, nearly fully opaque
+								{ nodeIsMaximallyVisible = true }
 							drawImageIcon(ofType:.filledCircle(fillColor,densityBasedAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 							}
 

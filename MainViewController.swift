@@ -81,6 +81,20 @@ class MainViewController: UIViewController {
 	override func viewDidLoad()
 		{
 		super.viewDidLoad()
+		// Where to put this when we have multiple view controllers down the road?
+		//deviceType = UIDevice.current.userInterfaceIdiom
+		switch UIDevice.current.userInterfaceIdiom
+			{
+			case .phone:
+				//print ("This is an iPhone\n")
+				treeSettings = iPhoneTreeSettings
+			case .pad:
+				//print ("This is an iPad\n")
+				treeSettings = iPadTreeSettings
+			default:
+				break
+			}
+
 
 		self.title = "Phlora" // This will be displayed in middle button of navigation bar at top
         navigationController!.setToolbarHidden(true,

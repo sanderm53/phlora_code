@@ -74,7 +74,13 @@ class XTree {
 		//print (mrcaArray)
 		assignLabels(fromMRCAList:mrcaArray)
 		imageCollection=ImageCollection(forTree:self)
-checkForImageFiles()
+		do {
+			try checkForImageFiles()
+			}
+		catch
+			{
+			print("Error checking for image files")
+			}
 
 setupNearestImageIconPositions(for:nodeArray) // also called in process_images() in fetchImageController when adding a new image
 
@@ -82,7 +88,9 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 
 
 		}
-	func setupNearestImageIconPositions(for nodeArray:[Node]) // the integer distance between the closer image icon above and below;
+	func setupNearestImageIconPositions(for nodeArray:[Node])
+		// the integer distance between the closer image icon above and below;
+		// NEED TO CHECK BOUNDARY CASES
 		{
 		var curPos:Position?
 		var prevPos:Position
@@ -122,40 +130,14 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 		return nil
 		}
 
-	func checkForImageFiles()
+	func checkForImageFiles() throws
 		{
 		// If a data package is annotated as being .inDocuments its image files are ONLY in that location,
 		// but if they are .inBundle, they might be in either place because user may have added their own images
 		// to a bundle data set.
-
 		let fileManager = FileManager.default
-		// So first always check in docs folder for user added images
-		if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-			{
-			//print (docsDir)
-			let studyDir = docsDir.appendingPathComponent("Studies")
-			if fileManager.fileExists(atPath: studyDir.path) == false
-				{
-				return
-				}
-			let studyName = treeInfo.treeName
-			let imagesDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Images")
-			if let fileURLs = try? fileManager.contentsOfDirectory(at: imagesDir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-					{
-					for fileURL in fileURLs
-						{
-						let fileNameBase = fileURL.deletingPathExtension().lastPathComponent
-						if let node = nodeHash[fileNameBase]
-							{
-							//print ("\(fileNameBase) exists in tree")
-							node.hasImageFile = true
-							node.imageFileURL = fileURL
-							hasImageFiles=true
-							}
-						}
-					}
-			}
-		// Then if it is a bundle data location, also check there
+
+		// Iff it is a bundle data location,  check there
 		if treeInfo.dataLocation! == .inBundle
 			{
 			let imageBundleURL = Bundle.main.bundleURL.appendingPathComponent(treeSettings.imageBundleLoc).appendingPathComponent(treeInfo.treeName)
@@ -174,6 +156,36 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 							}
 						}
 			}
+
+		// Also ALWAYS check in docs folder for user added images
+		if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+			{
+			//print (docsDir)
+			let studyDir = docsDir.appendingPathComponent("Studies")
+			if fileManager.fileExists(atPath: studyDir.path) == false
+				{
+				return // This means we've never added images from outside the bundle to our app--bail
+				}
+			let studyName = treeInfo.treeName
+			let imagesDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Images")
+			if let fileURLs = try? fileManager.contentsOfDirectory(at: imagesDir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+					{
+					for fileURL in fileURLs
+						{
+						let fileNameBase = fileURL.deletingPathExtension().lastPathComponent
+						if let node = nodeHash[fileNameBase]
+							{
+							//print ("\(fileNameBase) exists in tree")
+							node.hasImageFile = true
+							node.imageFileURL = fileURL
+							hasImageFiles=true
+							}
+						}
+					}
+			}
+
+
+
 		}
 
 

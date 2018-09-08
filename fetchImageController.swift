@@ -62,8 +62,16 @@ class FetchImageController : NSObject, UIImagePickerControllerDelegate, UINaviga
 		//viewController!.dismiss(animated: true)
 
 		//originalImage = info[UIImagePickerControllerOriginalImage] as? UIImage
-		if let url = info["UIImagePickerControllerImageURL"] as? URL
-			{ processImage(using: url)}
+print (info)
+		//if let url = info["UIImagePickerControllerReferenceURL"] as? URL
+		if let image = info[UIImagePickerControllerOriginalImage] as? UIImage
+			{
+				processImage(usingImage:image)
+			}
+//		else if let url = info["UIImagePickerControllerImageURL"] as? URL
+//			{
+//				processImage(using: url)
+//			}
 		
 
 
@@ -72,27 +80,31 @@ class FetchImageController : NSObject, UIImagePickerControllerDelegate, UINaviga
 
 //***
 
-	func choosePhotoFromFiles() {
-
+	func choosePhotoFromFiles()
+		{
 		let vc = UIDocumentPickerViewController(documentTypes: ["public.jpeg"],in: .import)
 		vc.delegate = self
 		viewController!.present(vc, animated: true)
-	}
-func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
-	{
-	controller.dismiss(animated: true)
-	}
-
-func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
-	{
-	print (urls.first)
-	if let url = urls.first
-		{
-		processImage(using:url)
 		}
-	}
+	
+	func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
+		{
+		controller.dismiss(animated: true)
+		}
 
-//***
+	func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
+		{
+		print (urls.first)
+		if let url = urls.first
+			{
+			if let image = UIImage(contentsOfFile:url.path)
+				{
+				processImage(usingImage:image)
+				}
+			}
+		}
+
+/***
 	func processImage(using url:URL)
 		{
 
@@ -105,6 +117,7 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 
 			imagePane.associatedNode!.imageFileURL = destURL
 			imagePane.associatedNode!.hasImageFile = true
+
 
 			viewController!.addImagePane(atNode:imagePane.associatedNode!)
 			viewController!.treeView.xTree.setupNearestImageIconPositions(for: viewController!.treeView.xTree.nodeArray)
@@ -120,12 +133,51 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
 			viewController!.present(alert,animated:true,completion:nil)
 			}
+		}
+*/
+
+//***
+	func processImage(usingImage image:UIImage)
+		{
+
+		do
+			{
+			let treeInfo = viewController!.treeView.treeInfo
+			
+			let destURL = try copyImageToDocs(srcImage:image, srcFileType: .imageFile, forStudy: treeInfo!.treeName, atNode:imagePane.associatedNode!)
 
 
+			imagePane.associatedNode!.imageFileURL = destURL
+			imagePane.associatedNode!.hasImageFile = true
 
+print("Adding image to image pane directly")
+			imagePane.addImage(image)
+/*
+
+			viewController!.addImagePane(atNode:imagePane.associatedNode!)
+			viewController!.treeView.xTree.setupNearestImageIconPositions(for: viewController!.treeView.xTree.nodeArray)
+			// ugh that seems like a overly special place to insert that code
+			imagePane.removeFromSuperview()
+*/
+			viewController!.treeView.setNeedsDisplay()
+			}
+		catch
+			{
+// Need to dismiss alert before presentig this one??
+	print ("Catch an image import error here")
+			let alert = UIAlertController(title:"Error importing image file",message:nil, preferredStyle: .alert)
+			alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
+			viewController!.present(alert,animated:true,completion:nil)
+			}
 		}
 
-	
+
+
+
+
+
+//***
+
 	//func choosePhotoFromLibrary(forImagePane imagePane:ImagePaneView)
 	func choosePhotoFromLibrary()
 		{
@@ -135,14 +187,14 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 
 		if UIImagePickerController.isSourceTypeAvailable(.photoLibrary)
 			{
-			pickerController.allowsEditing = true
+			pickerController.allowsEditing = false
 			if UIDevice.current.userInterfaceIdiom == .pad
 				{
 				pickerController.modalPresentationStyle = .popover
 				let imagePickerPopoverPresentationController = pickerController.popoverPresentationController
 				imagePickerPopoverPresentationController?.permittedArrowDirections = .right
 				imagePickerPopoverPresentationController?.sourceView = viewController!.treeView
-				if let coord = imagePane.associatedNode?.coord
+				if let coord = imagePane.associatedNode?.coord // make the popover point at the node
 					{
 					let origin = CGPoint(x:coord.x, y:WindowCoord(fromTreeCoord:coord.y, inTreeView: viewController!.treeView)  )
 					imagePickerPopoverPresentationController?.sourceRect = CGRect(origin:origin, size:CGSize(width:0, height:0))

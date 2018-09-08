@@ -11,7 +11,7 @@ import UIKit
 
 class TreesData
 	{
-
+	// 
 	var treeInfoDictionary = [String:TreeInfoPackage]()
 	var treeInfoNamesSortedArray = [String]()
 
@@ -291,6 +291,7 @@ func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy s
 					let fileExtension = srcURL.pathExtension
 					let fileName = node.originalLabel!
 					destURL = targetDir.appendingPathComponent(fileName).appendingPathExtension(fileExtension)
+//print ("-->",destURL)
 					}
 			}
 		if fileManager.fileExists(atPath: targetDir.path) == false  // create the correct Study folder (and ancestors) if needed
@@ -298,7 +299,55 @@ func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy s
 			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
 	// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
 			}
+print (srcURL,destURL)
+do {
 		try fileManager.copyItem(at: srcURL, to: destURL!)
+	}
+catch {print ("Copy didn't succeed", error)}
+		return destURL
+		}
+	return nil
+	}
+
+func copyImageToDocs(srcImage image:UIImage, srcFileType fileType:DataFileType, forStudy studyName:String, atNode node:Node?) throws -> URL?
+	// Copy a treefile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.
+	// If an image file, rename its copy based on the leaf label for that node.
+	{
+	var targetDir:URL
+	var destURL:URL?
+	// May need to creat Studies dir, StudyName dir and either Tree/Images directory as needed
+	let fileManager = FileManager.default
+	if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+		{
+		targetDir = docsDir.appendingPathComponent("Studies").appendingPathComponent(studyName)
+		//let srcFilename = srcURL.lastPathComponent
+		switch fileType
+			{
+			case .treeFile:
+				return nil
+			case .imageFile:
+				targetDir = targetDir.appendingPathComponent("Images")
+				if let node = node
+					{
+					let fileExtension = "jpg"
+					let fileName = node.originalLabel!
+					destURL = targetDir.appendingPathComponent(fileName).appendingPathExtension(fileExtension)
+//print ("-->",destURL)
+					}
+			}
+		if fileManager.fileExists(atPath: targetDir.path) == false  // create the correct Study folder (and ancestors) if needed
+			{
+			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+	// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
+			}
+do {
+		//try fileManager.copyItem(at: srcURL, to: destURL!)
+		if let jpeg = UIImageJPEGRepresentation(image, 1.0)
+			{
+			try jpeg.write(to:destURL!,options:[])
+			}
+	}
+catch {print ("Copy didn't succeed", destURL, error)}
 		return destURL
 		}
 	return nil
