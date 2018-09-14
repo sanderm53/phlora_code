@@ -129,6 +129,10 @@ class TreesData
 	}
 
 //*************************************************************************
+enum PhloraDataLocation {
+	case inBundle
+	case inDocuments
+	}
 
 class TreeInfoPackage
 	{
@@ -223,10 +227,6 @@ class TreeInfoPackage
 		}
 
 
-enum PhloraDataLocation {
-	case inBundle
-	case inDocuments
-	}
 
 enum parserError: Error
 	{

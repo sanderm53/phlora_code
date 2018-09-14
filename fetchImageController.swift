@@ -50,7 +50,6 @@ class FetchImageController : NSObject, UIImagePickerControllerDelegate, UINaviga
 
 	func imagePickerControllerDidCancel(_ picker: UIImagePickerController)
 		{
-		//viewController!.dismiss(animated: true)
 		picker.dismiss(animated: true) // dismisses via ancestral view controller that presented it
 		}
 
@@ -62,18 +61,17 @@ class FetchImageController : NSObject, UIImagePickerControllerDelegate, UINaviga
 		//viewController!.dismiss(animated: true)
 
 		//originalImage = info[UIImagePickerControllerOriginalImage] as? UIImage
-print (info)
+		//print (info)
 		//if let url = info["UIImagePickerControllerReferenceURL"] as? URL
+
 		if let image = info[UIImagePickerControllerOriginalImage] as? UIImage
 			{
 				processImage(usingImage:image)
 			}
-//		else if let url = info["UIImagePickerControllerImageURL"] as? URL
-//			{
-//				processImage(using: url)
-//			}
-		
-
+			//		else if let url = info["UIImagePickerControllerImageURL"] as? URL
+			//			{
+			//				processImage(using: url)
+			//			}
 
 		picker.dismiss(animated: true)
 		}
@@ -150,7 +148,7 @@ print (info)
 			imagePane.associatedNode!.imageFileURL = destURL
 			imagePane.associatedNode!.hasImageFile = true
 
-print("Adding image to image pane directly")
+//print("Adding image to image pane directly")
 			imagePane.addImage(image)
 /*
 
@@ -202,7 +200,7 @@ print("Adding image to image pane directly")
 					}
 				}
 			else
-				{ // haven't tested this on iPhone yet
+				{ 
 					viewController!.present(pickerController, animated: true, completion: nil)
 				}
 			}

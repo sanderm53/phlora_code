@@ -59,20 +59,26 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		var hasImage:Bool = false
 
 // Default position of this view is centered on the frame provided to it
-        init? (usingFrame f:CGRect,withFileNamePrefix name:String, atTreeDirectoryNamed tree:String)
+         init ()
                 {
 				isAttachedToNode = false
+				let f = CGRect()
 				paneCenter = CGPoint(x:f.midX,y:f.midY)
 				super.init(frame:f)
 				isUserInteractionEnabled=true
-
-                guard let image = getImageFromFile(withFileNamePrefix:name, atTreeDirectoryNamed:tree)
-               	else
-                        {return nil}
-				layoutPaneForImage(image)
-				addLabel(withName:name)
+				layoutPaneForImage(nil)
             }
-
+       init? (treeInfo:TreeInfoPackage)
+                {
+				isAttachedToNode = false
+				let f = CGRect()
+				paneCenter = CGPoint(x:f.midX,y:f.midY)
+				super.init(frame:f)
+				isUserInteractionEnabled=true
+                let image = getStudyImage(treeInfo:treeInfo)
+				layoutPaneForImage(image)
+            }
+	
         init (usingFrame f:CGRect, atNode node:Node, onTree tree:XTree)
                 {
                 var imageName:String
@@ -122,6 +128,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				else
 					{ rectMult=L/image.size.width }
 				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+print("adding image...",initialImageSize)
 				hasImage = true
 				imageView.image = image
 				frame.size = initialImageSize

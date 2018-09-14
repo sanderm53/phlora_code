@@ -9,8 +9,10 @@
 import UIKit
 
 
+
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
 class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate {
+//class StudyViewController: UITableViewController, UIDocumentPickerDelegate {
 
 	var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
@@ -18,6 +20,7 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 //	let treesData = TreesData() // Initializes this once when the view controller is instantiated
 var treesData:TreesData!
 	var pickedRowIndex:Int = 0
+	let editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
 //	var safeFrame:CGRect!
 	//var treeViewController = TreeViewController()
 
@@ -40,6 +43,18 @@ var treesData:TreesData!
 		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
 		vc.delegate = self
 		present(vc, animated: true)
+	}
+	func editButtonAction(sender: UIBarButtonItem!) {
+		if studyTableView.isEditing
+			{
+			studyTableView.setEditing(false, animated: true)
+			sender.title = "Edit"
+			}
+		else
+			{
+			studyTableView.setEditing(true, animated: true)
+			sender.title = "Done"
+			}
 	}
 func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
 	{
@@ -96,8 +111,15 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
         navigationController!.setToolbarHidden(true,
              animated: false)
 
-self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
+//self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
 
+let addButton =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
+//let editButton =  UIBarButtonItem(barButtonSystemItem: .edit, target: self, action: #selector(editButtonAction))
+let editButton =  UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
+//let doneButton =  UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneButtonAction))
+// yuck do I really have to toggle both buttons to mimic the tableviewcontroller behavior?
+//self.navigationItem.rightBarButtonItems = [editButtonItem, addButton]
+self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 // table view
 		studyTableView = UITableView()
@@ -146,12 +168,13 @@ self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .a
 		}
 
 
-// UITableView methods for the delegate protocol
-	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+// UITableView delegate methods used
+
+func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 		return treesData.treeInfoNamesSortedArray.count
 	}
 
-	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
 		let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
 // I set up the cell using a property observer in cell controller, which watches treeInfo property
@@ -168,7 +191,7 @@ self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .a
 		return cell
 	}
 
-	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
+func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
 		{
 		tableView.deselectRow(at: indexPath, animated: true)
 		if indexPath.row != pickedRowIndex
@@ -184,6 +207,48 @@ self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .a
 		transitionToTreeView(atStudyIndex: pickedRowIndex)
 		}
 
+func tableView(_ tableView:UITableView, canEditRowAt indexPath:IndexPath)->Bool
+	{
+	// only allow deletion of user added studies
+		let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
+		let treeInfo = treesData.treeInfoDictionary[treeName]
+		if treeInfo?.dataLocation == .inDocuments
+			{ return true }
+		else
+			{ return false }
+	}
+func tableView(_ tableView:UITableView, commit editingStyle:UITableViewCellEditingStyle, forRowAt indexPath:IndexPath)
+	{
+	if editingStyle == .delete
+		{
+		let alert = UIAlertController(title:"Really delete all data for this study from Phlora?",message:"", preferredStyle: .alert)
+		let action1 = UIAlertAction(title: "Cancel", style: .cancel)
+			{ (action:UIAlertAction) in self.dismiss(animated:true) }
+		let action2 = UIAlertAction(title: "Delete", style: .default)
+			{ (action:UIAlertAction) in
+			self.deleteStudyFromDocuments(at: indexPath)
+			}
+		alert.addAction(action1)
+		alert.addAction(action2)
+		present(alert, animated: true, completion: nil)
+		}
+	}
+
+	func deleteStudyFromDocuments(at indexPath:IndexPath)
+		{
+		let studyName = treesData.treeInfoNamesSortedArray[indexPath.row]
+		guard let treeInfo = treesData.treeInfoDictionary[studyName]
+		else { return }
+		treesData.treeInfoNamesSortedArray.remove(at:indexPath.row)
+		treesData.treeInfoNamesSortedArray = treesData.treeInfoNamesSortedArray.sorted(by: <)
+		studyTableView.beginUpdates()
+		studyTableView.deleteRows(at: [indexPath], with: .fade)
+		studyTableView.endUpdates()
+		if let studyDir = docDirectoryNameFor(treeInfo:treeInfo, ofType:.study)
+			{
+			print ("NEED TO DELETE:", studyDir)
+			}
+		}
 
 	func transitionToTreeView(atStudyIndex ix:Int)
 		{

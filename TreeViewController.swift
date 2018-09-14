@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Photos
 
 
 var appleBlue = UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0).cgColor
@@ -480,11 +481,11 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 		{
 		switch recognizer.state
 			{
-			case UIGestureRecognizerState.began:
+			case UIGestureRecognizerState.ended:
 				break
 			case UIGestureRecognizerState.changed:
 				break
-			case UIGestureRecognizerState.ended:
+			case UIGestureRecognizerState.began:
 				let imagePane = recognizer.view as! ImagePaneView
 				treeView.bringSubview(toFront: imagePane)
 				if imagePane.hasImage
@@ -533,11 +534,22 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		{
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
-		if imagePane.hasImage == false
+		switch recognizer.state
 			{
-			let fic = FetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
-			fic.launch()
-			
+			case UIGestureRecognizerState.began:
+				break
+			case UIGestureRecognizerState.changed:
+				break
+			case UIGestureRecognizerState.ended:
+				if imagePane.hasImage == false
+					{
+					let fic = FetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
+					fic.launch()
+					
+					}
+			default:
+				break
+
 			}
 		}
 
@@ -547,10 +559,20 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
 		//let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
-		let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
-		let scale:CGFloat = 2.0
-		imagePane.scale(by:scale, around:location, inTreeView: treeView)
-		self.treeView.setNeedsDisplay()
+		switch recognizer.state
+			{
+			case UIGestureRecognizerState.began:
+				break
+			case UIGestureRecognizerState.changed:
+				break
+			case UIGestureRecognizerState.ended:
+				let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
+				let scale:CGFloat = 2.0
+				imagePane.scale(by:scale, around:location, inTreeView: treeView)
+				self.treeView.setNeedsDisplay()
+			default:
+				break
+			}
 
 		}
 

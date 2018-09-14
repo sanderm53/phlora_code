@@ -16,6 +16,7 @@ var studyLabel: UILabel!
 var nLeafLabel: UILabel!
 var referenceLabel: UILabel!
 var studyImageView: UIImageView!
+var studyImagePane: ImagePaneView!
 
 var treeInfo: TreeInfoPackage? {
     didSet {
@@ -24,10 +25,15 @@ var treeInfo: TreeInfoPackage? {
         	nLeafLabel.text = "\(t.nLeaves) leaves"
 			referenceLabel.text = t.treeSource
 			// fetch an image file with the same filename prefix as the treeName (e.g., "Cactaceae.png" )
-			if let image = getImageFromFile(withFileNamePrefix:t.treeName, atTreeDirectoryNamed:t.treeName)
+//			if let image = getImageFromFile(withFileNamePrefix:t.treeName, atTreeDirectoryNamed:t.treeName)
+			if let image = getStudyImage(treeInfo:t)
 				{ studyImageView.image = image }
 			else
 				{ studyImageView.image = nil } // ...when we dequeue cell, we need to make sure to delete image if not present for the new cell
+
+if let image = getStudyImage(treeInfo:t)
+	{ studyImagePane.addImage(image) }
+ 
             setNeedsLayout()
         }
     }
@@ -38,6 +44,17 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 
 	backgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
     selectionStyle = .none
+
+
+studyImagePane = ImagePaneView()
+studyImagePane.contentMode = .scaleAspectFit // important
+contentView.addSubview(studyImagePane)
+studyImagePane.translatesAutoresizingMaskIntoConstraints=false
+studyImagePane.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+studyImagePane.leftAnchor.constraint(equalTo: contentView.leftAnchor).isActive = true
+studyImagePane.heightAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+studyImagePane.widthAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+
 
 	studyImageView = UIImageView()
 	studyImageView.contentMode = .scaleAspectFit // important
@@ -59,12 +76,20 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 	contentView.addSubview(referenceLabel)
 
 
+		//let margins = readableContentGuide
+//print (margins,contentView.frame,frame)
+		//studyImageView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
+		//studyImageView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
+
+
+
 // setup constraints differently on ipad vs phone
 	studyImageView.translatesAutoresizingMaskIntoConstraints=false
 	studyImageView.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-	studyImageView.leftAnchor.constraint(equalTo: leftAnchor).isActive = true
+	studyImageView.leftAnchor.constraint(equalTo: contentView.leftAnchor).isActive = true
 	studyImageView.heightAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
 	studyImageView.widthAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+
 
 	if UIDevice.current.userInterfaceIdiom == .pad
 		{ // Spread out and take advantage of horiz space
@@ -74,7 +99,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:20.0).isActive = true
 		nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
 		nLeafLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-		nLeafLabel.rightAnchor.constraint(equalTo: rightAnchor,constant:-50.0).isActive = true
+		nLeafLabel.rightAnchor.constraint(equalTo: contentView.rightAnchor,constant:-50.0).isActive = true
 		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
 		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+30.0).isActive = true
 		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor,constant:20.0).isActive = true

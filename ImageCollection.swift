@@ -11,25 +11,6 @@ import UIKit
 // **** NEED TO KEEP THIS CLASS FOR NOW!! EVEN WITH NEW CODE. NEED NODEARRAY and ASSOCIATED CODE. EVENTUALLY MOVE TO SOMEWHERE...
 
 
-func getImageFromFile(withFileNamePrefix fileNamePrefix:String, atTreeDirectoryNamed treeDir:String)->UIImage?
-	// treeDir is commonly just named from the treeName
-	{
-		let ext = ["jpg","png"]
-		let imageBundlePath = Bundle.main.bundlePath + "/" + treeSettings.imageBundleLoc + "/" + treeDir
-		guard let imageBundle = Bundle(path: imageBundlePath	)
-		else { return nil }
-		let imageFilename0 = fileNamePrefix+"."+ext[0]
-		let imageFilename1 = fileNamePrefix+"."+ext[1]
-		var image = UIImage(named:imageFilename0,in:imageBundle,compatibleWith:nil)
-		if image == nil
-			{
-			image = UIImage(named:imageFilename1,in:imageBundle,compatibleWith:nil) // try the other extension
-			if image == nil
-				{ return nil }
-			}
-		return image
-	}
-
 
 // 'Leaf indices' are [0..N-1] labels for leaves running vertically on view from top to bottom
 // They are used to index the node array. These are *elements* (not subscripts!) of the openImagesArray.
@@ -422,9 +403,11 @@ class MyImageView
 				{ return nil }
 			}
 */
+/* DEPRECATED
 		originalLeafImage = getImageFromFile(withFileNamePrefix:leaf.originalLabel!, atTreeDirectoryNamed:xTree.treeInfo.treeName)
 		if originalLeafImage == nil
 			{return nil}
+*/
 
 		leafImage = originalLeafImage
 		originalImageSize = originalLeafImage!.size
