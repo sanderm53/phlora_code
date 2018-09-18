@@ -26,14 +26,24 @@ var treeInfo: TreeInfoPackage? {
 			referenceLabel.text = t.treeSource
 			// fetch an image file with the same filename prefix as the treeName (e.g., "Cactaceae.png" )
 //			if let image = getImageFromFile(withFileNamePrefix:t.treeName, atTreeDirectoryNamed:t.treeName)
+
+/* Old way...
 			if let image = getStudyImage(treeInfo:t)
 				{ studyImageView.image = image }
 			else
 				{ studyImageView.image = nil } // ...when we dequeue cell, we need to make sure to delete image if not present for the new cell
+*/
 
-if let image = getStudyImage(treeInfo:t)
-	{ studyImagePane.addImage(image) }
- 
+			if let image = getStudyImage(treeInfo:t)
+				{
+				studyImagePane.addImage(image)
+				}
+			else
+				{
+				if studyImagePane.hasImage
+					{ studyImagePane.deleteImage()}
+				}
+
             setNeedsLayout()
         }
     }
@@ -56,9 +66,9 @@ studyImagePane.heightAnchor.constraint(equalToConstant: treeSettings.studyTableI
 studyImagePane.widthAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
 
 
-	studyImageView = UIImageView()
-	studyImageView.contentMode = .scaleAspectFit // important
-	contentView.addSubview(studyImageView)
+//	studyImageView = UIImageView()
+//	studyImageView.contentMode = .scaleAspectFit // important
+//	contentView.addSubview(studyImageView)
 
 	studyLabel = UILabel()
 	studyLabel.textColor = UIColor.white
@@ -84,11 +94,11 @@ studyImagePane.widthAnchor.constraint(equalToConstant: treeSettings.studyTableIm
 
 
 // setup constraints differently on ipad vs phone
-	studyImageView.translatesAutoresizingMaskIntoConstraints=false
-	studyImageView.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-	studyImageView.leftAnchor.constraint(equalTo: contentView.leftAnchor).isActive = true
-	studyImageView.heightAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
-	studyImageView.widthAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+//	studyImageView.translatesAutoresizingMaskIntoConstraints=false
+//	studyImageView.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+//	studyImageView.leftAnchor.constraint(equalTo: contentView.leftAnchor).isActive = true
+//	studyImageView.heightAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
+//	studyImageView.widthAnchor.constraint(equalToConstant: treeSettings.studyTableImageHeight).isActive = true
 
 
 	if UIDevice.current.userInterfaceIdiom == .pad
@@ -96,26 +106,31 @@ studyImagePane.widthAnchor.constraint(equalToConstant: treeSettings.studyTableIm
 
 		studyLabel.translatesAutoresizingMaskIntoConstraints=false
 		studyLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:20.0).isActive = true
+//		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:20.0).isActive = true
+		studyLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor, constant:20.0).isActive = true
 		nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
 		nLeafLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
 		nLeafLabel.rightAnchor.constraint(equalTo: contentView.rightAnchor,constant:-50.0).isActive = true
 		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
 		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+30.0).isActive = true
-		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor,constant:20.0).isActive = true
+//		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor,constant:20.0).isActive = true
+		referenceLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor,constant:20.0).isActive = true
 
 		}
 	else
 		{ // put all text in vert column
 		studyLabel.translatesAutoresizingMaskIntoConstraints=false
 		studyLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+//		studyLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+		studyLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor, constant:10.0).isActive = true
 		nLeafLabel.translatesAutoresizingMaskIntoConstraints=false
 		nLeafLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:-20.0).isActive = true
-		nLeafLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+//		nLeafLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+		nLeafLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor, constant:10.0).isActive = true
 		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
 		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+20.0).isActive = true
-		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+//		referenceLabel.leftAnchor.constraint(equalTo: studyImageView.rightAnchor, constant:10.0).isActive = true
+		referenceLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor, constant:10.0).isActive = true
 
 		}
 

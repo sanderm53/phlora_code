@@ -174,11 +174,53 @@ func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> 
 		return treesData.treeInfoNamesSortedArray.count
 	}
 
+ 	func handleTap(gesture: UITapGestureRecognizer) {
+			print ("Time to add an image")
+			let imagePane = gesture.view as! ImagePaneView
+			switch gesture.state
+				{
+				case UIGestureRecognizerState.began:
+					break
+				case UIGestureRecognizerState.changed:
+					break
+				case UIGestureRecognizerState.ended:
+					if imagePane.hasImage == false
+						{
+						let touchPt = imagePane.convert(gesture.location(in:imagePane), to : studyTableView)
+						if let ip = studyTableView.indexPathForRow(at:touchPt)
+							{
+							let cell = studyTableView.cellForRow(at:ip) as! StudyTableViewCell
+print (cell.treeInfo?.treeName)
+
+							let sourceRect = imagePane.frame // This frame is relative to the cell view's bounds rect and works
+							if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(treeInfo:cell.treeInfo!, ofType: .study)
+								{
+								let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:cell, atRect: sourceRect)
+								icc.launch()
+								}
+
+							}
+						}
+				default:
+					break
+
+				}
+
+	}
+
 func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
 		let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
 // I set up the cell using a property observer in cell controller, which watches treeInfo property
 		cell.treeInfo = treesData.treeInfoDictionary[treeName]
+
+		if cell.studyImagePane.hasImage == false  // prepare a cell with no image for possible "add image"
+			{
+			let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
+			tapGesture.cancelsTouchesInView = true // lets the touch continue up responder chain to table view
+			cell.studyImagePane.addGestureRecognizer(tapGesture)
+			}
+
 
 		if indexPath.row == pickedRowIndex
 			{

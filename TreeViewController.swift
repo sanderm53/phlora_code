@@ -543,9 +543,21 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 			case UIGestureRecognizerState.ended:
 				if imagePane.hasImage == false
 					{
-					let fic = FetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
-					fic.launch()
-					
+					//let fic = FetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
+					//fic.launch()
+
+
+					if let node  = imagePane.associatedNode
+						{
+						let coord = node.coord
+						let origin = CGPoint(x:coord.x, y:WindowCoord(fromTreeCoord:coord.y, inTreeView: treeView)  )
+						let sourceRect = CGRect(origin:origin, size:CGSize(width:0, height:0))
+						if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(treeInfo:treeView.treeInfo!, ofType: .images)
+							{
+							let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:treeView, atRect: sourceRect)
+							icc.launch()
+							}
+						}
 					}
 			default:
 				break

@@ -99,7 +99,10 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					}
 				else
 					{ layoutPaneForImage(nil) }
-				
+				// Only put border around images on tree view (i.e. in this initializer)
+				layer.borderColor=UIColor.white.cgColor
+				layer.borderWidth=2.0
+
 				}
 
 		func addLabel(withName name:String)
@@ -128,11 +131,26 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				else
 					{ rectMult=L/image.size.width }
 				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
-print("adding image...",initialImageSize)
 				hasImage = true
 				imageView.image = image
 				frame.size = initialImageSize
-				addImageLabel = nil
+				if let addImageLabel = addImageLabel
+					{
+					addImageLabel.removeFromSuperview()
+				}
+			}
+		func deleteImage() // assumes image is present, so have to reset after deleting and add a addImageLabel
+			{
+				hasImage = false
+				imageView.image = nil
+				addAddImageLabel()
+				if let node = associatedNode
+					{
+					node.hasImageFile = false
+					node.hasImage = false
+					node.isDisplayingImage = false
+					}
+
 			}
 
 		func layoutPaneForImage(_ image:UIImage?)
@@ -180,8 +198,6 @@ print("adding image...",initialImageSize)
 				imageView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
 
 				self.isUserInteractionEnabled=true
-				layer.borderColor=UIColor.white.cgColor
-				layer.borderWidth=2.0
 				//imageView.layer.borderColor=UIColor.red.cgColor
 				//imageView.layer.borderWidth=2.0
 				
@@ -201,7 +217,13 @@ func addAddImageLabel()
 	addImageLabel!.textColor = UIColor(cgColor: appleBlue)
 	addImageLabel!.text = "Add an image"
 	addImageLabel!.textAlignment = .center
-	addImageLabel!.backgroundColor = UIColor.white
+let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
+addImageLabel!.backgroundColor = studyPUBackgroundColor
+//addImageLabel!.layer.borderColor=UIColor.white.cgColor
+//addImageLabel!.layer.borderWidth=0.5
+
+
+
 	addSubview(addImageLabel!)
 
 	addImageLabel!.translatesAutoresizingMaskIntoConstraints=false

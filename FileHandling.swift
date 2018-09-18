@@ -14,6 +14,42 @@ enum DirectoryType {
 	case tree
 	}
 
+func copyImageToDocs(srcImage image:UIImage, copyToDir targetDir:URL, usingFileNameBase targetFileNameBase:String) throws -> URL?
+	// Copy a treefile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.
+	// If an image file, rename its copy based on the leaf label for that node.
+	{
+	//var targetDir:URL
+	var destURL:URL?
+	let fileExtension = "jpg"
+	let fileManager = FileManager.default
+	destURL = targetDir.appendingPathComponent(targetFileNameBase).appendingPathExtension(fileExtension)
+	if fileManager.fileExists(atPath: targetDir.path) == false  // create the correct Study folder (and ancestors) if needed
+		{
+		try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
+		}
+	do {
+		if let jpeg = UIImageJPEGRepresentation(image, 1.0)
+			{
+			try jpeg.write(to:destURL!,options:[])
+			}
+		}
+	catch
+		{
+		print ("Copy didn't succeed", destURL, error)
+		}
+	return destURL
+	}
+
+
+
+
+
+
+
+
+
+
 //func docDirectoryNameFor(study studyName:String, ofType dirType: DirectoryType, forDataLocation dataLocation:PhloraDataLocation)  -> URL?
 func docDirectoryNameFor(treeInfo:TreeInfoPackage, ofType dirType: DirectoryType)  -> URL?
 	{
