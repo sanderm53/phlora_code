@@ -234,9 +234,6 @@ addImageLabel!.backgroundColor = studyPUBackgroundColor
 
 	}
 
-//==> NEED TO UPDATE THIS SO THAT FRAME STAYS CENTERED AT SAME PLACE ALWAYS, REGARDLESS OF IMAGEVIEW; NEEDED SO THAT
-//POSITION OF PANE STAYS THE SAME WRT TREEVIEW. ELSE PANE SHIFTS AS WE ZOOM IN ON IMAGE. JUST MAKE THE FRAME
-//A SQUARE PERHAPS...tricky, let's defer solution. can be corrected in realtime by small panning of image
 
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
 				{

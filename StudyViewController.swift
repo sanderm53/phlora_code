@@ -16,13 +16,9 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 
 	var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
-	// NO SHOULDN"T DO THE FOLLOWING HERE: GETS REDONE EVERY TIME WE LAUNCH STUDY VIEW...
-//	let treesData = TreesData() // Initializes this once when the view controller is instantiated
-var treesData:TreesData!
+	var treesData:TreesData!
 	var pickedRowIndex:Int = 0
 	let editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
-//	var safeFrame:CGRect!
-	//var treeViewController = TreeViewController()
 
 	override func viewDidAppear(_ animated: Bool)
 		{
@@ -39,7 +35,6 @@ var treesData:TreesData!
 
 	func addButtonAction(sender: UIBarButtonItem!) {
 
-		//let vc = UIDocumentPickerViewController(documentTypes: ["public.text","public.jpeg"],in: .import)
 		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
 		vc.delegate = self
 		present(vc, animated: true)
@@ -114,26 +109,18 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 //self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
 
 let addButton =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
-//let editButton =  UIBarButtonItem(barButtonSystemItem: .edit, target: self, action: #selector(editButtonAction))
 let editButton =  UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
-//let doneButton =  UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneButtonAction))
-// yuck do I really have to toggle both buttons to mimic the tableviewcontroller behavior?
-//self.navigationItem.rightBarButtonItems = [editButtonItem, addButton]
 self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 // table view
 		studyTableView = UITableView()
 		studyTableView.delegate=self
 		studyTableView.dataSource = self
-		//studyTableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell") // This is calling a class name for the cell, but here it is just the root UITableViewCell class; if I want to init this to a different default style prob have to subclass it
 		studyTableView.register(StudyTableViewCell.self, forCellReuseIdentifier: "cell") // This is calling a class name for the cell, but here it is just the root UITableViewCell class; if I want to init this to a different default style prob have to subclass it
 		studyTableView.isHidden=false
 		studyTableView.backgroundColor=studyPUBackgroundColor
 		studyTableView.rowHeight=treeSettings.studyTableRowHeight
-		//studyTableView.separatorStyle = .none
-		//studyTableView.sectionIndexColor = UIColor.white
 		view.addSubview(studyTableView)
-
 
 		studyTableView.translatesAutoresizingMaskIntoConstraints=false
 		let margins = view.readableContentGuide
@@ -170,9 +157,9 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 // UITableView delegate methods used
 
-func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-		return treesData.treeInfoNamesSortedArray.count
-	}
+	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+			return treesData.treeInfoNamesSortedArray.count
+		}
 
  	func handleTap(gesture: UITapGestureRecognizer) {
 			print ("Time to add an image")
@@ -190,10 +177,10 @@ func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> 
 						if let ip = studyTableView.indexPathForRow(at:touchPt)
 							{
 							let cell = studyTableView.cellForRow(at:ip) as! StudyTableViewCell
-print (cell.treeInfo?.treeName)
+//print (cell.treeInfo?.treeName)
 
 							let sourceRect = imagePane.frame // This frame is relative to the cell view's bounds rect and works
-							if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(treeInfo:cell.treeInfo!, ofType: .study)
+							if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(treeInfo:cell.treeInfo!, ofType: .images)
 								{
 								let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:cell, atRect: sourceRect)
 								icc.launch()
@@ -208,73 +195,73 @@ print (cell.treeInfo?.treeName)
 
 	}
 
-func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-		let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
-		let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-// I set up the cell using a property observer in cell controller, which watches treeInfo property
-		cell.treeInfo = treesData.treeInfoDictionary[treeName]
+	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+			let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
+			let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
+	// I set up the cell using a property observer in cell controller, which watches treeInfo property
+			cell.treeInfo = treesData.treeInfoDictionary[treeName]
 
-		if cell.studyImagePane.hasImage == false  // prepare a cell with no image for possible "add image"
-			{
-			let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
-			tapGesture.cancelsTouchesInView = true // lets the touch continue up responder chain to table view
-			cell.studyImagePane.addGestureRecognizer(tapGesture)
-			}
+			if cell.studyImagePane.hasImage == false  // prepare a cell with no image for possible "add image"
+				{
+				let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
+				tapGesture.cancelsTouchesInView = true // lets the touch continue up responder chain to table view
+				cell.studyImagePane.addGestureRecognizer(tapGesture)
+				}
 
 
-		if indexPath.row == pickedRowIndex
-			{
-			cell.accessoryType = .checkmark
-			}
-		else
-			{
-			cell.accessoryType = .none
-			}
-		return cell
-	}
-
-func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
-		{
-		tableView.deselectRow(at: indexPath, animated: true)
-		if indexPath.row != pickedRowIndex
-			{
-			var cell = tableView.cellForRow(at: IndexPath(row:pickedRowIndex, section:0))
-			cell?.accessoryType = .none
-			cell = tableView.cellForRow(at: indexPath)
-			cell?.accessoryType = .checkmark
-			//pickedRowIndex = indexPath.row
-			}
-		pickedRowIndex = indexPath.row
-
-		transitionToTreeView(atStudyIndex: pickedRowIndex)
+			if indexPath.row == pickedRowIndex
+				{
+				cell.accessoryType = .checkmark
+				}
+			else
+				{
+				cell.accessoryType = .none
+				}
+			return cell
 		}
 
-func tableView(_ tableView:UITableView, canEditRowAt indexPath:IndexPath)->Bool
-	{
-	// only allow deletion of user added studies
-		let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-		let treeInfo = treesData.treeInfoDictionary[treeName]
-		if treeInfo?.dataLocation == .inDocuments
-			{ return true }
-		else
-			{ return false }
-	}
-func tableView(_ tableView:UITableView, commit editingStyle:UITableViewCellEditingStyle, forRowAt indexPath:IndexPath)
-	{
-	if editingStyle == .delete
-		{
-		let alert = UIAlertController(title:"Really delete all data for this study from Phlora?",message:"", preferredStyle: .alert)
-		let action1 = UIAlertAction(title: "Cancel", style: .cancel)
-			{ (action:UIAlertAction) in self.dismiss(animated:true) }
-		let action2 = UIAlertAction(title: "Delete", style: .default)
-			{ (action:UIAlertAction) in
-			self.deleteStudyFromDocuments(at: indexPath)
+	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
+			{
+			tableView.deselectRow(at: indexPath, animated: true)
+			if indexPath.row != pickedRowIndex
+				{
+				var cell = tableView.cellForRow(at: IndexPath(row:pickedRowIndex, section:0))
+				cell?.accessoryType = .none
+				cell = tableView.cellForRow(at: indexPath)
+				cell?.accessoryType = .checkmark
+				//pickedRowIndex = indexPath.row
+				}
+			pickedRowIndex = indexPath.row
+
+			transitionToTreeView(atStudyIndex: pickedRowIndex)
 			}
-		alert.addAction(action1)
-		alert.addAction(action2)
-		present(alert, animated: true, completion: nil)
+
+	func tableView(_ tableView:UITableView, canEditRowAt indexPath:IndexPath)->Bool
+		{
+		// only allow deletion of user added studies
+			let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
+			let treeInfo = treesData.treeInfoDictionary[treeName]
+			if treeInfo?.dataLocation == .inDocuments
+				{ return true }
+			else
+				{ return false }
 		}
-	}
+	func tableView(_ tableView:UITableView, commit editingStyle:UITableViewCellEditingStyle, forRowAt indexPath:IndexPath)
+		{
+		if editingStyle == .delete
+			{
+			let alert = UIAlertController(title:"Really delete all data for this study from Phlora?",message:"", preferredStyle: .alert)
+			let action1 = UIAlertAction(title: "Cancel", style: .cancel)
+				{ (action:UIAlertAction) in self.dismiss(animated:true) }
+			let action2 = UIAlertAction(title: "Delete", style: .default)
+				{ (action:UIAlertAction) in
+				self.deleteStudyFromDocuments(at: indexPath)
+				}
+			alert.addAction(action1)
+			alert.addAction(action2)
+			present(alert, animated: true, completion: nil)
+			}
+		}
 
 	func deleteStudyFromDocuments(at indexPath:IndexPath)
 		{
@@ -288,7 +275,11 @@ func tableView(_ tableView:UITableView, commit editingStyle:UITableViewCellEditi
 		studyTableView.endUpdates()
 		if let studyDir = docDirectoryNameFor(treeInfo:treeInfo, ofType:.study)
 			{
-			print ("NEED TO DELETE:", studyDir)
+			do {
+			try FileManager.default.removeItem(at: studyDir)
+				}
+			catch
+				{print ("There was a problem deleting everything at \(studyDir)") }
 			}
 		}
 

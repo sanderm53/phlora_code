@@ -556,6 +556,8 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 							{
 							let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:treeView, atRect: sourceRect)
 							icc.launch()
+print("After launch icc")
+//treeView.setNeedsDisplay()
 							}
 						}
 					}
