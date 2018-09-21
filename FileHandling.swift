@@ -10,6 +10,7 @@ import UIKit
 
 enum DirectoryType {
 	case study
+	case text
 	case images
 	case tree
 	}
@@ -50,13 +51,29 @@ func copyImageToDocs(srcImage image:UIImage, copyToDir targetDir:URL, usingFileN
 
 
 
-//func docDirectoryNameFor(study studyName:String, ofType dirType: DirectoryType, forDataLocation dataLocation:PhloraDataLocation)  -> URL?
-func docDirectoryNameFor(treeInfo:TreeInfoPackage, ofType dirType: DirectoryType)  -> URL?
+func searchForDirectoryWithPrecedence(forStudy studyName:String,ofType dirType: DirectoryType, create createFlag:Bool)->URL?
+	{
+	if let url = docDirectoryNameFor(study:studyName, inLocation:.inDocuments, ofType:dirType, create:createFlag)
+		{ return url }
+	else
+		{
+		return docDirectoryNameFor(study:studyName, inLocation:.inBundle, ofType:dirType, create:createFlag)
+		}
+	}
+
+func searchForFileWithPrecedence(filename file:String, forStudy studyName:String,ofType dirType: DirectoryType, create createFlag:Bool)->URL?
+	{
+	
+	}
+
+
+
+func docDirectoryNameFor(study studyName:String, inLocation dataLocation: PhloraDataLocation, ofType dirType: DirectoryType, create createFlag:Bool)  -> URL?
 	{
 	let fileManager = FileManager.default
-	let studyName = treeInfo.treeName
-	guard let dataLocation = treeInfo.dataLocation
-	else { return nil }
+	//let studyName = treeInfo.treeName
+	//guard let dataLocation = treeInfo.dataLocation
+	//else { return nil }
 	switch dataLocation
 		{
 		case .inBundle:
@@ -64,7 +81,7 @@ func docDirectoryNameFor(treeInfo:TreeInfoPackage, ofType dirType: DirectoryType
 					{
 					case .study:
 						return nil
-					case .tree:
+					case .tree, .text:
 						return Bundle.main.bundleURL
 					case .images:
 						return Bundle.main.bundleURL.appendingPathComponent(treeSettings.imageBundleLoc).appendingPathComponent(studyName)
@@ -73,32 +90,42 @@ func docDirectoryNameFor(treeInfo:TreeInfoPackage, ofType dirType: DirectoryType
 		case .inDocuments:
 			if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
 				{
-				let studyDir = docsDir.appendingPathComponent("Studies").appendingPathComponent(studyName)
+				var studyDir = docsDir.appendingPathComponent("Studies").appendingPathComponent(studyName)
 				switch dirType
 					{
 					case .study:
-						return studyDir
+						break
 					case .tree:
-						return studyDir.appendingPathComponent("Tree")
+						studyDir = studyDir.appendingPathComponent("Tree")
 					case .images:
-						return studyDir.appendingPathComponent("Images")
+						studyDir = studyDir.appendingPathComponent("Images")
+					case .text:
+						studyDir = studyDir.appendingPathComponent("Text")
 					}
+				if createFlag == true && fileManager.fileExists(atPath: studyDir.path) == false  // create if needed
+					{
+					do {
+						try fileManager.createDirectory(at: studyDir, withIntermediateDirectories: true, attributes: nil)
+						}
+					catch
+						{ return nil }
+					}
+				return studyDir
 				}
 			else
 				{return nil}
-		
-		
 		}
 	}
 
-func getStudyImage(treeInfo:TreeInfoPackage) -> UIImage? // which has a filename like study.jpg
+func getStudyImage(forStudyName studyName:String) -> UIImage? // which has a filename like study.jpg
 	{
-	if let dir = docDirectoryNameFor(treeInfo:treeInfo, ofType:.images)
+	//if let dir = docDirectoryNameFor(study:studyName, inLocation:treeInfo.dataLocation!, ofType:.images, create: true)
+	if let dir = searchForDirectoryWithPrecedence(forStudy:studyName,ofType:.images, create:false)
 		{
 		let ext = ["jpg","png"]
 
-		let imageURL0 = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension(ext[0])
-		let imageURL1 = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension(ext[1])
+		let imageURL0 = dir.appendingPathComponent(studyName).appendingPathExtension(ext[0])
+		let imageURL1 = dir.appendingPathComponent(studyName).appendingPathExtension(ext[1])
 		var image = UIImage(contentsOfFile:imageURL0.path)
 		if image == nil
 			{
@@ -111,24 +138,4 @@ func getStudyImage(treeInfo:TreeInfoPackage) -> UIImage? // which has a filename
 	else {return nil}
 	}
 
-/*
-// IN PROCESS OF KILLING THIS CODE:
-func getImageFromFile(withFileNamePrefix fileNamePrefix:String, atTreeDirectoryNamed treeDir:String)->UIImage?
-	// treeDir is commonly just named from the treeName
-	{
-		let ext = ["jpg","png"]
-		let imageBundlePath = Bundle.main.bundlePath + "/" + treeSettings.imageBundleLoc + "/" + treeDir
-		guard let imageBundle = Bundle(path: imageBundlePath	)
-		else { return nil }
-		let imageFilename0 = fileNamePrefix+"."+ext[0]
-		let imageFilename1 = fileNamePrefix+"."+ext[1]
-		var image = UIImage(named:imageFilename0,in:imageBundle,compatibleWith:nil)
-		if image == nil
-			{
-			image = UIImage(named:imageFilename1,in:imageBundle,compatibleWith:nil) // try the other extension
-			if image == nil
-				{ return nil }
-			}
-		return image
-	}
-*/
+

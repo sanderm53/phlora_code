@@ -52,6 +52,7 @@ var safeFrame:CGRect!
 
 var myNavigationController:UINavigationController!
 var otherVC:UIViewController!
+var infoViewController:TextFileViewController?
 
 var activityIndicator:UIActivityIndicatorView!
 
@@ -73,7 +74,10 @@ func addButtonAction(sender: UIBarButtonItem!) {
 	}
 
 func infoButtonAction(sender: UIButton!) {
-    helpView.isHidden = !helpView.isHidden
+    //helpView.isHidden = !helpView.isHidden
+		self.navigationController?.pushViewController(infoViewController!, animated: true)
+
+
 }
 
 func cladeNameButtonAction(sender: UIButton!) {
@@ -202,10 +206,13 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 
 		let treeName = treesData.treeInfoNamesSortedArray[pickedRowIndex]
 		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
-		//let treeInfo = treesData.treeInfoDictionary[treeName]!
+		let treeInfo = treesData.treeInfoDictionary[treeName]!
 		//treeView = DrawTreeView(frame:safeFrame,using:treeInfo)
 
 		self.title = treeName + " (\(nLeaves) leaves)" // This will be displayed in middle button of navigation bar at top
+
+		if infoViewController == nil
+			{ infoViewController = TextFileViewController(treeInfo:treeInfo) }
 
 		//treeView = treesData.selectTreeView(forTreeName:treeName, usingSameFrameAs:safeFrame)
 		treeView = treesData.selectTreeView(forTreeName:treeName)
@@ -248,20 +255,6 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 		infoButton.tintColor=UIColor.white
 
   	// display a toggle button to access the study selector
-/*
-			treePickerButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-			treePickerButton.addTarget(self, action: #selector(treePickerButtonAction), for: .touchUpInside)
-			let bottomTreePickerRectCenter = CGPoint(x: treeView.bottomInfoRect.midX - buttonGap, y: treeView.bottomInfoRect.midY)
-	treePickerButton.frame.size = infoButton.frame.size
-			let treePickerButtonOrigin = CGPoint(x:bottomTreePickerRectCenter.x-treePickerButton.frame.width/2,y:bottomTreePickerRectCenter.y-treePickerButton.frame.height/2)
-			treePickerButton.frame = CGRect(origin: treePickerButtonOrigin, size: treePickerButton.frame.size)
-			//treePickerButton.tintColor=UIColor.yellow
-			//cladeNameButton.setTitleColor(UIColor.yellow, for: .normal)
-			//cladeNameButton.setTitle("C", for: .normal)
-			let treePickerButtonImage = makeTreePickerButtonImage(size:treePickerButton.frame.size)
-			treePickerButton.setImage(treePickerButtonImage, for: .normal)
-			//self.view.addSubview(treePickerButton)
-*/
 
   	// display a toggle button to show clade names but only if present on tree
 
@@ -552,11 +545,14 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 						let coord = node.coord
 						let origin = CGPoint(x:coord.x, y:WindowCoord(fromTreeCoord:coord.y, inTreeView: treeView)  )
 						let sourceRect = CGRect(origin:origin, size:CGSize(width:0, height:0))
-						if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(treeInfo:treeView.treeInfo!, ofType: .images)
+						//if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(treeInfo:treeView.treeInfo!, ofType: .images)
+
+
+							if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:treeView.treeInfo!.dataLocation!, ofType:.images, create:true)
 							{
 							let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:treeView, atRect: sourceRect)
 							icc.launch()
-print("After launch icc")
+//print("After launch icc")
 //treeView.setNeedsDisplay()
 							}
 						}

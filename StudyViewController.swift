@@ -180,7 +180,8 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 //print (cell.treeInfo?.treeName)
 
 							let sourceRect = imagePane.frame // This frame is relative to the cell view's bounds rect and works
-							if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(treeInfo:cell.treeInfo!, ofType: .images)
+							//if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(treeInfo:cell.treeInfo!, ofType: .images)
+								if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(study: cell.treeInfo!.treeName, inLocation:cell.treeInfo!.dataLocation!, ofType:.images, create:true)
 								{
 								let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:cell, atRect: sourceRect)
 								icc.launch()
@@ -273,10 +274,11 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 		studyTableView.beginUpdates()
 		studyTableView.deleteRows(at: [indexPath], with: .fade)
 		studyTableView.endUpdates()
-		if let studyDir = docDirectoryNameFor(treeInfo:treeInfo, ofType:.study)
+		if let studyDir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:treeInfo.dataLocation!, ofType:.study,create:false)
+		//if let studyDir = docDirectoryNameFor(treeInfo:treeInfo, ofType:.study)
 			{
 			do {
-			try FileManager.default.removeItem(at: studyDir)
+				try FileManager.default.removeItem(at: studyDir)
 				}
 			catch
 				{print ("There was a problem deleting everything at \(studyDir)") }
