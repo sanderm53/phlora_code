@@ -135,6 +135,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 		// If a data package is annotated as being .inDocuments its image files are ONLY in that location,
 		// but if they are .inBundle, they might be in either place because user may have added their own images
 		// to a bundle data set.
+		// Note this checks for both node and study images...
 		let fileManager = FileManager.default
 
 		// Iff it is a bundle data location,  check there

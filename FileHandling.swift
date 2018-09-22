@@ -50,24 +50,6 @@ func copyImageToDocs(srcImage image:UIImage, copyToDir targetDir:URL, usingFileN
 
 
 
-
-func searchForDirectoryWithPrecedence(forStudy studyName:String,ofType dirType: DirectoryType, create createFlag:Bool)->URL?
-	{
-	if let url = docDirectoryNameFor(study:studyName, inLocation:.inDocuments, ofType:dirType, create:createFlag)
-		{ return url }
-	else
-		{
-		return docDirectoryNameFor(study:studyName, inLocation:.inBundle, ofType:dirType, create:createFlag)
-		}
-	}
-
-func searchForFileWithPrecedence(filename file:String, forStudy studyName:String,ofType dirType: DirectoryType, create createFlag:Bool)->URL?
-	{
-	
-	}
-
-
-
 func docDirectoryNameFor(study studyName:String, inLocation dataLocation: PhloraDataLocation, ofType dirType: DirectoryType, create createFlag:Bool)  -> URL?
 	{
 	let fileManager = FileManager.default
@@ -117,25 +99,67 @@ func docDirectoryNameFor(study studyName:String, inLocation dataLocation: Phlora
 		}
 	}
 
-func getStudyImage(forStudyName studyName:String) -> UIImage? // which has a filename like study.jpg
+func getStudyImage(forStudyName studyName:String, inLocation location:PhloraDataLocation) -> UIImage? // which has a filename like study.jpg
 	{
-	//if let dir = docDirectoryNameFor(study:studyName, inLocation:treeInfo.dataLocation!, ofType:.images, create: true)
-	if let dir = searchForDirectoryWithPrecedence(forStudy:studyName,ofType:.images, create:false)
+	var image,returnImage:UIImage?
+	let ext = ["jpg","png"]
+	if location == .inBundle
 		{
-		let ext = ["jpg","png"]
+		if let dir = docDirectoryNameFor(study:studyName, inLocation:.inBundle, ofType:.images, create: true)
+			{
+			let imageURL0 = dir.appendingPathComponent(studyName).appendingPathExtension(ext[0])
+			let imageURL1 = dir.appendingPathComponent(studyName).appendingPathExtension(ext[1])
+			var image = UIImage(contentsOfFile:imageURL0.path)
+			if image == nil
+				{
+				image = UIImage(contentsOfFile:imageURL1.path) // try the other extension
+				}
+			returnImage = image
+			}
+		}
 
+	if let dir = docDirectoryNameFor(study:studyName, inLocation:.inDocuments, ofType:.images, create: true)
+		{
 		let imageURL0 = dir.appendingPathComponent(studyName).appendingPathExtension(ext[0])
 		let imageURL1 = dir.appendingPathComponent(studyName).appendingPathExtension(ext[1])
-		var image = UIImage(contentsOfFile:imageURL0.path)
+		image = UIImage(contentsOfFile:imageURL0.path)
 		if image == nil
 			{
 			image = UIImage(contentsOfFile:imageURL1.path) // try the other extension
-			if image == nil
-				{ return nil }
 			}
-		return image
+		if image != nil
+			{returnImage = image} // second, docs image takes precedence and gets returned if present
 		}
-	else {return nil}
+	
+	return returnImage
 	}
 
+func getFileURLMatching(study studyName:String, filenameBase fnb:String, extensions exts:[String], ofType dirType: DirectoryType, create createFlag:Bool)->URL?
+// Returns LAST URL that matches looking first in bundle then in docs and looking at all extensions.
+// Checks both bundle and docs even though we could pass the parameter to tell it which; keep code simple
+	{
+	var retURL:URL?
+	let fileManager = FileManager.default
+	let dataLocations = [PhloraDataLocation.inBundle, PhloraDataLocation.inDocuments]
+	for dataLocation in dataLocations
+		{
+		if let dir = docDirectoryNameFor(study:studyName, inLocation:dataLocation, ofType:dirType, create: createFlag)
+			{
+			for ext in exts
+				{
+				let url = dir.appendingPathComponent(fnb).appendingPathExtension(ext)
+				if fileManager.fileExists(atPath: url.path)
+					{
+					retURL = url
+					}
+				}
+			}
+		}
+	return retURL
+	}
 
+func getStudyImage(forStudyName studyName:String) -> UIImage? // which has a filename like study.jpg
+	{
+	guard let url = getFileURLMatching(study:studyName, filenameBase:studyName, extensions: ["jpg","png"], ofType:.images, create:true) else { return nil }
+	return UIImage(contentsOfFile:url.path)
+}

@@ -75,7 +75,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				paneCenter = CGPoint(x:f.midX,y:f.midY)
 				super.init(frame:f)
 				isUserInteractionEnabled=true
-                let image = getStudyImage(forStudyName:treeInfo.treeName)
+                let image = getStudyImage(forStudyName:treeInfo.treeName, inLocation:treeInfo.dataLocation!)
 				layoutPaneForImage(image)
             }
 	

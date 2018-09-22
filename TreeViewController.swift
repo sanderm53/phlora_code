@@ -459,11 +459,14 @@ func addImagePane(atNode node:Node)
 	imagePane.addGestureRecognizer(doubleTapGesture)
 	tapGesture.require(toFail: doubleTapGesture) // ensures gestures sequenced right
 	
-	let longTapGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleImagePaneLongPress(recognizer:)))
-	longTapGesture.delegate = self
-	imagePane.addGestureRecognizer(longTapGesture)
-	longTapGesture.minimumPressDuration = 1.0
-
+	// This is a GR to long press imagePane to delete; only allow for user added data
+	if treeView.treeInfo!.dataLocation! == .inDocuments
+		{
+		let longTapGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleImagePaneLongPress(recognizer:)))
+		longTapGesture.delegate = self
+		imagePane.addGestureRecognizer(longTapGesture)
+		longTapGesture.minimumPressDuration = 1.0
+		}
 
 	}
 // ***********************************************************************************

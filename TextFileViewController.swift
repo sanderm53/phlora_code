@@ -55,8 +55,8 @@ class TextFileViewController: UIViewController {
 
 		textView = UITextView()
 		self.view.addSubview(textView)
-		textView.allowsEditingTextAttributes = true
-		textView.text = textInfoFileToString()
+//textView.allowsEditingTextAttributes = true ... works but then will need to save as attr text
+		textView.text = getTextFromFile()
 		textView.textColor = UIColor.white
 		textView.font = UIFont.preferredFont(forTextStyle:.body)
 		textView.isEditable=true // careful, sometimes seems to throw constraint errors
@@ -70,41 +70,41 @@ class TextFileViewController: UIViewController {
 
  		}
 
-	func textInfoFileToString() -> String
+	func getTextFromFile() -> String
 		{
-		// As usual, first we look for this in user-added docs dir, which takes precedence. If not there and if it might be in
-		// bundle (builtin), then check there
-		if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inDocuments, ofType:.text, create:false)
-			{
-			let textFile = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
-			if let s = try? String(contentsOf: textFile)
-				{ return s }
-			}
-		else if treeInfo.dataLocation == .inBundle
+		// As usual, anything added in docs by user has precedence over bundle file but check there first. If neither, present and inviting message
+		var retString:String?
+		if treeInfo.dataLocation == .inBundle
 			{
 			if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inBundle, ofType:.text, create:false)
 				{
 				let textFile = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
-				if let s = try? String(contentsOf: textFile)
-					{ return s }
+				retString = try? String(contentsOf: textFile)
 				}
 			}
-			
-		return "Add text here." // dummy text in case no file present
+
+		if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inDocuments, ofType:.text, create:false)
+			{
+			let textFile = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
+			if let s = try? String(contentsOf: textFile)
+				{ retString = s }
+			}
+		if retString == nil
+			{ retString = "Add text here." } // dummy text in case no file present
+		return retString!
 		}
 
 	func saveTextToFile(text s:String) throws
+		// Write to documents directory, even if original location is inBundle
 		{
 		let fileManager = FileManager.default
 		if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inDocuments, ofType:.text, create:true)
-		// Note we force this to write to documents directory, even if original location is inBundle
 			{
 			if fileManager.fileExists(atPath: dir.path) == false  // create if needed
 				{
 				try fileManager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
 				}
 			let textFileURL = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
-	//print (s,textFileURL)
 			try s.write(to: textFileURL, atomically: true, encoding: .utf8)
 			}
 		}
@@ -131,7 +131,6 @@ class TextFileViewController: UIViewController {
     	}
 
 
-// ********************************** I have disabled device rotations in info.plist!, so the following is mute and not current
 
 	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
 	

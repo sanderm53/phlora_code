@@ -27,6 +27,8 @@ var treeInfo: TreeInfoPackage? {
 			// fetch an image file with the same filename prefix as the treeName (e.g., "Cactaceae.png" )
 
 			if let image = getStudyImage(forStudyName:t.treeName)
+			//if let image = getStudyImage(forStudyName:t.treeName, inLocation:t.dataLocation!)
+			//if let image = getStudyImage(forTreeInfo: t)
 				{
 				studyImagePane.addImage(image)
 				}
