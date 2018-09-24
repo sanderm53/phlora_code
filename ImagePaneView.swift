@@ -57,6 +57,8 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		//var maxTransform:CGAffineTransform = CGAffineTransform.identity
 		//var diagonalIsHidden:Bool = false
 		var hasImage:Bool = false
+		var isFrozen:Bool = false // frozen means it stays in place as tree is panned
+		var imageWindowCoord:CGFloat = 0.0
 
 // Default position of this view is centered on the frame provided to it
          init ()
@@ -68,6 +70,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				isUserInteractionEnabled=true
 				layoutPaneForImage(nil)
             }
+/*
        init? (treeInfo:TreeInfoPackage)
                 {
 				isAttachedToNode = false
@@ -78,7 +81,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
                 let image = getStudyImage(forStudyName:treeInfo.treeName, inLocation:treeInfo.dataLocation!)
 				layoutPaneForImage(image)
             }
-	
+*/
         init (usingFrame f:CGRect, atNode node:Node, onTree tree:XTree)
                 {
                 var imageName:String
@@ -150,6 +153,8 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					node.hasImage = false
 					node.isDisplayingImage = false
 					}
+				let L = treeSettings.initialImageSize
+				frame.size =  CGSize(width:L ,height:L) // reset to original square size
 
 			}
 
@@ -328,6 +333,28 @@ addImageLabel!.backgroundColor = studyPUBackgroundColor
 				{ return false }
 			}
 
+	func freeze(inTreeView treeView:DrawTreeView)
+		{
+		if let node = associatedNode
+			{
+			isFrozen = true
+			imageWindowCoord = WindowCoord(fromTreeCoord: node.coord.y, inTreeView: treeView)
+			treeView.setNeedsDisplay()
+			}
+		}
+
+	func unfreeze(inTreeView treeView:DrawTreeView)
+		{
+		if let node = associatedNode
+			{
+			isFrozen=false
+			let targetTreeCoord = TreeCoord(fromWindowCoord: imageWindowCoord,inTreeView: treeView)
+			let necessaryRectYCoordOffset = targetTreeCoord - node.coord.y
+			frame = frame.offsetBy(dx: 0, dy: necessaryRectYCoordOffset)
+			treeView.setNeedsDisplay()
+			//self.setNeedsDisplay()
+			}
+		}
 
 	}
 

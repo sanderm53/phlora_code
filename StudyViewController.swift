@@ -162,7 +162,7 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 		}
 
  	func handleTap(gesture: UITapGestureRecognizer) {
-			print ("Time to add an image")
+			//print ("Time to add an image")
 			let imagePane = gesture.view as! ImagePaneView
 			switch gesture.state
 				{
@@ -302,7 +302,7 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 		}
 
 
-
+	
 
 
 }

@@ -56,7 +56,7 @@ class TextFileViewController: UIViewController {
 		textView = UITextView()
 		self.view.addSubview(textView)
 //textView.allowsEditingTextAttributes = true ... works but then will need to save as attr text
-		textView.text = getTextFromFile()
+		textView.text = getTextFromFile(forStudyName:treeInfo.treeName)
 		textView.textColor = UIColor.white
 		textView.font = UIFont.preferredFont(forTextStyle:.body)
 		textView.isEditable=true // careful, sometimes seems to throw constraint errors
@@ -70,48 +70,32 @@ class TextFileViewController: UIViewController {
 
  		}
 
-	func getTextFromFile() -> String
-		{
-		// As usual, anything added in docs by user has precedence over bundle file but check there first. If neither, present and inviting message
-		var retString:String?
-		if treeInfo.dataLocation == .inBundle
-			{
-			if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inBundle, ofType:.text, create:false)
-				{
-				let textFile = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
-				retString = try? String(contentsOf: textFile)
-				}
-			}
 
-		if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inDocuments, ofType:.text, create:false)
-			{
-			let textFile = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
-			if let s = try? String(contentsOf: textFile)
-				{ retString = s }
-			}
-		if retString == nil
-			{ retString = "Add text here." } // dummy text in case no file present
-		return retString!
-		}
-
-	func saveTextToFile(text s:String) throws
-		// Write to documents directory, even if original location is inBundle
+func getTextFromFile(forStudyName studyName:String) -> String // which has a filename like study.jpg
+	{
+	if let url = getFileURLMatching(study:studyName, filenameBase:studyName, extensions: ["txt"], ofType:.text)
 		{
-		let fileManager = FileManager.default
-		if let dir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:.inDocuments, ofType:.text, create:true)
-			{
-			if fileManager.fileExists(atPath: dir.path) == false  // create if needed
-				{
-				try fileManager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
-				}
-			let textFileURL = dir.appendingPathComponent(treeInfo.treeName).appendingPathExtension("txt")
-			try s.write(to: textFileURL, atomically: true, encoding: .utf8)
-			}
+		if let s = try? String(contentsOf: url)
+			{ return s }
 		}
-	
+	return "Add text here."
+	}
+
+func saveTextToFile(forStudyName studyName:String, text s:String) throws
+	// Write to documents directory, even if original location is inBundle
+	{
+	if let dir = docDirectoryNameFor(study: studyName, inLocation:.inDocuments, ofType:.text, create:true)
+		{
+		let textFileURL = dir.appendingPathComponent(studyName).appendingPathExtension("txt")
+		try s.write(to: textFileURL, atomically: true, encoding: .utf8)
+		}
+	}
+
+
+
 	func saveButtonAction(sender: UIBarButtonItem!) {
 		do {
-			try saveTextToFile(text:textView.text)
+			try saveTextToFile(forStudyName:treeInfo.treeName, text:textView.text)
 			}
 		catch {
 			print ("Failed to save edited text")

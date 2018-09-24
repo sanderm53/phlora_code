@@ -89,7 +89,7 @@ class ImageChooserController : NSObject, UIImagePickerControllerDelegate, UINavi
 
 	func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
 		{
-		print (urls.first)
+		//print (urls.first)
 		if let url = urls.first
 			{
 			if let image = UIImage(contentsOfFile:url.path)
@@ -115,6 +115,7 @@ If not, assume it is the study image (only alternative now), and write to a jpeg
 						{
 						associatedNode.imageFileURL = destURL
 						associatedNode.hasImageFile = true
+						associatedNode.isDisplayingImage = true
 						}
 					}
 			imagePane.addImage(image)

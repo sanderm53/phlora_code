@@ -646,12 +646,23 @@ ctx.drawPath(using: .stroke)
 
 	func drawLineToImage(inContext ctx:CGContext, fromX xImageCenter:CGFloat)
 		{
+		var imagePaneUpperRight:CGPoint
+		if let imagePane = self.imagePaneView
+			{
 			ctx.setLineWidth(treeSettings.edgeWidth)
 
 
 			let imageIconPt = CGPoint(x:xImageCenter, y:coord.y)
-			let imagePaneUpperRight = CGPoint(x: imagePaneView!.frame.maxX, y: coord.y-imagePaneView!.frame.height/2.0 + imagePaneView!.center.y)
 
+			if imagePane.isFrozen
+				{
+				let targetTreeCoord = TreeCoord(fromWindowCoord: imagePane.imageWindowCoord,inTreeView: imagePane.superview as! DrawTreeView)
+				imagePaneUpperRight = CGPoint(x: imagePane.frame.maxX, y: targetTreeCoord-imagePane.frame.height/2.0 + imagePane.center.y)
+				}
+			else
+				{
+				imagePaneUpperRight = CGPoint(x: imagePane.frame.maxX, y: coord.y-imagePane.frame.height/2.0 + imagePane.center.y)
+				}
 			ctx.setAlpha(1.0)
 			ctx.move(to:imageIconPt)
 			ctx.addLine(to:imagePaneUpperRight)
@@ -661,6 +672,7 @@ ctx.drawPath(using: .stroke)
 			ctx.strokePath()
 			ctx.setLineDash(phase: 0, lengths: [])
 			ctx.setLineWidth(treeSettings.edgeWidth)
+			}
 		}
 
 	enum ImageIconType {

@@ -156,7 +156,7 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
 
 	// Add gesture recognizers NOTE I'M NOW ATTACHING THESE TO THE VIEW RATHER THAN THE treeView
 
- 
+ /*
 
 		let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(gesture:)))
 		doubleTapGesture.numberOfTapsRequired = 2
@@ -168,6 +168,7 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
 
 		doubleTapGesture.require(toFail: tripleTapGesture) // ensures double and triple tap sequenced right
 
+*/
 
 
 		let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
@@ -458,7 +459,15 @@ func addImagePane(atNode node:Node)
 	doubleTapGesture.numberOfTapsRequired = 2
 	imagePane.addGestureRecognizer(doubleTapGesture)
 	tapGesture.require(toFail: doubleTapGesture) // ensures gestures sequenced right
-	
+
+	let tripleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleImageTripleTap(recognizer:)))
+	tripleTapGesture.numberOfTapsRequired = 3
+	imagePane.addGestureRecognizer(tripleTapGesture)
+
+	doubleTapGesture.require(toFail: tripleTapGesture) // ensures double and triple tap sequenced right
+
+
+
 	// This is a GR to long press imagePane to delete; only allow for user added data
 	if treeView.treeInfo!.dataLocation! == .inDocuments
 		{
@@ -491,7 +500,8 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 						{ (action:UIAlertAction) in self.dismiss(animated:true) }
 					let action2 = UIAlertAction(title: "Delete", style: .default)
 						{ (action:UIAlertAction) in
-						self.deleteImagePane(imagePane)
+						//self.deleteImagePane(imagePane)
+						self.deleteImageInPane(imagePane)
 						}
 					alert!.addAction(action1)
 					alert!.addAction(action2)
@@ -523,6 +533,27 @@ func deleteImagePane(_ imagePane:ImagePaneView)
 			}
 		imagePane.removeFromSuperview()
 		self.treeView.setNeedsDisplay()
+	}
+func deleteImageInPane(_ imagePane:ImagePaneView) // This leaves the pane but resets to no image
+	{
+		if let node = imagePane.associatedNode
+			{
+			node.hasImage = false
+			node.hasImageFile = false
+			//node.imagePaneView = nil
+			guard let url = node.imageFileURL else { return }
+			do 	{
+				try FileManager.default.removeItem(at:url)
+				}
+			catch
+				{
+				print ("Error removing file")
+				return
+				}
+			node.imageFileURL = nil
+			imagePane.deleteImage()
+			}
+		self.treeView.setNeedsDisplay() // to update the image icons 
 	}
 
 // Minimally bring imagepane to front; if no image, go on add one!
@@ -588,6 +619,28 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			}
 
 		}
+// ***********************************************************************************
+
+	func handleImageTripleTap(recognizer: UITapGestureRecognizer)
+		{
+		let imagePane = recognizer.view as! ImagePaneView
+		treeView.bringSubview(toFront: imagePane)
+		switch recognizer.state
+			{
+			case UIGestureRecognizerState.began:
+				break
+			case UIGestureRecognizerState.changed:
+				break
+			case UIGestureRecognizerState.ended:
+//print ("Triple tap")
+				if imagePane.isFrozen {imagePane.unfreeze(inTreeView:treeView)}
+				else {imagePane.freeze(inTreeView:treeView)}
+//				self.treeView.setNeedsDisplay()
+			default:
+				break
+			}
+		}
+
 
 
 // ***********************************************************************************
@@ -728,26 +781,6 @@ let slideFactor = 0.1 * slideMultiplier
 				}
 			}
 		}
-// ***********************************************************************************
-
-	func handleTripleTap(gesture: UITapGestureRecognizer)
-		{
-		if treeView.imagesAreVisible
-			{
-			let location = gesture.location(in: treeView)
-			let treeLocation = treePoint(fromWindowPoint:location)
-			let leafIndex = treeView.xTree.imageCollection.getFrontmostImageView(atTreeCoord:treeLocation, inTreeView:treeView)
-			if leafIndex != nil
-				{
-				if treeView.xTree.imageCollection.leafImageIsFrozen(withLeafIndex:leafIndex!)
-					{treeView.xTree.imageCollection.setLeafImageIsUnfrozen(withLeafIndex:leafIndex!, inTreeView:treeView)}
-				else
-					{treeView.xTree.imageCollection.setLeafImageIsFrozen(withLeafIndex:leafIndex!, inTreeView:treeView)}
-				treeView.setNeedsDisplay()
-				}
-			}
-		}
-
 
 // ***********************************************************************************
 

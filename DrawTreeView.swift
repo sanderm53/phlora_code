@@ -284,24 +284,20 @@ class DrawTreeView: UIView
 		//super.layoutSubviews() ???? yup what about other subviews? OOps this assumes all subviews are imagepanes!!!
 		for subview in subviews
 			{
-			let imagePane = subview as! ImagePaneView
-			if !imagePane.isHidden && imagePane.isAttachedToNode
+			if let imagePane = subview as? ImagePaneView
 				{
-// SHOULD IMBED THIS TEST IN THE SETLOC FUNC
-
-imagePane.setLocationRelativeTo(treeView:self) //... didn't work; i need the frame for gesture recogz, diagonal, etc...
-/*
-				if let treeCoordY = imagePane.associatedNode?.coord.y
+				if !imagePane.isHidden && imagePane.isAttachedToNode
 					{
-					//imagePane.setLocationRelativeToTreeTo(0,panTranslateTree + treeCoordY + decoratedTreeRect.midY)
-					
-					//imagePane.upDateDiagonalFrame(iconX:xCenterImageIcon)
-					//let newFrame = imagePane.upDateDiagonalFrame(usingFrame: imagePane.frame, iconX:xCenterImageIcon)
-					//imagePane.diagonalLineView?.frame = newFrame
-					imagePane.setLocationRelativeToTreeTo(0,WindowCoord(fromTreeCoord: treeCoordY , inTreeView: self))
-setNeedsDisplay()
+					// SHOULD IMBED THIS TEST IN THE SETLOC FUNC
+					if imagePane.isFrozen
+						{
+						imagePane.setLocationRelativeToTreeTo(0,imagePane.imageWindowCoord)
+						}
+					else
+						{
+						imagePane.setLocationRelativeTo(treeView:self) //... didn't work; i need the frame for gesture recogz, diagonal, etc...
+						}
 					}
-*/
 				}
 			}
 		}
