@@ -656,7 +656,8 @@ ctx.drawPath(using: .stroke)
 
 			if imagePane.isFrozen
 				{
-				let targetTreeCoord = TreeCoord(fromWindowCoord: imagePane.imageWindowCoord,inTreeView: imagePane.superview as! DrawTreeView)
+				guard let treeView = imagePane.superview as? DrawTreeView else { return }
+				let targetTreeCoord = TreeCoord(fromWindowCoord: imagePane.imageWindowCoord,inTreeView: treeView)
 				imagePaneUpperRight = CGPoint(x: imagePane.frame.maxX, y: targetTreeCoord-imagePane.frame.height/2.0 + imagePane.center.y)
 				}
 			else

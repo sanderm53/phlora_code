@@ -243,6 +243,8 @@ addImageLabel!.backgroundColor = studyPUBackgroundColor
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
 				{
 
+	//print ("Around Pt:",pt)
+	
 				let theTransform = CGAffineTransform.identity.translatedBy(x: pt.x, y: pt.y).scaledBy(x: scale, y: scale).translatedBy(x: -pt.x, y: -pt.y) // note that this order is reversed from how you'd apply them to current transform (I think)
 				let newBounds = bounds.applying(theTransform)
 				let deltaOrigin = newBounds.origin // since original bounds was just 0,0
@@ -261,15 +263,29 @@ addImageLabel!.backgroundColor = studyPUBackgroundColor
 
 		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:DrawTreeView)
 				{
+				let testFrameInsets:CGFloat = 100
+				var vertInset,horizInset:CGFloat
+
+				// my way of keeping images within window during movement
+				// careful, frame vs center are wonky in this code...rect comparisons need to be done with frames
 				let newCenter = CGPoint(x: center.x+x, y: center.y+y)
-				center = newCenter
-							/* ...useful when/if animating potentially offscreen
-							let newRect = centeredRect(center: newCenter, size: bounds.size)
-							if rectInPaneCoordsDoesIntersectWithWindow(paneRect:newRect, ofTreeView:treeView)
+				var testPaneFrame = frame.offsetBy(dx: x, dy: y)
+				//...keep the panes from moving offscreen in the following way. For small images, don't let their center go off
+				// screen. For larger images, make sure there is an overhang of dimension 'testFrameInsets' onto the visible window
+				if testPaneFrame.height > 2.0 * testFrameInsets
+					{ vertInset = testFrameInsets}
+				else
+					{ vertInset = testPaneFrame.height/2 }
+				if testPaneFrame.width > 2.0 * testFrameInsets
+					{ horizInset = testFrameInsets}
+				else
+					{ horizInset = testPaneFrame.width/2 }
+				testPaneFrame = UIEdgeInsetsInsetRect(testPaneFrame, UIEdgeInsets(top: vertInset, left: horizInset, bottom: vertInset, right: horizInset))
+				//....Following does the actual trapping
+				if treeView.bounds.intersects(testPaneFrame)
 												{
 												center = newCenter
 												}
-							*/
 				}
 	
 
@@ -323,9 +339,12 @@ addImageLabel!.backgroundColor = studyPUBackgroundColor
 
 		func rectInPaneCoordsDoesIntersectWithWindow(paneRect rect:CGRect, ofTreeView treeView:DrawTreeView) -> Bool
 			{
-			let pt = rect.origin
-			let p = convert(panePt:pt, toTreeView:treeView)
-			let convertedRect = CGRect(origin:p, size:rect.size)
+			//let pt = rect.origin
+			//let p = convert(panePt:pt, toTreeView:treeView)
+			
+	let convertedRect = self.convert(rect, to: treeView)
+			
+			//let convertedRect = CGRect(origin:p, size:rect.size)
 			let r = treeView.decoratedTreeRect!
 			if r.intersects(convertedRect)
 				{ return true }

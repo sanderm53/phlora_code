@@ -22,7 +22,8 @@ var lastUpdate: TimeInterval = 0
 var progress: TimeInterval = 0
 var startAnimationY: CGFloat = 0.0
 var targetY: CGFloat = 0.0
-var animateDuration: TimeInterval = 2.0
+var animateDuration: TimeInterval = 2.0 // Careful if we let this run too long! Mucks up
+var animateDurationImagePanes: TimeInterval = 0.2 // Careful if we let this run too long! Mucks up
 var imageIsPanning:Bool=false
 var panningLeafIndex:Int?
 var imageIconsArePanning:Bool=false
@@ -63,6 +64,8 @@ var panGesture:UIPanGestureRecognizer?
 var panningImagePane:ImagePaneView?
 var panningImagePaneStartPt:CGPoint?
 var panningImagePaneEndPt:CGPoint?
+var panningImageVelocity:CGPoint?
+var lastTime: TimeInterval?
 
 var showingImageAddButtons:Bool = false
 
@@ -556,7 +559,9 @@ func deleteImageInPane(_ imagePane:ImagePaneView) // This leaves the pane but re
 		self.treeView.setNeedsDisplay() // to update the image icons 
 	}
 
+// ***********************************************************************************
 // Minimally bring imagepane to front; if no image, go on add one!
+
 func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		{
 		let imagePane = recognizer.view as! ImagePaneView
@@ -570,9 +575,6 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 			case UIGestureRecognizerState.ended:
 				if imagePane.hasImage == false
 					{
-					//let fic = FetchImageController(viewControllerToPresent:self, forImagePane:imagePane)
-					//fic.launch()
-
 
 					if let node  = imagePane.associatedNode
 						{
@@ -586,8 +588,6 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 							{
 							let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:treeView, atRect: sourceRect)
 							icc.launch()
-//print("After launch icc")
-//treeView.setNeedsDisplay()
 							}
 						}
 					}
@@ -597,6 +597,7 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 			}
 		}
 
+// ***********************************************************************************
 
 func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		{
@@ -646,36 +647,21 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 // ***********************************************************************************
 	func handleImagePanePinch(recognizer : UIPinchGestureRecognizer)
 		{
+		killTheAnimationTimer()	// This is important. The image pane pan timer may still be running when I try to scale this, which mucks up the scaling around point behavior. This seems to have fixed it.
 		let scale=recognizer.scale
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
 
-		//let location = recognizer.location(in: imagePane.imageView) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
-let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
-		// killTheAnimationTimer()	// don't SEEM to need this but need it in handleImagePanePan(), so why not here?
+		let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
 
 
 		switch recognizer.state
 			{
-			//case UIGestureRecognizerState.began:
 
 			case UIGestureRecognizerState.changed:
 				imagePane.scale(by:scale, around:location, inTreeView: treeView)
 				self.treeView.setNeedsDisplay() // needed to update the diagonal lines
 
-/*
-			case UIGestureRecognizerState.ended:
-				if imagePane.scale > imagePane.maxScale
-					{
-					UIView.animate(withDuration:0.2, animations: {
-						imagePane.imageView.transform = imagePane.maxTransform })
-					}
-				if imagePane.scale < 1.0
-					{
-					UIView.animate(withDuration:0.2, animations: {
-						imagePane.imageView.transform = CGAffineTransform.identity })
-					}
-*/
 			default:
 				break
 
@@ -685,73 +671,41 @@ let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in
 // ***********************************************************************************
 	func handleImagePanePan(recognizer : UIPanGestureRecognizer)
 		{
-		let imagePane = recognizer.view as! ImagePaneView
-		
-		treeView.bringSubview(toFront: imagePane)
-		//let imageView = imagePane.imageView
-		//let location = recognizer.location(in: imagePane.imageView)
-
-
 		killTheAnimationTimer()	// If in the middle of a pan animation, kill the animation and go: IMPORTANT
-
+		let imagePane = recognizer.view as! ImagePaneView
+		treeView.bringSubview(toFront: imagePane)
 		let translation = recognizer.translation(in: imagePane)
-	//let treeLocation = treePoint(fromWindowPoint:location)
-
-		if recognizer.state == UIGestureRecognizerState.began
+		switch recognizer.state
 			{
-			//imagePane.diagonalIsHidden = true
-			}
-		if recognizer.state == UIGestureRecognizerState.changed
-			{
-			imagePane.translate(dx: translation.x, dy: translation.y, inTreeView: treeView)
-	//treeView.layoutSubviews()
-			self.treeView.setNeedsDisplay() // needed to update the diagonal lines
-			recognizer.setTranslation(CGPoint(x:0,y:0), in: imagePane) // reset
-
-//print ("ImagePane current frame and center = ", imagePane.frame, imagePane.center)
-
-			}
-		if recognizer.state == UIGestureRecognizerState.ended
-			{
-
-//imagePane.diagonalIsHidden = true
-
-//self.treeView.setNeedsDisplay()
-
+			case UIGestureRecognizerState.began:
+				break
+			case UIGestureRecognizerState.changed:
+				imagePane.translate(dx: translation.x, dy: translation.y, inTreeView: treeView)
+				self.treeView.setNeedsDisplay() // needed to update the diagonal lines
+				recognizer.setTranslation(CGPoint(x:0,y:0), in: imagePane) // reset
+			case UIGestureRecognizerState.ended:
 				let velocity = recognizer.velocity(in: imagePane)
 
-let magnitude = sqrt(velocity.x*velocity.x + velocity.y*velocity.y)
-let slideMultiplier = magnitude/1000
-let slideFactor = 0.1 * slideMultiplier
+				let magnitude = sqrt(velocity.x*velocity.x + velocity.y*velocity.y)
+				let slideMultiplier = magnitude/1000
+				let slideFactor = 0.05 * slideMultiplier
 
-				//let targetX = velocity.x * slideFactor
-				//let targetY = velocity.y * slideFactor
-//var finalCenter = CGPoint(x:imagePane.center.x+targetX, y:imagePane.center.y+targetY)
-//finalCenter.x = clamp(finalCenter.x, between:0, and:treeView.bounds.size.width)
-
-
-				//imagePane.relativePaneCenter.x += targetX
-				//imagePane.relativePaneCenter.y += targetY // only do this in .ended right now since above we use old translate() func
-//let newPaneViewFrame = imagePane.frame.offsetBy(dx: targetX, dy: targetY)
-
-/*
-					UIView.animate(withDuration: Double(slideFactor*2),
-							delay: 0,
-							options: UIViewAnimationOptions.curveEaseOut,
-							animations:
-								{
-								//self.imageView.transform = transform
-								imagePane.center = finalCenter
-								},
-							completion: {finished in
-								self.treeView.setNeedsDisplay()
-					} )
-*/
-
-			//createDisplayLink2(forImagePane:imagePane, toTargetPt:finalCenter)
-	//NB! This animation messes up the point-based image scale function. After panning, it no longer scales relative to point in bounds. I don't know why, but disable at the moment.
+				let targetX = velocity.x * slideFactor
+				let targetY = velocity.y * slideFactor
+				let finalCenter = CGPoint(x:imagePane.center.x+targetX, y:imagePane.center.y+targetY)
+			panningImageVelocity = velocity
+				createDisplayLink2(forImagePane:imagePane, toTargetPt:finalCenter)
+			default:
+				break
 			}
 		}
+
+
+
+
+
+
+
 // ***********************************************************************************
 // ***********************************************************************************
 
@@ -1060,7 +1014,8 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 		timer=nil
 		timer = CADisplayLink(target: self, selector: #selector(step2))
 		startAnimation = Date.timeIntervalSinceReferenceDate
-		endAnimation  = Date.timeIntervalSinceReferenceDate + animateDuration
+		lastTime = startAnimation
+		endAnimation  = Date.timeIntervalSinceReferenceDate + animateDurationImagePanes
 		self.panningImagePane = ip
 		self.panningImagePaneStartPt = ip.center
 		self.panningImagePaneEndPt = targetPt
@@ -1073,8 +1028,11 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 			{
 			let now: TimeInterval = Date.timeIntervalSinceReferenceDate
 
-			let t = Float( (now-startAnimation)/animateDuration  )
-			let tTransform = 1-powf((1-t),3.0) // easing out
+			let t = Float( (now-startAnimation)/animateDurationImagePanes  )
+			let deltaT = now - lastTime!
+			lastTime = now
+			//let tTransform = 1-powf((1-t),1.0) // easing out
+			let tTransform = 1-powf(t,1.0) // deceleration function
 
 			//print (now, startAnimation, endAnimation, t)
 		
@@ -1085,11 +1043,13 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 			if let ip = panningImagePane
 				{
 
-				if !ip.isPanePointWithinWindow(panePt:ip.center, ofTreeView:treeView)
-					{ return } // prob should kill the animation!
+				//if !ip.isPanePointWithinWindow(panePt:ip.center, ofTreeView:treeView)
+				//	{ return } // prob should kill the animation!
 
-				let dx = CGFloat(tTransform) * (self.panningImagePaneEndPt!.x - ip.center.x)
-				let dy = CGFloat(tTransform) * (self.panningImagePaneEndPt!.y - ip.center.y)
+				//let dx = CGFloat(tTransform) * (self.panningImagePaneEndPt!.x - ip.center.x)
+				//let dy = CGFloat(tTransform) * (self.panningImagePaneEndPt!.y - ip.center.y)
+				let dx = CGFloat(deltaT) * panningImageVelocity!.x * CGFloat(tTransform)
+				let dy = CGFloat(deltaT) * panningImageVelocity!.y * CGFloat(tTransform)
 
 				ip.translate(dx: dx, dy: dy, inTreeView: treeView)
 				treeView.setNeedsDisplay()
