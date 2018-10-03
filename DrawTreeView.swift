@@ -105,14 +105,15 @@ class DrawTreeView: UIView
 	var bottomInfoRect:CGRect!					// Rectangle below tree containing information
 
 	var panTranslateTree:CGFloat=0.0			// realtime translation of y-axis of tree for panning
-
+/* yuck; easy to get into infinite loops when layoutSubviews messes with panTranslateTree somewhere in its call chain
 		{
 		didSet {
 			setNeedsLayout() // prop observer to trigger recalculation of subview images
 			}
 		}
+*/
 
-	var previousBounds:CGRect = .zero
+	var previousBounds:CGRect? // This is only initialized once the frame is set up, i.e., in viewDidLayoutSubviews
 
 
 	var treeInfo:TreeInfoPackage?
@@ -147,28 +148,18 @@ class DrawTreeView: UIView
 	
 	func setup()
 		{
-//print("0: drawtree setup frame=",frame)
 		windowIndependentSetup()
 		xTree.imageCollection.setup() // &&&&&&
-//		windowDependentSetup()
 		}
 
 
 	func windowIndependentSetup()
 		{
 		xTree = XTree(withTreeInfoPackage:treeInfo!) // initialize the tree data structure
-//xTreeIsSetup = true
 		let paragraphStyle = NSMutableParagraphStyle()
 		paragraphStyle.lineBreakMode = .byTruncatingTail
 		taxonLabelAttributes[NSParagraphStyleAttributeName]=paragraphStyle
 
-		}
-	
-	func windowDependentSetup()
-		{
-        setupViewDependentTreeParameters()
-//		setupViewDependentImageCollectionGeometry() &&&&
-//		xTree.imageCollection.setup()  &&&&&
 		}
 
 	func setupViewDependentImageCollectionGeometry()
@@ -177,10 +168,73 @@ class DrawTreeView: UIView
 		xTree.imageCollection.imageXCenter=decoratedTreeRectMinusImageIcons.midX //ditto
 		}
 
-	func setupViewDependentTreeParameters()
+
+func treeOpensGapAtTopByThisMuch()->CGFloat
+	{
+	return WindowCoord(fromTreeCoord:xTree.minY, inTreeView:self) - nakedTreeRect.minY
+	}
+func treeOpensGapAtBottomByThisMuch()->CGFloat
+	{
+	return nakedTreeRect.maxY - WindowCoord(fromTreeCoord:xTree.maxY, inTreeView:self)
+	}
+
+
+func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or dev rotation, modify the tree to fill new treeView, but keep it centered on wherever it was before and with same scale; requires some black magic.
+	// NB. If the new window is taller than the old and the current view of the tree is really zoomed out, then the tree might
+	// occupy less than a full screen in the new window (bad!), so we have to trap for that and zoom in some on the new view
+	{
+
+//print ("Entering updateTreeViewWhenSizeChanged")
+		var newScale,deltaScale:CGFloat
+		var newPan,z:CGFloat
+		let oldTreeHeight = 2*xTree.maxY
+		let savePan = panTranslateTree
+		let saveScale = scaleTreeBy
+		setupViewDependentTreeRectsEtc()
+		setupTreeCoordsForTreeToFill()
+
+		let newTreeHeight = nakedTreeRectCentered.height
+		let restoreToOriginalTreeSizeScaleFactor = oldTreeHeight/newTreeHeight
+		let nodeTansform = CGAffineTransform(scaleX:1.0, y: restoreToOriginalTreeSizeScaleFactor)
+		xTree.root.transformTreeCoords(by : nodeTansform)
+		xTree.minY *= restoreToOriginalTreeSizeScaleFactor
+		xTree.maxY *= restoreToOriginalTreeSizeScaleFactor // any problem with successive roundoff errors?
+//print ("after minY,maxY",xTree.minY,xTree.maxY)
+		panTranslateTree = savePan // YES!
+		scaleTreeBy = restoreToOriginalTreeSizeScaleFactor // This has to just be the scale it was before transformation, because we are forcing tree first into given rect
+
+// Phase 2: Correct if gaps are open when going from small to larger screen
+		if bounds.height > oldH // screen height got bigger; watch out for gaps at top or bottom of tree
+			{
+			let topGap = max (0, treeOpensGapAtTopByThisMuch())
+			let bottomGap = max (0, treeOpensGapAtBottomByThisMuch())
+			let maxGap = max (topGap, bottomGap)
+			if maxGap == 0
+				{ return }
+			if topGap > bottomGap
+				{
+				z = TreeCoord(fromWindowCoord: decoratedTreeRect.midY, inTreeView: self) - xTree.minY
+				}
+			else
+				{
+				z = xTree.maxY - TreeCoord(fromWindowCoord: decoratedTreeRect.midY, inTreeView: self)
+				}
+			let scale = 0.5*nakedTreeRect.height/z
+			let nodeTansform = CGAffineTransform(scaleX:1.0, y: scale)
+			xTree.root.transformTreeCoords(by : nodeTansform)
+			xTree.minY *= scale
+			xTree.maxY *= scale
+			panTranslateTree *= scale
+			scaleTreeBy *= scale
+			}
+
+	}
+
+	func setupViewDependentTreeRectsEtc() // Inits a tree filling the treeView with 0 pan and 1.0 scale
 		{
-		panTranslateTree=0.0
-		scaleTreeBy=1.0
+//print ("Entering setupViewDependentTreeParams")
+		//panTranslateTree=0.0
+		//scaleTreeBy=1.0
 		
 		(maxStringLength,maxStringHeight) =  xTree.root.getLabelSizeInfo(withAttributes: taxonLabelAttributes)
 
@@ -195,46 +249,42 @@ class DrawTreeView: UIView
 		// when we redraw the tree. Sheesh
 
 
-		//decoratedTreeRect = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame,right:rightBorderInsetFromFrame,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
 
 		decoratedTreeRect = UIEdgeInsetsInsetRect(bounds, UIEdgeInsets(top: 0, left: leftBorderInsetFromFrame, bottom: 0, right: rightBorderInsetFromFrame))
 
-		//decoratedTreeRectMinusImageIcons = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame,right:rightBorderInsetFromFrame+imageIconWidth,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
-
 		decoratedTreeRectMinusImageIcons = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: 0, left: 0, bottom: 0, right: imageIconWidth))
-
-
 
 		// the treeRect and derived rectangles are used solely to provide bounds for the initial layout of
 		// coordinates of the tree edges and labels. 
 
-
-
 		decoratedTreeRectCentered = decoratedTreeRect.offsetBy(dx: 0, dy: -decoratedTreeRect.midY)
-
-		//imageIconsRect = getTreeRect(fromView:self.bounds,left:leftBorderInsetFromFrame+decoratedTreeRectMinusImageIcons.width,right:rightBorderInsetFromFrame,top:topBorderInsetFromFrame,bottom:bottomBorderInsetFromFrame)
 
 		imageIconsRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: 0, left: decoratedTreeRectMinusImageIcons.width, bottom: 0, right: 0))
 
-
-
 		let neededTopBottomGap = max(maxStringHeight/2.0,treeSettings.imageIconRadius) // to make room for labels and image icon space
-
-		//nakedTreeRect = CGRect(x:decoratedTreeRect.origin.x,y:decoratedTreeRect.origin.y+neededTopBottomGap,width:decoratedTreeRect.size.width-(maxStringLength+imageIconWidth),height:decoratedTreeRect.size.height-2*neededTopBottomGap)
 
 		nakedTreeRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: neededTopBottomGap, left: 0, bottom: neededTopBottomGap, right: maxStringLength+imageIconWidth))
 
 		nakedTreeRectCentered = nakedTreeRect.offsetBy(dx: 0, dy: -nakedTreeRect.midY)
 
-		xTree.root.setupNodeCoordinates (in: nakedTreeRectCentered, forTreeType : TreeType.cladogram)
+		//xTree.root.setupNodeCoordinates (in: nakedTreeRectCentered, forTreeType : TreeType.cladogram)
 
-		(xTree.minY,xTree.maxY)=xTree.root.minMaxY() // This will be updated any time pan or scale by specific code elsewhere
+		//(xTree.minY,xTree.maxY)=xTree.root.minMaxY() // This will be updated any time pan or scale by specific code elsewhere
 		
 		labelScaleFactor = CGFloat(xTree.root.numDescLvs!)*maxStringHeight*labelSpacingFactor/decoratedTreeRect.height
 		edgeScaleFactor = edgeDarknessFactor/CGFloat(xTree.root.numDescLvs!)
 		backgroundColor=treeSettings.viewBackgroundColor
 		xCenterImageIcon = decoratedTreeRect.maxX - imageIconWidth/2.0
 		}
+
+	func setupTreeCoordsForTreeToFill()
+		{
+		xTree.root.setupNodeCoordinates (in: nakedTreeRectCentered, forTreeType : .cladogram)
+		(xTree.minY,xTree.maxY)=xTree.root.minMaxY() // This will be updated any time pan or scale by specific code elsewhere
+		panTranslateTree = 0
+		scaleTreeBy = 1.0
+		}
+
 
 	func getTreeRect(fromView viewRect: CGRect, left leftMargin: CGFloat,right rightMargin: CGFloat,top topMargin: CGFloat,bottom bottomMargin: CGFloat)->CGRect
 		{

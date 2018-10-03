@@ -36,8 +36,6 @@ with the imageView it won't work properly, so keep the imagePane frame such that
 Pane EVENTUALLY will appear initially with its center at the same Y as its node. However, this positioning
 occurs during layoutSubviews of treeView. Panning the image pane changes its coordinates relative to the center of
 its initial frame, which is set to (midX,y=0).
-The pt relativePaneCenter keeps track of changes from this initial point, and therefore is always a useful measure
-of translations relative to the node.
 */
 
 class ImagePaneView: UIView, UIGestureRecognizerDelegate
@@ -46,16 +44,10 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
         var imageLabel=UILabel()
         var addImageLabel:UILabel?
         var associatedNode:Node?
-        //var imageNameForDisplay:String!
 
 		var paneCenter : CGPoint!
-		//var relativePaneCenter = CGPoint(x:0,y:0)	// distance pane has moved from original point which was center of frame,
-		//var scale:CGFloat = 1.0
 		var isAttachedToNode:Bool = false
 		var scale:CGFloat = 1.0
-		//var maxScale:CGFloat = 1.0
-		//var maxTransform:CGAffineTransform = CGAffineTransform.identity
-		//var diagonalIsHidden:Bool = false
 		var hasImage:Bool = false
 		var isFrozen:Bool = false // frozen means it stays in place as tree is panned
 		var imageWindowCoord:CGFloat = 0.0
@@ -209,35 +201,32 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				
 			}
 
-func addImageButtonAction(sender: UIButton!) {
-	
-}
 
-func addAddImageLabel()
-	{
-	addImageLabel = UILabel()
+		func addAddImageLabel()
+			{
+			addImageLabel = UILabel()
 
-	//referenceLabel.font = UIFont(name:"Helvetica", size:14)
+			//referenceLabel.font = UIFont(name:"Helvetica", size:14)
 
-	addImageLabel!.textColor = UIColor(cgColor: appleBlue)
-	addImageLabel!.text = "Add an image"
-	addImageLabel!.textAlignment = .center
-let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
-addImageLabel!.backgroundColor = studyPUBackgroundColor
-//addImageLabel!.layer.borderColor=UIColor.white.cgColor
-//addImageLabel!.layer.borderWidth=0.5
+			addImageLabel!.textColor = UIColor(cgColor: appleBlue)
+			addImageLabel!.text = "Add an image"
+			addImageLabel!.textAlignment = .center
+		let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
+		addImageLabel!.backgroundColor = studyPUBackgroundColor
+		//addImageLabel!.layer.borderColor=UIColor.white.cgColor
+		//addImageLabel!.layer.borderWidth=0.5
 
 
 
-	addSubview(addImageLabel!)
+			addSubview(addImageLabel!)
 
-	addImageLabel!.translatesAutoresizingMaskIntoConstraints=false
-	addImageLabel!.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
-	addImageLabel!.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
-	addImageLabel!.topAnchor.constraint(equalTo: topAnchor).isActive = true
-	addImageLabel!.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
+			addImageLabel!.translatesAutoresizingMaskIntoConstraints=false
+			addImageLabel!.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+			addImageLabel!.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+			addImageLabel!.topAnchor.constraint(equalTo: topAnchor).isActive = true
+			addImageLabel!.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
 
-	}
+			}
 
 
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)

@@ -22,7 +22,7 @@ var lastUpdate: TimeInterval = 0
 var progress: TimeInterval = 0
 var startAnimationY: CGFloat = 0.0
 var targetY: CGFloat = 0.0
-var animateDuration: TimeInterval = 2.0 // Careful if we let this run too long! Mucks up
+var animateDuration: TimeInterval = 2.0 // Careful if we let this run too long! Mucks up other events/anims
 var animateDurationImagePanes: TimeInterval = 0.2 // Careful if we let this run too long! Mucks up
 var imageIsPanning:Bool=false
 var panningLeafIndex:Int?
@@ -147,31 +147,12 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
 	override func viewDidLoad() // Gets loaded once but not when going back and forth in VC stack
 		{
 		super.viewDidLoad()
-
-//safeFrame = CGRect()
-//print ("View did load", view.frame)
-
 		// Do any additional setup after loading the view, typically from a nib.
 
         navigationController!.setToolbarHidden(false, animated: false)
-		//navigationController!.setNavigationBarHidden(false, animated: false) // has to be here
 		self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
 
 	// Add gesture recognizers NOTE I'M NOW ATTACHING THESE TO THE VIEW RATHER THAN THE treeView
-
- /*
-
-		let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(gesture:)))
-		doubleTapGesture.numberOfTapsRequired = 2
-		view.addGestureRecognizer(doubleTapGesture)
-
-		let tripleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTripleTap(gesture:)))
-		tripleTapGesture.numberOfTapsRequired = 3
-		view.addGestureRecognizer(tripleTapGesture)
-
-		doubleTapGesture.require(toFail: tripleTapGesture) // ensures double and triple tap sequenced right
-
-*/
 
 
 		let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
@@ -185,28 +166,13 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
 			happens, the default is to discard the gesture even if our handler does nothing special with it. Hence, here we turn off the discarding
 			and pass the touches along to the view, which apparently passes them along to all subviews, incl the tableview.
 			Sheesh, but this explains the mystery of where touches go on the way to controllers when there is no code in my viewcontroller for this. */
+
 		view.addGestureRecognizer(tapGesture)
-
-self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(recognizer:)))
+		self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(recognizer:)))
 		view.addGestureRecognizer(panGesture!)
-
-
-
 
 		let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(recognizer:)))
 		view.addGestureRecognizer(pinchGesture)
-
-
-
-	// Add the tree view programmatically
-		// First do initializations
-
-		// Then setup view
-//		let safeFrame=view.frame.insetBy(dx: treeSettings.treeViewInsetY, dy: treeSettings.treeViewInsetY)
-		// need to use dY in both directions for when device rotation occurs; yes, this is a hack
-		//let treeInfo = treeInfoDictionary["legumes7"]!
-
-		//pickedRowIndex = 0
 
 		let treeName = treesData.treeInfoNamesSortedArray[pickedRowIndex]
 		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
@@ -230,53 +196,27 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
 		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
 
-	// Implement a simple help page pop up along with the information "i" button at bottom of screen
-		let hvWidth = treeSettings.helpViewSize.width
-		let hvHeight = treeSettings.helpViewSize.height
-		let hvOrigin = CGPoint(x: view.frame.midX-hvWidth/2, y: view.frame.midY-hvHeight/2)
-		let helpFrame=CGRect(origin: hvOrigin, size: treeSettings.helpViewSize)
-		// init with an actual frame makes sure that text is top justified...prob better way to do this to make init not necessary
-		helpView = UITextView(frame: helpFrame)
-		helpView = UITextView()
-		helpView.attributedText = HTMLFileToAttributedString(fromHTMLFilePrefix:treeSettings.helpFileNamePrefix)
-		helpView.isHidden=true
-		helpView.isEditable=false // careful, sometimes seems to throw constraint errors
-		helpView.backgroundColor=UIColor.black
-		helpView.layer.borderColor=UIColor.white.cgColor
-		helpView.layer.borderWidth=2.0
-		helpView.layer.cornerRadius=10
-		self.view.addSubview(helpView)
-		helpView.translatesAutoresizingMaskIntoConstraints=false
-		helpView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-		helpView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-		helpView.widthAnchor.constraint(equalToConstant: hvWidth).isActive = true
-		helpView.heightAnchor.constraint(equalToConstant: hvHeight).isActive = true
-
-
-
 		infoButton = UIButton(type: .infoDark)
 		infoButton.addTarget(self, action: #selector(infoButtonAction), for: .touchUpInside)
 		infoButton.tintColor=UIColor.white
 
-  	// display a toggle button to access the study selector
-
   	// display a toggle button to show clade names but only if present on tree
 
-			cladeNameButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-			cladeNameButton.addTarget(self, action: #selector(cladeNameButtonAction), for: .touchUpInside)
-	cladeNameButton.frame.size = infoButton.frame.size
-			cladeNameButton.tintColor=UIColor.yellow
-			let cladeNameButtonImage = makeCladeNameButtonImage(size:cladeNameButton.frame.size)
-			cladeNameButton.setImage(cladeNameButtonImage, for: .normal)
-			//self.view.addSubview(cladeNameButton)
+		cladeNameButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		cladeNameButton.addTarget(self, action: #selector(cladeNameButtonAction), for: .touchUpInside)
+		cladeNameButton.frame.size = infoButton.frame.size
+		cladeNameButton.tintColor=UIColor.yellow
+		let cladeNameButtonImage = makeCladeNameButtonImage(size:cladeNameButton.frame.size)
+		cladeNameButton.setImage(cladeNameButtonImage, for: .normal)
+		//self.view.addSubview(cladeNameButton)
 
-	 // display a toggle button to show images but only if present on tree
-			imagesButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-			imagesButton.addTarget(self, action: #selector(imagesButtonAction), for: .touchUpInside)
-			imagesButton.frame.size = infoButton.frame.size
-			imagesButton.tintColor=UIColor.yellow
-			let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
-			imagesButton.setImage(imagesButtonImage, for: .normal)
+ // display a toggle button to show images but only if present on tree
+		imagesButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		imagesButton.addTarget(self, action: #selector(imagesButtonAction), for: .touchUpInside)
+		imagesButton.frame.size = infoButton.frame.size
+		imagesButton.tintColor=UIColor.yellow
+		let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
+		imagesButton.setImage(imagesButtonImage, for: .normal)
 
 			
 		let it1 = UIBarButtonItem(customView: cladeNameButton)
@@ -298,9 +238,6 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 		buttonArray += [it4,spacer]
 		//buttonArray += [it3,spacer,it4,spacer] // add this when I add the taxon list button
 		setToolbarItems(buttonArray,animated: false)
-
-
-
 		}
 
 
@@ -315,13 +252,6 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 		{
 		super.viewWillAppear(animated)
         navigationController!.setToolbarHidden(false, animated: false)
-		//navigationController!.setNavigationBarHidden(false, animated: false)
-//print ("View will appear. Frame, treeFrame is ", view.frame, treeView.frame)
-//treeView.layoutIfNeeded() // THIS WAS THE TICKET! BUT I SHOULD NOT ALWAYS HAVE TO FOLLOWING SETUPS
-//print ("View will appear. Frame, treeFrame is (after layoutifneeded)", view.frame, treeView.frame)
-//treeView.setupViewDependentTreeParameters()
-//treeView.setNeedsDisplay() //yikes doesn't help to do this...without it, distorts taxon labels
-//print ("View will appear. Frame, treeFrame is (after updating)", view.frame, treeView.frame)
 		}
 
 	override func didReceiveMemoryWarning() {
@@ -331,37 +261,59 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 
    override func viewDidLayoutSubviews()
 	
-	// Here is the place to adjust the tree size parameters, since here the treeView frame has finally been established
+	// Here is the place to adjust the tree size parameters, since here the treeView frame/bounds has finally been established
 	
    		{
+//print ("Entering viewDidLayoutSubviews")
 		super.viewDidLayoutSubviews()
-//		print ("View did layout subviews",view.frame, treeView.frame)
-		if (treeView.bounds != treeView.previousBounds)
+		// Need to include the application state because of an apparent reportd bug where switching apps (i.e., sending this
+		// to background) actually forces spurious calls to this func and viewWillTransition. Since these reset the TreeParams
+		// it was causing unneeded resets to unzoomed, unpanned tree.
+		if UIApplication.shared.applicationState == .active
 			{
-			treeView.setupViewDependentTreeParameters() //.. but only if view has changed! Triggered by opening a new image, for example.
+			if treeView.previousBounds == nil // treeview's bounds have not been set up; do the following the first time thru
+				{
+				treeView.setupViewDependentTreeRectsEtc()
+				treeView.setupTreeCoordsForTreeToFill()
+				}
+			else
+				{
+				if treeView.bounds != treeView.previousBounds // treeview's been set up once anyway, change it if size has changed
+					{
+					treeView.updateTreeViewWhenSizeChanged(oldWindowHeight:treeView.previousBounds!.height)
+					}
+				}
 			treeView.previousBounds = treeView.bounds
 			treeView.setNeedsDisplay()
 			}
-
     	}
 
 // Handle recomputing tree coords on a device rotation event.
-// Not a perfect solution. The animation visibly shows the distorted
-// matrix transformation of the original tree briefly before showing what I want. Fix.
 
-	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
 
+// !! The transition animator appears to always call setNeedsLayout because it always jumps into viewDidLayoutSubviews
 
+		{
+//print ("Entering viewWillTransition")
+		// note: size refers to self.view, not self.treeView
+		//let oldH = self.treeView.frame.height
+	super.viewWillTransition(to: size, with: coordinator)
+//print ("In viewwilltransition",UIApplication.shared.applicationState,size, treeView.bounds, treeView.previousBounds)
+/*
+		if UIApplication.shared.applicationState == .active &&  treeView.bounds.size != size
+			{
+			coordinator.animate(alongsideTransition: nil)
+				{ _ in
+				//self.treeView.setupViewDependentTreeParameters()
+//print ("In In viewwilltransition")
 
-		super.viewWillTransition(to: size, with: coordinator)
-
-//print ("View will transition",view.frame, treeView.frame)
-
-		coordinator.animate(alongsideTransition: nil)
-			{ _ in
-			self.treeView.setupViewDependentTreeParameters()
-			self.treeView.setNeedsDisplay() // have to keep
+//print ("Calling setupvdtp from viewWillTransition")
+				//self.treeView.updateTreeViewWhenSizeChanged(oldWindowHeight:oldH)
+				//self.treeView.setNeedsDisplay() // have to keep
+				}
 			}
+*/
 		}
 
 // **********************************
@@ -418,9 +370,6 @@ self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleP
 			}
 		}
 
-
-
-
 // ***********************************************************************************
 // ***********************************************************************************
 
@@ -468,8 +417,6 @@ func addImagePane(atNode node:Node)
 	imagePane.addGestureRecognizer(tripleTapGesture)
 
 	doubleTapGesture.require(toFail: tripleTapGesture) // ensures double and triple tap sequenced right
-
-
 
 	// This is a GR to long press imagePane to delete; only allow for user added data
 	if treeView.treeInfo!.dataLocation! == .inDocuments
@@ -642,8 +589,6 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			}
 		}
 
-
-
 // ***********************************************************************************
 	func handleImagePanePinch(recognizer : UIPinchGestureRecognizer)
 		{
@@ -657,14 +602,12 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 
 		switch recognizer.state
 			{
-
 			case UIGestureRecognizerState.changed:
 				imagePane.scale(by:scale, around:location, inTreeView: treeView)
 				self.treeView.setNeedsDisplay() // needed to update the diagonal lines
 
 			default:
 				break
-
 			}
 		recognizer.scale = 1
 		}
@@ -699,11 +642,6 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				break
 			}
 		}
-
-
-
-
-
 
 
 // ***********************************************************************************
@@ -837,47 +775,15 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 
 		if recognizer.state == UIGestureRecognizerState.began
 			{
-/*
-						if treeView.imagesAreVisible // if images are not visible, then leaf or icon panning will not be set, and further if tests below can safely be ignored
-							{
-							let leafIndex = treeView.xTree.imageCollection.getFrontmostImageView(atTreeCoord:treeLocation, inTreeView:treeView)
-							if leafIndex != nil
-								{
-								panningLeafIndex = leafIndex
-								imageIsPanning=true
-								}
-							else if treeView.imageIconsRect.contains(location)
-								{
-								imageIconsArePanning=true
-								lastPanningIconLeafIndex = windowYToNearestLeafIndex(windowY:location.y)
-
-			// NEEDS UPDATING FOR NEW IMAGE MODEL; OR NOW BORKS BECAUSE SETLEAFIMAGEISOPEN SAYS THE IMAGE IS PRESENT WHEN IT IS NOT IN NEW REGIME
-			//					treeView.xTree.imageCollection.setLeafImageIsOpen(withLeafIndex:lastPanningIconLeafIndex!, to:true)
-								treeView.setNeedsDisplay()
-								}
-							// ...else otherwise ignore
-							}
-*/
 
 			}
 		if recognizer.state == UIGestureRecognizerState.changed
 			{
 			if imageIsPanning  // panning an image
 				{
-/*
-				treeView.xTree.imageCollection.translateImage(withLeafIndex:panningLeafIndex!, by:translation)
-				treeView.setNeedsDisplay()
-				recognizer.setTranslation(CGPoint(x:0,y:0), in: treeView)
-*/
 				}
 			else if imageIconsArePanning // panning an image icon
 				{
-/*
-				treeView.xTree.imageCollection.setLeafImageIsOpen(withLeafIndex:lastPanningIconLeafIndex!, to:false)
-				lastPanningIconLeafIndex = windowYToNearestLeafIndex(windowY:location.y)
-// see above				treeView.xTree.imageCollection.setLeafImageIsOpen(withLeafIndex:lastPanningIconLeafIndex!, to:true)
-				treeView.setNeedsDisplay()
-*/
 				}
 			else // panning on rest of tree view
 				{
@@ -888,6 +794,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				else if (topGap > 0.0) {treeView.panTranslateTree -= translation.y}
 
 				treeView.setNeedsDisplay()
+treeView.setNeedsLayout()
 				recognizer.setTranslation(CGPoint(x:0,y:0), in: treeView)
 				}
 			}
@@ -895,17 +802,9 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			{
 			if imageIsPanning
 				{
-/*
-				imageIsPanning=false
-*/
 				}
 			else if imageIconsArePanning // panning an image icon
 				{
-/*
-				treeView.xTree.imageCollection.setLeafImageIsOpen(withLeafIndex:lastPanningIconLeafIndex!, to:false)
-				imageIconsArePanning=false
-				treeView.setNeedsDisplay()
-*/
 				}
 			else
 				{
@@ -935,11 +834,14 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 
 	func treeOpensGapAtTopByThisMuch(withPanOffset offset:CGFloat)->CGFloat
 		{
+
 		let yW = treeWindowCoord(fromTreeCoord: -treeView.xTree.maxY) + offset - max(treeView.maxStringHeight/2.0,treeSettings.imageIconRadius)
+		
+//print(treeView.xTree.maxY,offset,treeWindowCoord(fromTreeCoord: -treeView.xTree.maxY),max(treeView.maxStringHeight/2.0,treeSettings.imageIconRadius),yW, treeView.decoratedTreeRect.minY,yW - treeView.decoratedTreeRect.minY)
 		return yW - treeView.decoratedTreeRect.minY
 		}
 
-	func treeWindowCoord(fromTreeCoord y:CGFloat)->CGFloat
+	func treeWindowCoord(fromTreeCoord y:CGFloat)->CGFloat // Watch out! not generally what it implies. No pan offset
 		{
 		return (y + treeView.decoratedTreeRect.midY)
 		}
@@ -1005,6 +907,7 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 				}
 			treeView.panTranslateTree = startAnimationY + CGFloat(tTransform) * targetY
 			treeView.setNeedsDisplay()
+			treeView.setNeedsLayout()
 
 			}
 	// Thanks to Ben Dietzkis' web site
@@ -1027,15 +930,12 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 	func step2(displaylink: CADisplayLink)
 			{
 			let now: TimeInterval = Date.timeIntervalSinceReferenceDate
-
 			let t = Float( (now-startAnimation)/animateDurationImagePanes  )
 			let deltaT = now - lastTime!
 			lastTime = now
-			//let tTransform = 1-powf((1-t),1.0) // easing out
+
 			let tTransform = 1-powf(t,1.0) // deceleration function
 
-			//print (now, startAnimation, endAnimation, t)
-		
 			if now >= endAnimation
 				{
 				killTheAnimationTimer()	// If in the middle of a pan animation, kill the animation and go
@@ -1043,11 +943,6 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 			if let ip = panningImagePane
 				{
 
-				//if !ip.isPanePointWithinWindow(panePt:ip.center, ofTreeView:treeView)
-				//	{ return } // prob should kill the animation!
-
-				//let dx = CGFloat(tTransform) * (self.panningImagePaneEndPt!.x - ip.center.x)
-				//let dy = CGFloat(tTransform) * (self.panningImagePaneEndPt!.y - ip.center.y)
 				let dx = CGFloat(deltaT) * panningImageVelocity!.x * CGFloat(tTransform)
 				let dy = CGFloat(deltaT) * panningImageVelocity!.y * CGFloat(tTransform)
 
@@ -1242,31 +1137,6 @@ treeView.layoutSubviews()
 			UIGraphicsEndImageContext()
 			return iconImage
 			}
-/*
-	func HTMLFileToAttributedString(fromHTMLFilePrefix:String)->NSAttributedString
-		{
-		if let htmlURL = Bundle.main.url(forResource: fromHTMLFilePrefix, withExtension: "html"),
-			let data = NSData(contentsOf: htmlURL)
-			{
-			   do
-				{
-				let attrStr = try NSAttributedString(data: data as Data, options: [NSDocumentTypeDocumentAttribute:NSHTMLTextDocumentType], documentAttributes: nil)
-//print (attrStr)
-				return (attrStr)
-				}
-			   catch
-				{
-				print("Error creating attributed string in HTMLFileToAttributedString")
-				}
-			}
-		else
-			{
-			print ("Error finding file, etc., in HTMLFileToAttributedString")
-			}
-		return (NSAttributedString(string: "Error return from HTMLFileToAttributedString"))
-		}
-*/
-
 
 
 /* How to add an activity indicator...terminated in viewDidAppear above
