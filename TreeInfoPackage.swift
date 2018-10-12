@@ -299,7 +299,7 @@ func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy s
 			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
 	// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
 			}
-print (srcURL,destURL)
+//print (srcURL,destURL)
 do {
 		try fileManager.copyItem(at: srcURL, to: destURL!)
 	}
@@ -347,7 +347,7 @@ do {
 			try jpeg.write(to:destURL!,options:[])
 			}
 	}
-catch {print ("Copy didn't succeed", destURL, error)}
+catch {print ("Copy didn't succeed", destURL!, error)}
 		return destURL
 		}
 	return nil

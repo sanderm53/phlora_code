@@ -10,6 +10,7 @@ import UIKit
 
 struct Settings
 	{
+	let largeButtonSize:CGSize		// e.g., buttons on main page
 	let allowedToLoadImages:Bool
 	let preLoadImages:Bool
 	let imageBundleLoc:String
@@ -31,7 +32,7 @@ struct Settings
 	let edgeWidth:CGFloat
 	let imageIconColor:CGColor
 	let imageIconRadius:CGFloat
-	let imageIconAlpha:CGFloat
+	let imageIconAlphaThreshold:CGFloat
 	let viewBackgroundColor:UIColor
 	let truncateLabels:Bool
 	let truncateLabelsLength:CGFloat
@@ -42,8 +43,6 @@ struct Settings
 	let imageToIconLineColor:CGColor
 	let treeViewInsetX:CGFloat
 	let treeViewInsetY:CGFloat
-	let helpViewSize:CGSize
-	let helpFileNamePrefix:String // .html file with Phlora help information as HTML text
 	let studyTableRowHeight:CGFloat
 	let studyTableImageHeight:CGFloat
 	let studyTableLabelFontSize:CGFloat
@@ -52,11 +51,12 @@ struct Settings
 	}
 
 let iPhoneTreeSettings=Settings(
+	largeButtonSize:CGSize(width: 200, height: 250),
 	allowedToLoadImages:true,
 	preLoadImages:false,
 	imageBundleLoc:"Images.bundle",
 	imageFileExtension:"jpg",
-	titleFontSize:30,
+	titleFontSize:20,
 	titleFontName:"Helvetica",
 	titleFontColor:UIColor.white,
 	labelFontSize:12,
@@ -73,7 +73,7 @@ let iPhoneTreeSettings=Settings(
 	edgeWidth:1.5,
 	imageIconColor:UIColor.gray.cgColor,
 	imageIconRadius:15.0,
-	imageIconAlpha:0.75,
+	imageIconAlphaThreshold:0.75,
 	viewBackgroundColor:UIColor.black,
 	truncateLabels:true,
 	truncateLabelsLength:100.0,
@@ -84,8 +84,6 @@ let iPhoneTreeSettings=Settings(
 	imageToIconLineColor:UIColor.yellow.cgColor,
 	treeViewInsetX:15,
 	treeViewInsetY:15, // program sets X=Y anyway because of device rotations
-	helpViewSize:CGSize(width: 250, height: 400),
-	helpFileNamePrefix:String("helpDocPhone"),
 	studyTableRowHeight:125,
 	studyTableImageHeight:100,
 	studyTableLabelFontSize:16,
@@ -94,6 +92,7 @@ let iPhoneTreeSettings=Settings(
 	)
 
 	let iPadTreeSettings=Settings(
+	largeButtonSize:CGSize(width: 300, height: 400),
 	allowedToLoadImages:true,
 	preLoadImages:false,
 	imageBundleLoc:"Images.bundle",
@@ -115,19 +114,17 @@ let iPhoneTreeSettings=Settings(
 	edgeWidth:1.5,
 	imageIconColor:UIColor.gray.cgColor,
 	imageIconRadius:15.0,
-	imageIconAlpha:0.75,
+	imageIconAlphaThreshold:0.75,
 	viewBackgroundColor:UIColor.black,
 	truncateLabels:true,
 	truncateLabelsLength:200.0,
 	replaceUnderscore:true,
 	replaceSingleQuotes:true,
-	initialImageSize:150.0,
+	initialImageSize:250.0,
 	initialImageXPos:300.0,
 	imageToIconLineColor:UIColor.yellow.cgColor,
 	treeViewInsetX:15,
 	treeViewInsetY:15, // program sets X=Y anyway because of device rotations
-	helpViewSize:CGSize(width: 500, height: 400),
-	helpFileNamePrefix:String("helpDoc"),
 	studyTableRowHeight:200,
 	studyTableImageHeight:150,
 	studyTableLabelFontSize:24,

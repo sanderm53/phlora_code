@@ -58,7 +58,7 @@ func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
 
 func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
 	{
-	print (urls.first)
+	//print (urls.first)
 	if let url = urls.first
 		{
 		do

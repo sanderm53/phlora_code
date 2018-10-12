@@ -65,7 +65,7 @@ class ImageChooserController : NSObject, UIImagePickerControllerDelegate, UINavi
 
 	func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any])
 		{
-
+//print (info)
 		if let image = info[UIImagePickerControllerOriginalImage] as? UIImage
 			{
 				addAndSaveImage(image)
@@ -116,10 +116,15 @@ If not, assume it is the study image (only alternative now), and write to a jpeg
 						associatedNode.imageFileURL = destURL
 						associatedNode.hasImageFile = true
 						associatedNode.isDisplayingImage = true
+						associatedNode.imageFileDataLocation = .inDocuments
+
 						}
 					}
 			imagePane.addImage(image)
-			
+			// iff this is being called from a treeview, then I want to make sure there is a longpress delete tapgesture added to imagePane once image is added
+			// Otherwise, the longpress gesture is only added when images are loaded from disk...
+			if let vc = viewController as? TreeViewController
+				{ vc.addLongTapGestureToDeleteImageFrom(imagePane) }
 			// The following is really useful when this is called by treeView, as it updates the diagonal lines; also seems OK
 			// on study view, but I suppose there might be a context in which I don't want to update...
 			sourceView.setNeedsDisplay()
@@ -142,6 +147,7 @@ If not, assume it is the study image (only alternative now), and write to a jpeg
 
 		if UIImagePickerController.isSourceTypeAvailable(.photoLibrary)
 			{
+
 			pickerController.allowsEditing = false
 			if UIDevice.current.userInterfaceIdiom == .pad
 				{

@@ -38,20 +38,20 @@ func copyImageToDocs(srcImage image:UIImage, copyToDir targetDir:URL, usingFileN
 		}
 	catch
 		{
-		print ("Copy didn't succeed", destURL, error)
+		print ("Copy didn't succeed", destURL!, error)
 		}
 	return destURL
 	}
 
 //**********************
 
+// Location of files depends on whether they are built-in or user-added (cf. PhloraDataLocation enum). Form a correct URL for this
+// and return it with subdirectories for images, trees, etc., as needed. This URL will be used to read or write as needed.
 
 func docDirectoryNameFor(study studyName:String, inLocation dataLocation: PhloraDataLocation, ofType dirType: DirectoryType, create createFlag:Bool)  -> URL?
 	{
 	let fileManager = FileManager.default
-	//let studyName = treeInfo.treeName
-	//guard let dataLocation = treeInfo.dataLocation
-	//else { return nil }
+
 	switch dataLocation
 		{
 		case .inBundle:

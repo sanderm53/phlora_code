@@ -71,6 +71,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 	referenceLabel = UILabel()
 	referenceLabel.textColor = UIColor.white
 	referenceLabel.font = UIFont(name:"Helvetica", size:treeSettings.studyTableReferenceFontSize)
+	referenceLabel.numberOfLines = 2
 	contentView.addSubview(referenceLabel)
 
 	if UIDevice.current.userInterfaceIdiom == .pad
@@ -85,10 +86,10 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
 		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+30.0).isActive = true
 		referenceLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor,constant:20.0).isActive = true
-
+		referenceLabel.rightAnchor.constraint(equalTo: rightAnchor, constant:-10.0).isActive = true
 		}
 	else
-		{ // put all text in vert column
+		{ // put all text in vert column; note multiline reference expands vertically when needed and crowds taxonname
 		studyLabel.translatesAutoresizingMaskIntoConstraints=false
 		studyLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
 		studyLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor, constant:10.0).isActive = true
@@ -98,7 +99,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		referenceLabel.translatesAutoresizingMaskIntoConstraints=false
 		referenceLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant:+20.0).isActive = true
 		referenceLabel.leftAnchor.constraint(equalTo: studyImagePane.rightAnchor, constant:10.0).isActive = true
-
+		referenceLabel.rightAnchor.constraint(equalTo: rightAnchor, constant:-10.0).isActive = true
 		}
 
 

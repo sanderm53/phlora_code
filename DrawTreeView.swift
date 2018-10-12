@@ -185,11 +185,9 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 	{
 
 //print ("Entering updateTreeViewWhenSizeChanged")
-		var newScale,deltaScale:CGFloat
-		var newPan,z:CGFloat
 		let oldTreeHeight = 2*xTree.maxY
 		let savePan = panTranslateTree
-		let saveScale = scaleTreeBy
+// Phase 1. Rotate tree keeping the taxon at midY of screen centered at new screen. May open top/bot gaps when going from small to larger screen
 		setupViewDependentTreeRectsEtc()
 		setupTreeCoordsForTreeToFill()
 
@@ -199,13 +197,13 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 		xTree.root.transformTreeCoords(by : nodeTansform)
 		xTree.minY *= restoreToOriginalTreeSizeScaleFactor
 		xTree.maxY *= restoreToOriginalTreeSizeScaleFactor // any problem with successive roundoff errors?
-//print ("after minY,maxY",xTree.minY,xTree.maxY)
 		panTranslateTree = savePan // YES!
 		scaleTreeBy = restoreToOriginalTreeSizeScaleFactor // This has to just be the scale it was before transformation, because we are forcing tree first into given rect
 
-// Phase 2: Correct if gaps are open when going from small to larger screen
-		if bounds.height > oldH // screen height got bigger; watch out for gaps at top or bottom of tree
+// Phase 2: Correct if gaps are opened when going from small to larger screen
+		if bounds.height > oldH // only happens when screen height got bigger
 			{
+			var z:CGFloat
 			let topGap = max (0, treeOpensGapAtTopByThisMuch())
 			let bottomGap = max (0, treeOpensGapAtBottomByThisMuch())
 			let maxGap = max (topGap, bottomGap)
@@ -232,10 +230,6 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 
 	func setupViewDependentTreeRectsEtc() // Inits a tree filling the treeView with 0 pan and 1.0 scale
 		{
-//print ("Entering setupViewDependentTreeParams")
-		//panTranslateTree=0.0
-		//scaleTreeBy=1.0
-		
 		(maxStringLength,maxStringHeight) =  xTree.root.getLabelSizeInfo(withAttributes: taxonLabelAttributes)
 
 		if treeSettings.truncateLabels
@@ -247,8 +241,6 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 		// system that draw commands go into, rather than the frame. The ycenter of the tree stays fixed
 		// in the coord system, but the origin moves when the frame gets resized, which has to be corrected
 		// when we redraw the tree. Sheesh
-
-
 
 		decoratedTreeRect = UIEdgeInsetsInsetRect(bounds, UIEdgeInsets(top: 0, left: leftBorderInsetFromFrame, bottom: 0, right: rightBorderInsetFromFrame))
 
@@ -267,10 +259,6 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 
 		nakedTreeRectCentered = nakedTreeRect.offsetBy(dx: 0, dy: -nakedTreeRect.midY)
 
-		//xTree.root.setupNodeCoordinates (in: nakedTreeRectCentered, forTreeType : TreeType.cladogram)
-
-		//(xTree.minY,xTree.maxY)=xTree.root.minMaxY() // This will be updated any time pan or scale by specific code elsewhere
-		
 		labelScaleFactor = CGFloat(xTree.root.numDescLvs!)*maxStringHeight*labelSpacingFactor/decoratedTreeRect.height
 		edgeScaleFactor = edgeDarknessFactor/CGFloat(xTree.root.numDescLvs!)
 		backgroundColor=treeSettings.viewBackgroundColor

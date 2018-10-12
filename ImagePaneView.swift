@@ -127,11 +127,20 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					{ rectMult=L/image.size.width }
 				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
 				hasImage = true
-				imageView.image = image
+				//imageView.image = image
+				imageView.image = resizeUIImage(image: image, toSize: initialImageSize)
 				frame.size = initialImageSize
 				if let addImageLabel = addImageLabel
 					{
 					addImageLabel.removeFromSuperview()
+				}
+			}
+		func reloadImageToFitPaneSize () // add image to existing pane, which may have changed size during zoom; resize image to fit pane's imageView
+			{
+			if let url = associatedNode?.imageFileURL
+				{
+				if let image = UIImage(contentsOfFile:url.path)
+					{ imageView.image = resizeUIImage(image: image, toSize: imageView.bounds.size) }
 				}
 			}
 		func deleteImage() // assumes image is present, so have to reset after deleting and add a addImageLabel
@@ -166,23 +175,20 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 						{ rectMult=L/image.size.width }
 					initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
 					hasImage = true // well, it should anyway, after loading it below
+					imageView = UIImageView(image: resizeUIImage(image:image, toSize:initialImageSize))
 					}
 				else
 					{
 					initialImageSize = CGSize(width:L ,height:L)
 					hasImage = false // default empty image
 					addAddImageLabel()
+					imageView = UIImageView(image: nil) // works even if image == nil
 					}
 
 
 				frame = centeredRect(center:paneCenter,size:initialImageSize)
 
-				// to experiment with using scaled down sizes. didn't matter much
-				//let thumb = resizeUIImage(image:image, toSize:initialImageSize)
-				//imageView = UIImageView(image: thumb)
 
-
-				imageView = UIImageView(image: image) // works even if image == nil
 				imageView.contentMode = .scaleAspectFit
 				imageView.isUserInteractionEnabled=true
 

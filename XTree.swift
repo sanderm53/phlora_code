@@ -152,6 +152,8 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 								//print ("\(fileNameBase) exists in tree")
 								node.hasImageFile = true
 								node.imageFileURL = fileURL
+								node.imageFileDataLocation = .inBundle
+
 								hasImageFiles=true
 								}
 							}
@@ -179,6 +181,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 							//print ("\(fileNameBase) exists in tree")
 							node.hasImageFile = true
 							node.imageFileURL = fileURL
+							node.imageFileDataLocation = .inDocuments
 							hasImageFiles=true
 							}
 						}

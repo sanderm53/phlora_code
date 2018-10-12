@@ -49,7 +49,8 @@ class Node {
   //var leafImage: UIImage?
   var isDisplayingImage: Bool = false  // image is on or off, except can be overridden by turning off all images with button
   //var hasInstantiatedImagePane: Bool = false
-  var nodeIsMaximallyVisible:Bool = false
+  var nodeIsMaximallyVisible:Bool = false // This refers to whether the node's LABEL is visible -- not the image icon
+  var imageIconAlpha:CGFloat = 0.0	// This is the opacity of the image icon; will be hidden if too low
   var hasImage: Bool?  // maybe totally deprecated??????
   var hasImageFile: Bool = false // This is initially set to false because at the moment we draw the tree before doing any initializations about images; once tree is drawn we initialize nodes to either have or not have image files and then clean up drawing the image icons appropriately. If I change the order of drawing we can set this initially to optional
   var imageView:MyImageView?
@@ -59,6 +60,7 @@ class Node {
   var nodeFlag:Bool = false
   var closestImageIconNeighberDistance:Int = 10000
   var imageFileURL:URL?
+  var imageFileDataLocation:PhloraDataLocation?
   
   init()
 	{
@@ -376,7 +378,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 	// **********************************************************************
 
-	func drawImageIcon(inContext ctx:CGContext, atX xCenter:CGFloat, atY yCenter:CGFloat,withRadius radius:CGFloat,withFillColor fillColor:CGColor, alpha alpha:CGFloat, isFilled filled:Bool)
+	func drawImageIcon(inContext ctx:CGContext, atX xCenter:CGFloat, atY yCenter:CGFloat,withRadius radius:CGFloat,withFillColor fillColor:CGColor, alpha:CGFloat, isFilled filled:Bool)
 		{
 		let squareSize:CGSize=CGSize(width:2*radius,height:2*radius)
 		let imageIconOrigin=CGPoint(x:xCenter-radius, y:yCenter-radius)
@@ -790,16 +792,16 @@ ctx.drawPath(using: .stroke)
 					// First, filled circles of two possible colors when we know there is an image file
 					
 					if hasImageFile  // draw the icon possibly before loading image as long as there is a known image file for this image
-/* When there is an image file present, I display an icon according to a delicate algorithm that trades off the fadeout-
-behavior that I want for the labels (which are densely arrayed vertically), with the actual density of images vertically (which
-may or may not be dense, but will be less or equal in density to the labels. When the icons are dense, basically I want them
-to fade like labels, but when they are sparse I want them to be visible in some negativemonotonic relation to their density.
-When the leaf node is at the everyNthLabel positions, there is a computed alpha value based on the same criteria as labels.
-For every leaf node there is also a density based alpha value. When the leaf node is inbetween everyNthLabel, use the density
-based alpha only. When the leaf node is at one of those everyNthLabel positions, use the maximum of the two alpha values to
-ensure visiblity as appropriate.
-!! NEED TO FIGURE OUT HOW TO UPDATE THIS AS IMAGES ARE ADDED...!!
-*/
+						/* When there is an image file present, I display an icon according to a delicate algorithm that trades off the fadeout-
+						behavior that I want for the labels (which are densely arrayed vertically), with the actual density of images vertically (which
+						may or may not be dense, but will be less or equal in density to the labels. When the icons are dense, basically I want them
+						to fade like labels, but when they are sparse I want them to be visible in some negativemonotonic relation to their density.
+						When the leaf node is at the everyNthLabel positions, there is a computed alpha value based on the same criteria as labels.
+						For every leaf node there is also a density based alpha value. When the leaf node is inbetween everyNthLabel, use the density
+						based alpha only. When the leaf node is at one of those everyNthLabel positions, use the maximum of the two alpha values to
+						ensure visiblity as appropriate.
+						!! NEED TO FIGURE OUT HOW TO UPDATE THIS AS IMAGES ARE ADDED...!!
+						*/
 						{
 						var fillColor:CGColor
 						// Switch the color of the image icon depending on if it is displaying
@@ -812,6 +814,7 @@ ensure visiblity as appropriate.
 						let finalAlpha = max(curAlpha,densityBasedAlpha)
 						if finalAlpha > 0.95 // so, nearly fully opaque
 								{ nodeIsMaximallyVisible = true }
+						imageIconAlpha = finalAlpha
 						drawImageIcon(ofType:.filledCircle(fillColor,finalAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 						}
 					else // no image file; handle case when we are prompting for a new file
@@ -839,6 +842,7 @@ ensure visiblity as appropriate.
 							let densityBasedAlpha = 1 - 1/CGFloat(closestImageIconNeighberDistance)
 							if densityBasedAlpha > 0.95 // so, nearly fully opaque
 								{ nodeIsMaximallyVisible = true }
+							imageIconAlpha = densityBasedAlpha
 							drawImageIcon(ofType:.filledCircle(fillColor,densityBasedAlpha), inContext:ctx, atPointCenter:CGPoint(x:xImageCenter,y:self.coord.y),withRadius:treeSettings.imageIconRadius)
 							}
 

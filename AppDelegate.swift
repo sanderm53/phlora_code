@@ -51,10 +51,24 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
 	func applicationWillEnterForeground(_ application: UIApplication) {
 		// Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+//print ("Application will enter foreground")
 	}
 
 	func applicationDidBecomeActive(_ application: UIApplication) {
 		// Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+//print ("Application did become active")
+/*
+	let navController = window?.rootViewController as! UINavigationController
+	if let nv = navController.visibleViewController as? TreeViewController
+		{
+		if nv.treeView.previousBounds != nil
+			{
+			nv.treeView.setNeedsLayout()
+			nv.viewDidLayoutSubviews()
+			
+			} // Only need to run this treeView init stuff if we are returning from already initialized view and maybe changed orientation when running some other app
+		}
+*/
 	}
 
 	func applicationWillTerminate(_ application: UIApplication) {

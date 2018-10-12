@@ -121,9 +121,9 @@ class MainViewController: UIViewController {
 		imageView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
 		imageView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
 
-		let studyButton = button(title:"Studies",fontSize:30,action:#selector(studyButtonAction))
-		let aboutButton = button(title:"About/Credits",fontSize:30,action:#selector(aboutButtonAction))
-		let helpButton = button(title:"Help",fontSize:30,action:#selector(helpButtonAction))
+		let studyButton = button(title:"Studies",fontSize:treeSettings.titleFontSize,action:#selector(studyButtonAction))
+		let aboutButton = button(title:"About/Credits",fontSize:treeSettings.titleFontSize,action:#selector(aboutButtonAction))
+		let helpButton = button(title:"Help",fontSize:treeSettings.titleFontSize,action:#selector(helpButtonAction))
 
 		let stackView = UIStackView(arrangedSubviews:[studyButton,helpButton,aboutButton])
 		stackView.axis = .vertical
@@ -137,8 +137,8 @@ class MainViewController: UIViewController {
 		stackView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
 		//stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
 		stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-		stackView.widthAnchor.constraint(equalToConstant: 300.0).isActive = true
-		stackView.heightAnchor.constraint(equalToConstant: 400.0).isActive = true
+		stackView.widthAnchor.constraint(equalToConstant: treeSettings.largeButtonSize.width).isActive = true
+		stackView.heightAnchor.constraint(equalToConstant: treeSettings.largeButtonSize.height).isActive = true
  		}
 
 

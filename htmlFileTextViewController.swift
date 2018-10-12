@@ -58,9 +58,6 @@ class htmlFileTextViewController: UIViewController {
         navigationController!.setToolbarHidden(true,
              animated: false)
         view.backgroundColor=UIColor.black
-		// view.translatesAutoresizingMaskIntoConstraints=false !!!! DO NOT DO THIS!!!!! INVALIDATES CONSTRAINT LAYOUT SOMEHOW....
-	// Implement a simple help page pop up along with the information "i" button at bottom of screen
-		//textView = UITextView(frame: view.frame)
 		textView = UITextView()
 		self.view.addSubview(textView)
 		textView.attributedText = HTMLFileToAttributedString(fromHTMLFilePrefix:htmlFilePrefix!)
@@ -72,7 +69,31 @@ class htmlFileTextViewController: UIViewController {
 		textView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
 		textView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
 		textView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
-		textView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
+
+		if title == "About" // Add some logos just for this page;
+			{
+			let imageView1 = UIImageView(image: UIImage(named:"UA.jpg"))
+			let imageView2 = UIImageView(image: UIImage(named:"NSF.png"))
+			imageView1.contentMode = .scaleAspectFit
+			imageView2.contentMode = .scaleAspectFit
+			let stackView = UIStackView(arrangedSubviews:[imageView1,imageView2])
+			stackView.axis = .horizontal
+			stackView.distribution = .fillEqually
+			stackView.alignment = .fill
+			stackView.spacing = 50
+			stackView.translatesAutoresizingMaskIntoConstraints = false
+			view.addSubview(stackView)
+			
+			stackView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor,constant:-25).isActive = true
+			stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+			stackView.widthAnchor.constraint(equalToConstant: 250.0).isActive = true
+			stackView.heightAnchor.constraint(equalToConstant: 75.0).isActive = true
+			textView.bottomAnchor.constraint(equalTo: stackView.topAnchor, constant:-25.0).isActive = true
+			}
+		else
+			{
+			textView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
+			}
 
  		}
 
