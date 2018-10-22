@@ -38,69 +38,144 @@ occurs during layoutSubviews of treeView. Panning the image pane changes its coo
 its initial frame, which is set to (midX,y=0).
 */
 
+enum imageResolutionType
+	{
+	case low,high
+	}
+
 class ImagePaneView: UIView, UIGestureRecognizerDelegate
         {
-		var imageView: UIImageView!
+		var imageView: UIImageView!		// I will always put an imageView in place, even if its uiimage is nil
         var imageLabel=UILabel()
         var addImageLabel:UILabel?
         var associatedNode:Node?
+		var imageOriginalSize:CGSize?	// size of the image as it's stored on disk, and max size to be used for 'high' res
+		var imageSmallSize:CGSize?		// keep a size here that is smallish and use it to resize an image to something small when res needs to be low
+		var imageLoadedAtResolution:imageResolutionType? // either low or high
+		let imageResolutionBoundaryFactor:CGFloat = 3.0 // boundary between low and high resolution image to be requested is given in units of the 'scale' parameter that describes the size of the image relative to its original size. This code is sort of wasted if image is really low res
 
 		var paneCenter : CGPoint!
-		var isAttachedToNode:Bool = false
 		var scale:CGFloat = 1.0
-		var hasImage:Bool = false
-		var isFrozen:Bool = false // frozen means it stays in place as tree is panned
-		var imageWindowCoord:CGFloat = 0.0
+		//var hasImage:Bool = false
+		var imageIsLoaded = false
+		var isFrozen:Bool = false 			// frozen means it stays in place as tree is panned
+		var imageWindowCoord:CGFloat = 0.0 // Default position of this view is centered on the frame provided to it
 
-// Default position of this view is centered on the frame provided to it
-         init ()
-                {
-				isAttachedToNode = false
-				let f = CGRect()
-				paneCenter = CGPoint(x:f.midX,y:f.midY)
-				super.init(frame:f)
-				isUserInteractionEnabled=true
-				layoutPaneForImage(nil)
-            }
-/*
-       init? (treeInfo:TreeInfoPackage)
-                {
-				isAttachedToNode = false
-				let f = CGRect()
-				paneCenter = CGPoint(x:f.midX,y:f.midY)
-				super.init(frame:f)
-				isUserInteractionEnabled=true
-                let image = getStudyImage(forStudyName:treeInfo.treeName, inLocation:treeInfo.dataLocation!)
-				layoutPaneForImage(image)
-            }
-*/
-        init (usingFrame f:CGRect, atNode node:Node, onTree tree:XTree)
-                {
-                var imageName:String
-				isAttachedToNode = true
-				paneCenter = CGPoint(x:f.midX,y:f.midY)
-				associatedNode = node
-               	super.init(frame:f)
- 				if let name = node.label
- 					{imageName = name}
-				else
-					{imageName="Unlabeled node"}
-				addLabel(withName:imageName)
-               //let image = getImageFromFile(withFileNamePrefix:node.originalLabel!, atTreeDirectoryNamed:tree.treeInfo.treeName)
+		func isAttachedToNode() ->Bool
+			{
+			return associatedNode != nil
+			}
+	
+	
 
-				if let url = node.imageFileURL
+// *********************** Initializer and window management
+
+       init (usingFrame f:CGRect=CGRect(), atNode node:Node?, withImage image:UIImage?, imageLabel:String?, showBorder:Bool) // does it all
+                {
+				paneCenter = CGPoint(x:f.midX,y:f.midY)
+				let initialImageSize = CGSize()
+				
+            	super.init(frame:f)
+            	backgroundColor = nil // transparent (should be default)
+				frame = centeredRect(center:paneCenter,size:initialImageSize)
+
+				associatedNode = node // will remain nil if this is not a node-associated call
+
+				// This will set up pane's imageView appropriately, and then constraints follow below
+				if let image = image
 					{
-					layoutPaneForImage(UIImage(contentsOfFile:url.path))
+					loadImage(image)
 					}
 				else
-					{ layoutPaneForImage(nil) }
-				// Only put border around images on tree view (i.e. in this initializer)
-				layer.borderColor=UIColor.white.cgColor
-				layer.borderWidth=2.0
+					{
+					loadEmptyImage()
+  					}
 
+				if let label = imageLabel
+					{ addLabel(withName:label) }
+
+				imageView.contentMode = .scaleAspectFit
+				imageView.isUserInteractionEnabled=true
+
+				self.addSubview(imageView)
+
+				imageView.translatesAutoresizingMaskIntoConstraints = false
+				imageView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+				imageView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+				imageView.topAnchor.constraint(equalTo: topAnchor).isActive = true
+				imageView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+
+				self.isUserInteractionEnabled=true
+
+				if showBorder
+					{
+					layer.borderColor=UIColor.white.cgColor
+					layer.borderWidth=2.0
+					}
 				}
 
-		func addLabel(withName name:String)
+		func loadImage (_ image:UIImage) // add image to existing pane at small size , get rid of addAdd label. Can be used to reload image overwriting an existing one
+			{
+				imageOriginalSize = image.size
+				var rectMult:CGFloat
+				let L=treeSettings.initialImageSize
+				var initialImageSize:CGSize
+				let aspect = image.size.height/image.size.width
+				if aspect >= 1.0
+					{ rectMult=L/image.size.height }
+				else
+					{ rectMult=L/image.size.width }
+				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+
+				if associatedNode == nil // if this is NOT a tree leaf image, let's keep it very small thumb at first
+					{
+					imageSmallSize = initialImageSize
+					}
+				else	// but if it is a tree image might make it bigger by boundary factor
+					{
+					imageSmallSize = CGSize(width:initialImageSize.width*imageResolutionBoundaryFactor, height:initialImageSize.height*imageResolutionBoundaryFactor)
+					associatedNode!.hasLoadedImageAtLeastOnce = true
+					}
+				imageLoadedAtResolution = .low
+				imageIsLoaded = true // well, it should anyway, after loading it below
+
+				if imageView == nil
+					{
+					imageView = UIImageView(image: resizeUIImage(image:image, toSize:imageSmallSize!))
+					}
+				else
+
+					{ imageView.image = resizeUIImage(image:image, toSize:imageSmallSize!) }
+				imageOriginalSize = image.size
+
+				bounds.size = initialImageSize // keep it centered on frame center by changing bounds size
+				if let addImageLabel = addImageLabel // remove an existing addaddimage label if present
+					{
+					addImageLabel.removeFromSuperview()
+					}
+			}
+
+		func loadEmptyImage() // set up the empty imageView and add the addaddlabel messag to it
+			{
+				let L=treeSettings.initialImageSize
+				let initialImageSize = CGSize(width:L ,height:L)
+				imageIsLoaded = false // default empty image
+				imageView = UIImageView(image: nil) // works even if image == nil
+				bounds.size = initialImageSize // keep it centered on frame center by changing bounds size
+				addAddImageLabel()
+			}
+
+		func unloadImage() // delete image, add the addaddLabel, leave pane in place at default size, do not delete from disk
+			{
+				imageOriginalSize = nil
+				self.imageIsLoaded = false
+				imageView.image = nil
+				let L = treeSettings.initialImageSize
+				frame.size =  CGSize(width:L ,height:L) // reset to original square size OR SHOULD IT BE BOUNDS.size?
+				addAddImageLabel()
+			}
+
+		func addLabel(withName name:String) // Usually the taxon label, placed at bottom of pane
 			{
 			imageLabel = UILabel()
 			self.addSubview(imageLabel)
@@ -115,114 +190,15 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			//imageLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
 			}
 
-		func addImage (_ image:UIImage) // add image to existing pane, get rid of addAdd label
-			{
-				var rectMult:CGFloat
-				let L=treeSettings.initialImageSize
-				var initialImageSize:CGSize
-				let aspect = image.size.height/image.size.width
-				if aspect >= 1.0
-					{ rectMult=L/image.size.height }
-				else
-					{ rectMult=L/image.size.width }
-				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
-				hasImage = true
-				//imageView.image = image
-				imageView.image = resizeUIImage(image: image, toSize: initialImageSize)
-				frame.size = initialImageSize
-				if let addImageLabel = addImageLabel
-					{
-					addImageLabel.removeFromSuperview()
-				}
-			}
-		func reloadImageToFitPaneSize () // add image to existing pane, which may have changed size during zoom; resize image to fit pane's imageView
-			{
-			if let url = associatedNode?.imageFileURL
-				{
-				if let image = UIImage(contentsOfFile:url.path)
-					{ imageView.image = resizeUIImage(image: image, toSize: imageView.bounds.size) }
-				}
-			}
-		func deleteImage() // assumes image is present, so have to reset after deleting and add a addImageLabel
-			{
-				hasImage = false
-				imageView.image = nil
-				addAddImageLabel()
-				if let node = associatedNode
-					{
-					node.hasImageFile = false
-					node.hasImage = false
-					node.isDisplayingImage = false
-					}
-				let L = treeSettings.initialImageSize
-				frame.size =  CGSize(width:L ,height:L) // reset to original square size
-
-			}
-
-		func layoutPaneForImage(_ image:UIImage?)
-			{
-
-				var rectMult:CGFloat
-				let L=treeSettings.initialImageSize
-				var initialImageSize:CGSize
-
-				if let image = image
-					{
-					let aspect = image.size.height/image.size.width
-					if aspect >= 1.0
-						{ rectMult=L/image.size.height }
-					else
-						{ rectMult=L/image.size.width }
-					initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
-					hasImage = true // well, it should anyway, after loading it below
-					imageView = UIImageView(image: resizeUIImage(image:image, toSize:initialImageSize))
-					}
-				else
-					{
-					initialImageSize = CGSize(width:L ,height:L)
-					hasImage = false // default empty image
-					addAddImageLabel()
-					imageView = UIImageView(image: nil) // works even if image == nil
-					}
-
-
-				frame = centeredRect(center:paneCenter,size:initialImageSize)
-
-
-				imageView.contentMode = .scaleAspectFit
-				imageView.isUserInteractionEnabled=true
-
-				self.addSubview(imageView)
-
-				imageView.translatesAutoresizingMaskIntoConstraints = false
-				imageView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
-				imageView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
-				imageView.topAnchor.constraint(equalTo: topAnchor).isActive = true
-				imageView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-
-				self.isUserInteractionEnabled=true
-				//imageView.layer.borderColor=UIColor.red.cgColor
-				//imageView.layer.borderWidth=2.0
-				
-				
-			}
-
-
-		func addAddImageLabel()
+		func addAddImageLabel() // A message that just says "Add an image" in the center of pane when no image is presently displayed
 			{
 			addImageLabel = UILabel()
-
-			//referenceLabel.font = UIFont(name:"Helvetica", size:14)
 
 			addImageLabel!.textColor = UIColor(cgColor: appleBlue)
 			addImageLabel!.text = "Add an image"
 			addImageLabel!.textAlignment = .center
-		let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
-		addImageLabel!.backgroundColor = studyPUBackgroundColor
-		//addImageLabel!.layer.borderColor=UIColor.white.cgColor
-		//addImageLabel!.layer.borderWidth=0.5
-
-
+			let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
+			addImageLabel!.backgroundColor = studyPUBackgroundColor
 
 			addSubview(addImageLabel!)
 
@@ -233,6 +209,72 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			addImageLabel!.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
 
 			}
+
+
+// ********************* Geometry...
+
+
+/*
+Basic approach to memory management for possibly large collection of possibly large images:
+	- Toggle between a low and high res version of the image, stored at sizes of imageSmallSize, and imageOriginalSize respectively
+	- When first loaded, resize image to low res and display
+	- If image is scaled UP past imageResolutionBoundaryFactor, then reload image at full res and display
+	- If scaled back down, reverse...
+Some setup has to occur in layoutImagePane and addImage functions.
+*/
+
+		func reloadImageToFitPaneSizeIfNeeded () // add a node's image to existing pane, which may have changed size during zoom; resize image to fit pane's imageView
+			{
+			if scale > imageResolutionBoundaryFactor &&  imageLoadedAtResolution == .low
+				{
+				if let url = associatedNode?.imageFileURL
+					{
+					if let image = UIImage(contentsOfFile:url.path)
+						{
+						imageView.image = image
+						imageLoadedAtResolution = .high
+
+						}
+					}
+				}
+
+			if scale <= imageResolutionBoundaryFactor &&  imageLoadedAtResolution == .high
+				{
+		// could do this just be rescaling current large imageView.image, which sidesteps reloading...
+				if let url = associatedNode?.imageFileURL
+					{
+					if let image = UIImage(contentsOfFile:url.path)
+						{
+						imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!)
+						imageLoadedAtResolution = .low
+						}
+					}
+				}
+
+
+
+
+			}
+
+
+
+
+		func minimize(andHide flag:Bool)
+			{
+			if imageLoadedAtResolution == .high
+				{
+				if let image = imageView.image
+					{imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!) }
+				}
+			if flag == true
+				{
+				self.isHidden = true
+				//if let node = associatedNode
+				//	{ node.isDisplayingImage = false }
+				}
+			}
+
+
 
 
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)

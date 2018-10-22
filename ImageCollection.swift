@@ -18,7 +18,7 @@ import UIKit
 // Note. The imageCollection is ALWAYS initialized even if there are no images. This helps guard against calls
 // which assume an imageCollection is present. It's possible bugs may follow this.
 
-
+/*
 class ImageCollection {
 	var nodeArray: [Node]=[]
 	var openImagesArray: [Int]=[]
@@ -42,9 +42,12 @@ class ImageCollection {
 		self.xTree = xTree
 		}
 
+*/
+
 	// Either preload all available images (slow), or just check if image files exist so we can draw image
 	// icons and wait to init the imageViews later when needed
 
+/*
 	func setup()
 		{
 		let root = xTree.root!
@@ -73,10 +76,17 @@ class ImageCollection {
 			}
 		}
 
+*/
+
+
+/*
 	func getPickedLeafNode(withLeafIndex lix:Int)->Node
 		{
 		return nodeArray[lix]
 		}
+*/
+
+/*
 
 	func imageIsBig(withLeafIndex lix:Int)->Bool? // image width is bigger than "maximize" amount (which is allowed)
 		{
@@ -99,12 +109,12 @@ class ImageCollection {
 			}
 		return nodeArray[lix].hasImage!
 		}
-
+// MODIFIED
 	func leafImageisOpen(withLeafIndex lix:Int)->Bool
 		{
-		return nodeArray[lix].isDisplayingImage
+		return nodeArray[lix].imageIsNowLoaded
 		}
-		
+//
 	func leafImageIsFrozen(withLeafIndex lix:Int)->Bool
 		{
 		if nodeArray[lix].hasImage == nil
@@ -360,12 +370,17 @@ class ImageCollection {
 	func leafImageIsMinimized(withLeafIndex leafIndex:Int)->Bool
 		{ return nodeArray[leafIndex].imageView!.isMinimized }
 
-}
+*/
+
+//}
+
 // ...................................................................................
 
 /*
 Expected dir structure in folder Images.bundle is to have a subdir with the treeName for each nexus tree file. Within this subdir are the images
 */
+
+/*
 
 class MyImageView
 	{
@@ -529,3 +544,4 @@ class MyImageView
 		self.rect = self.rect.offsetBy(dx: translation.x, dy: translation.y)
 		}
 	}
+*/

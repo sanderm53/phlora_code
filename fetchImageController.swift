@@ -35,7 +35,7 @@ class ImageChooserController : NSObject, UIImagePickerControllerDelegate, UINavi
 		self.alert = UIAlertController(title:"Choose source of image",message:"", preferredStyle: .alert)
 		super.init()
 		let action1 = UIAlertAction(title: "Cancel", style: .cancel)
-			{ (action:UIAlertAction) in print("You've pressed cancel") }
+			{ (action:UIAlertAction) in  }
 		let action2 = UIAlertAction(title: "Photo library", style: .default)
 			{ (action:UIAlertAction) in
 			//print("You've pressed pl")
@@ -114,13 +114,13 @@ If not, assume it is the study image (only alternative now), and write to a jpeg
 					if let associatedNode = imagePane.associatedNode
 						{
 						associatedNode.imageFileURL = destURL
-						associatedNode.hasImageFile = true
-						associatedNode.isDisplayingImage = true
+						//associatedNode.hasImageFile() = true
+						//associatedNode.isDisplayingImage = true
 						associatedNode.imageFileDataLocation = .inDocuments
 
 						}
 					}
-			imagePane.addImage(image)
+			imagePane.loadImage(image)
 			// iff this is being called from a treeview, then I want to make sure there is a longpress delete tapgesture added to imagePane once image is added
 			// Otherwise, the longpress gesture is only added when images are loaded from disk...
 			if let vc = viewController as? TreeViewController

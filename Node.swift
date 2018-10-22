@@ -46,22 +46,38 @@ class Node {
   var time: Float?
   var coord: CGPoint		//anything not optional must be initialized in inits below
   weak var parent: Node?
-  //var leafImage: UIImage?
-  var isDisplayingImage: Bool = false  // image is on or off, except can be overridden by turning off all images with button
-  //var hasInstantiatedImagePane: Bool = false
   var nodeIsMaximallyVisible:Bool = false // This refers to whether the node's LABEL is visible -- not the image icon
   var imageIconAlpha:CGFloat = 0.0	// This is the opacity of the image icon; will be hidden if too low
-  var hasImage: Bool?  // maybe totally deprecated??????
-  var hasImageFile: Bool = false // This is initially set to false because at the moment we draw the tree before doing any initializations about images; once tree is drawn we initialize nodes to either have or not have image files and then clean up drawing the image icons appropriately. If I change the order of drawing we can set this initially to optional
-  var imageView:MyImageView?
+	
+  //var hasImage: Bool?  // maybe totally deprecated??????
+  var imageFileURL:URL?
+  var imageFileDataLocation:PhloraDataLocation?
+
+
   var imagePaneView:ImagePaneView?
+  //var hasImageFile: Bool = false
+  var hasLoadedImageAtLeastOnce: Bool = false // but may have been unloaded...
+
+// delete following...
+//  var imageIsNowLoaded:Bool = false // but may be hidden or not...
+
+	
   var descendantRangeOfIDs:(UInt,UInt) = (0,0)
   //var alphaModifier:CGFloat = 1.0
   var nodeFlag:Bool = false
   var closestImageIconNeighberDistance:Int = 10000
-  var imageFileURL:URL?
-  var imageFileDataLocation:PhloraDataLocation?
-  
+
+	
+  func hasImageFile()->Bool
+  	{
+	return imageFileURL != nil
+	}
+  func imageIsLoaded()->Bool
+  	{
+  	guard let ipv = imagePaneView else { return false }
+	return ipv.imageIsLoaded
+  	}
+
   init()
 	{
 	self.coord=CGPoint()
@@ -236,6 +252,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 	// Must run initImageFilesExistence() first!
 	// Sets the node's hasImage field to true if an image was properly instantiated
 
+/*
 	func initImage(onTree xTree:XTree)
 		{
 		if hasImageFile
@@ -273,9 +290,10 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		
 		}
 
-
+*/
 
 	// check if image file is present for each leaf taxon name and note that for the node and for the image collection as a whole (via return val)
+/*
 	func initImageFilesExistence(usingTreeNameAsDirName treeNameDir:String)->Bool
 		{
 		let ext = ["jpg","png"]
@@ -307,6 +325,10 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 			}
 		return hasFoundImageFileSomewhere
 		}
+
+*/
+
+
 	// **********************************************************************
 	
 
@@ -791,7 +813,7 @@ ctx.drawPath(using: .stroke)
 
 					// First, filled circles of two possible colors when we know there is an image file
 					
-					if hasImageFile  // draw the icon possibly before loading image as long as there is a known image file for this image
+					if hasImageFile()  // draw the icon possibly before loading image as long as there is a known image file for this image
 						/* When there is an image file present, I display an icon according to a delicate algorithm that trades off the fadeout-
 						behavior that I want for the labels (which are densely arrayed vertically), with the actual density of images vertically (which
 						may or may not be dense, but will be less or equal in density to the labels. When the icons are dense, basically I want them
@@ -805,8 +827,10 @@ ctx.drawPath(using: .stroke)
 						{
 						var fillColor:CGColor
 						// Switch the color of the image icon depending on if it is displaying
-						if isDisplayingImage
+						if imageIsLoaded()
 							{fillColor = treeSettings.imageFontColor.cgColor}
+						else if hasLoadedImageAtLeastOnce
+							{fillColor = treeSettings.imageUnloadedColor}
 						else
 							{fillColor = treeSettings.imageIconColor}
 
@@ -832,13 +856,26 @@ ctx.drawPath(using: .stroke)
 					}
 				else
 					{
-						if hasImageFile  // draw tiny icons everywhere else
+						if hasImageFile()  // draw tiny icons everywhere else
 							{
 							var fillColor:CGColor
-							if isDisplayingImage
+							//if isDisplayingImage
+							//	{fillColor = treeSettings.imageFontColor.cgColor}
+							//else
+							//	{fillColor = treeSettings.imageIconColor}
+
+
+							if imageIsLoaded()
 								{fillColor = treeSettings.imageFontColor.cgColor}
+							else if hasLoadedImageAtLeastOnce
+								{fillColor = treeSettings.imageUnloadedColor}
 							else
 								{fillColor = treeSettings.imageIconColor}
+
+
+
+
+
 							let densityBasedAlpha = 1 - 1/CGFloat(closestImageIconNeighberDistance)
 							if densityBasedAlpha > 0.95 // so, nearly fully opaque
 								{ nodeIsMaximallyVisible = true }

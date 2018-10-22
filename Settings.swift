@@ -31,6 +31,7 @@ struct Settings
 	let edgeColor:CGColor
 	let edgeWidth:CGFloat
 	let imageIconColor:CGColor
+	let imageUnloadedColor:CGColor
 	let imageIconRadius:CGFloat
 	let imageIconAlphaThreshold:CGFloat
 	let viewBackgroundColor:UIColor
@@ -72,6 +73,7 @@ let iPhoneTreeSettings=Settings(
 	edgeColor:UIColor.green.cgColor,
 	edgeWidth:1.5,
 	imageIconColor:UIColor.gray.cgColor,
+	imageUnloadedColor:UIColor.blue.cgColor,
 	imageIconRadius:15.0,
 	imageIconAlphaThreshold:0.75,
 	viewBackgroundColor:UIColor.black,
@@ -113,6 +115,7 @@ let iPhoneTreeSettings=Settings(
 	edgeColor:UIColor.green.cgColor,
 	edgeWidth:1.5,
 	imageIconColor:UIColor.gray.cgColor,
+	imageUnloadedColor:UIColor.blue.cgColor,
 	imageIconRadius:15.0,
 	imageIconAlphaThreshold:0.75,
 	viewBackgroundColor:UIColor.black,

@@ -28,12 +28,12 @@ var treeInfo: TreeInfoPackage? {
 
 			if let image = getStudyImage(forStudyName:t.treeName)
 				{
-				studyImagePane.addImage(image)
+				studyImagePane.loadImage(image)
 				}
 			else
 				{
-				if studyImagePane.hasImage
-					{ studyImagePane.deleteImage()} // in case we are reusing a cell with an image pane already populated
+				if studyImagePane.imageIsLoaded
+					{ studyImagePane.unloadImage()} // in case we are reusing a cell with an image pane already populated
 				}
 
             setNeedsLayout()
@@ -44,11 +44,12 @@ var treeInfo: TreeInfoPackage? {
 override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
     super.init(style: style, reuseIdentifier: reuseIdentifier)
 
-	backgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
+	//backgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
+	backgroundColor = nil
     selectionStyle = .none
 
 
-	studyImagePane = ImagePaneView()
+	studyImagePane = ImagePaneView(atNode:nil, withImage:nil, imageLabel:nil, showBorder:false)
 	studyImagePane.contentMode = .scaleAspectFit // important
 	contentView.addSubview(studyImagePane)
 	studyImagePane.translatesAutoresizingMaskIntoConstraints=false

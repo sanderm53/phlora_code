@@ -47,7 +47,7 @@ class XTree {
 	var minY:CGFloat=0.0 // min and max leaf node locations
 	var maxY:CGFloat=0.0
 	var numDescLvs:UInt!
-	var imageCollection:ImageCollection!
+	//var imageCollection:ImageCollection!
 	var treeInfo:TreeInfoPackage
 	var hasCladeNames:Bool=false
 	var hasImageFiles:Bool=false
@@ -73,7 +73,7 @@ class XTree {
 		let mrcaArray = treeInfo.mrcaArray
 		//print (mrcaArray)
 		assignLabels(fromMRCAList:mrcaArray)
-		imageCollection=ImageCollection(forTree:self)
+		//imageCollection=ImageCollection(forTree:self)
 		do {
 			try checkForImageFiles()
 			}
@@ -95,7 +95,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 		var curPos:Position?
 		var prevPos:Position
 		curPos = Position(at:0)
-		if nodeArray[0].hasImageFile
+		if nodeArray[0].hasImageFile()
 			{
 			curPos = Position(at:0)
 			}
@@ -123,7 +123,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 			{
 			for i in pos+1...nodeArray.count-1
 				{
-				if nodeArray[i].hasImageFile
+				if nodeArray[i].hasImageFile()
 					{ return Position(at:i)}
 				}
 			}
@@ -150,7 +150,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 							if let node = nodeHash[fileNameBase]
 								{
 								//print ("\(fileNameBase) exists in tree")
-								node.hasImageFile = true
+								//node.hasImageFile() = true
 								node.imageFileURL = fileURL
 								node.imageFileDataLocation = .inBundle
 
@@ -179,7 +179,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 						if let node = nodeHash[fileNameBase]
 							{
 							//print ("\(fileNameBase) exists in tree")
-							node.hasImageFile = true
+							//node.hasImageFile() = true
 							node.imageFileURL = fileURL
 							node.imageFileDataLocation = .inDocuments
 							hasImageFiles=true

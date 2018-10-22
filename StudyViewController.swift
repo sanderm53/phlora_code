@@ -102,6 +102,7 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 
 		let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
 		view.backgroundColor=studyPUBackgroundColor
+		//view.backgroundColor=UIColor.black
 		navigationController!.setNavigationBarHidden(false, animated: false)
         navigationController!.setToolbarHidden(true,
              animated: false)
@@ -118,7 +119,8 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 		studyTableView.dataSource = self
 		studyTableView.register(StudyTableViewCell.self, forCellReuseIdentifier: "cell") // This is calling a class name for the cell, but here it is just the root UITableViewCell class; if I want to init this to a different default style prob have to subclass it
 		studyTableView.isHidden=false
-		studyTableView.backgroundColor=studyPUBackgroundColor
+		//studyTableView.backgroundColor=studyPUBackgroundColor
+	studyTableView.backgroundColor=nil // transparent, keep view color
 		studyTableView.rowHeight=treeSettings.studyTableRowHeight
 		view.addSubview(studyTableView)
 
@@ -171,7 +173,7 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 				case UIGestureRecognizerState.changed:
 					break
 				case UIGestureRecognizerState.ended:
-					if imagePane.hasImage == false
+					if imagePane.imageIsLoaded == false
 						{
 						let touchPt = imagePane.convert(gesture.location(in:imagePane), to : studyTableView)
 						if let ip = studyTableView.indexPathForRow(at:touchPt)
@@ -202,7 +204,7 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 	// I set up the cell using a property observer in cell controller, which watches treeInfo property
 			cell.treeInfo = treesData.treeInfoDictionary[treeName]
 
-			if cell.studyImagePane.hasImage == false  // prepare a cell with no image for possible "add image"
+			if cell.studyImagePane.imageIsLoaded == false  // prepare a cell with no image for possible "add image"
 				{
 				let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
 				tapGesture.cancelsTouchesInView = true // lets the touch continue up responder chain to table view

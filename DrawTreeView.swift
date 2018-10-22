@@ -149,7 +149,7 @@ class DrawTreeView: UIView
 	func setup()
 		{
 		windowIndependentSetup()
-		xTree.imageCollection.setup() // &&&&&&
+		//xTree.imageCollection.setup() // &&&&&&
 		}
 
 
@@ -160,12 +160,6 @@ class DrawTreeView: UIView
 		paragraphStyle.lineBreakMode = .byTruncatingTail
 		taxonLabelAttributes[NSParagraphStyleAttributeName]=paragraphStyle
 
-		}
-
-	func setupViewDependentImageCollectionGeometry()
-		{
-		xTree.imageCollection.imageMaximumWidth = decoratedTreeRectMinusImageIcons.width // clunky place to init this but has to be in this order...
-		xTree.imageCollection.imageXCenter=decoratedTreeRectMinusImageIcons.midX //ditto
 		}
 
 
@@ -324,7 +318,7 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 			{
 			if let imagePane = subview as? ImagePaneView
 				{
-				if !imagePane.isHidden && imagePane.isAttachedToNode
+				if !imagePane.isHidden && imagePane.isAttachedToNode()
 					{
 					// SHOULD IMBED THIS TEST IN THE SETLOC FUNC
 					if imagePane.isFrozen

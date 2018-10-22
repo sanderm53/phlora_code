@@ -81,61 +81,33 @@ func addButtonAction(sender: UIBarButtonItem!) {
 	}
 
 func infoButtonAction(sender: UIButton!) {
-    //helpView.isHidden = !helpView.isHidden
-		self.navigationController?.pushViewController(infoViewController!, animated: true)
-
-
-}
+	self.navigationController?.pushViewController(infoViewController!, animated: true)
+	}
 
 func cladeNameButtonAction(sender: UIButton!) {
     treeView.cladeNamesAreVisible = !treeView.cladeNamesAreVisible
     treeView.setNeedsDisplay()
-}
+	}
 func imagesButtonAction(sender: UIButton!) {
     treeView.imagesAreVisible = !treeView.imagesAreVisible
 
 	for subview in treeView.subviews
 			{
 			let imagePane = subview as! ImagePaneView
-			if imagePane.associatedNode!.isDisplayingImage
-				{
-				imagePane.isHidden = !treeView.imagesAreVisible
-				}
+			imagePane.isHidden = !treeView.imagesAreVisible
 			}
 	if treeView.imagesAreVisible
 		{ treeView.setNeedsLayout() } // visible again: layout of images don't get updated when they are hidden
     treeView.setNeedsDisplay()
-
-}
+	}
 func treePickerButtonAction(sender: UIButton!) {
 
-/*
-	let vc = StudyViewController()
-	vc.treesData = treesData
-	vc.pickedRowIndex = pickedRowIndex
-	self.navigationController?.pushViewController(vc, animated: true)
+	}
 
-
- 	if let indexPath = studyTableView.indexPathForSelectedRow
-		{studyTableView.deselectRow(at:indexPath, animated:false)}
-   studyPopupView.isHidden = false
-   studyPopupView.setNeedsDisplay() // doesn't seem necessary...
-*/
-
-
-}
-/*
-func treePickerSelectTreeButtonAction(sender: UIButton!) {
-    //
-	let treeName = treesData.treeInfoNamesSortedArray[pickedRowIndex]
-	switchTreeView(fromTreeView:treeView, toTreeNamed:treeName)
-    studyTableView.isHidden = true
-}
-*/
 func tablePopupCancelButtonAction(sender: UIButton!) {
     //
     studyPopupView.isHidden = true
-}
+	}
 
 
 
@@ -264,7 +236,39 @@ func tablePopupCancelButtonAction(sender: UIButton!) {
 	override func didReceiveMemoryWarning() {
 		super.didReceiveMemoryWarning()
 print ("Received memory warning")
+self.emergencyMinimizeImages()
 		// Dispose of any resources that can be recreated.
+		}
+
+	func emergencyMinimizeImages()
+		{
+		var vcIsVisible:Bool = false
+		if self == navigationController?.visibleViewController
+			{vcIsVisible = true}
+
+print ("Attempting emergency minimize")
+		guard let tv = treeView
+		else // sometimes this gets called on an invalid treeviewcontroller that hasn't been initialized yet
+			{
+			print ("treeView not found")
+			return
+			}
+		
+		for subview in tv.subviews
+			{
+			if let imagePane = subview as? ImagePaneView
+				{
+				if vcIsVisible
+					{
+					if treeView.bounds.intersects(imagePane.frame) == false // this is the visible vc, and pane is offscreen, so close
+						{ closeImagePane(imagePane) }
+					}
+				else
+					{ closeImagePane(imagePane) } // pane is in another vc, so close all of its panes
+
+				}
+			}
+		tv.setNeedsDisplay()
 		}
 
 	override func viewWillLayoutSubviews()
@@ -404,15 +408,30 @@ func addImagePane(atNode node:Node)
 	note that the tap gesture is handled differently in the two cases (see handlePaneSingleTap)
 	*/
 	// Instantiate frame at y = 0, which will place its center at tree coord y=0
+
+	var image:UIImage?
 	let aFrame = centeredRect(center: CGPoint(x:treeView.decoratedTreeRect.midX,y:0), size: CGSize(width:0,height:0))
-	let imagePane = ImagePaneView(usingFrame:aFrame, atNode:node, onTree:treeView.xTree)
-	treeView.addSubview(imagePane)
-	//node.hasInstantiatedImagePane = true //  have to do this here after pane is init
-	node.imagePaneView = imagePane // have to do this here after pane is init
-	if imagePane.hasImage
+
+	if let imageFilePath = node.imageFileURL?.path // node has an imageFile
 		{
-		node.isDisplayingImage = true //  have to do this here after pane is init
+		image = UIImage(contentsOfFile:imageFilePath)
+		node.hasLoadedImageAtLeastOnce = true // well, or at least tried to...
 		}
+	let imagePane = ImagePaneView(usingFrame:aFrame, atNode:node, withImage:image, imageLabel:node.label,showBorder:true)
+
+
+	//let imagePane = ImagePaneView(usingFrame:aFrame, atNode:node, onTree:treeView.xTree)
+
+	treeView.addSubview(imagePane)
+
+	node.imagePaneView = imagePane // have to do this here after pane is initialized (can't within pane's init)
+
+print ("Trying to add image pane for node ",node.originalLabel)
+
+//	if imagePane.hasImage
+//		{
+//		node.isDisplayingImage = true //  have to do this here after pane is init
+//		}
 	
 	let imagePanGesture =  UIPanGestureRecognizer(target: self, action: #selector(handleImagePanePan(recognizer:)))
 	imagePane.addGestureRecognizer(imagePanGesture)
@@ -478,7 +497,7 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 			case UIGestureRecognizerState.began:
 				let imagePane = recognizer.view as! ImagePaneView
 				treeView.bringSubview(toFront: imagePane)
-				if imagePane.hasImage
+				if imagePane.imageIsLoaded
 					{
 					alert = UIAlertController(title:"Delete user-added image from Phlora?",message:"", preferredStyle: .alert)
 					let action1 = UIAlertAction(title: "Cancel", style: .cancel)
@@ -496,13 +515,28 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 				break
 			}
 		}
-func deleteImagePane(_ imagePane:ImagePaneView)
+
+func closeImagePane(_ imagePane:ImagePaneView) // but leave on disk
+	{
+print ("Closing imagepane")
+		if let node = imagePane.associatedNode
+			{
+			//node.imageIsNowLoaded = false
+			node.imagePaneView = nil
+			}
+		imagePane.imageView = nil
+		imagePane.removeFromSuperview()
+//		self.treeView.setNeedsDisplay()
+	}
+
+func deleteImagePane(_ imagePane:ImagePaneView)  // AND THE FILE ON DISK
 	{
 		if let node = imagePane.associatedNode
 			{
-			node.hasImage = false
-			node.hasImageFile = false
+			//node.hasImage = false
+			//node.hasImageFile() = false
 			node.imagePaneView = nil
+			//node.imageIsNowLoaded = false
 			guard let url = node.imageFileURL else { return }
 			do 	{
 				try FileManager.default.removeItem(at:url)
@@ -520,12 +554,13 @@ func deleteImagePane(_ imagePane:ImagePaneView)
 		imagePane.removeFromSuperview()
 		self.treeView.setNeedsDisplay()
 	}
-func deleteImageInPane(_ imagePane:ImagePaneView) // This leaves the pane but resets to no image
+func deleteImageInPane(_ imagePane:ImagePaneView) // This leaves the pane but resets to no image; deletes from disk
 	{
 		if let node = imagePane.associatedNode
 			{
-			node.hasImage = false
-			node.hasImageFile = false
+			//node.hasImage = false
+			//node.hasImageFile() = false
+			//node.imageIsNowLoaded = false
 			//node.imagePaneView = nil
 			guard let url = node.imageFileURL else { return }
 			do 	{
@@ -538,7 +573,7 @@ func deleteImageInPane(_ imagePane:ImagePaneView) // This leaves the pane but re
 				}
 			node.imageFileURL = nil
 			node.imageFileDataLocation = nil
-			imagePane.deleteImage()
+			imagePane.unloadImage()
 			}
 		self.treeView.setNeedsDisplay() // to update the image icons 
 	}
@@ -557,7 +592,7 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 			case UIGestureRecognizerState.changed:
 				break
 			case UIGestureRecognizerState.ended:
-				if imagePane.hasImage == false
+				if imagePane.imageIsLoaded == false
 					{
 
 					if let node  = imagePane.associatedNode
@@ -600,6 +635,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				let location = recognizer.location(in: imagePane) // SUPER IMPORTANT location in imageView BECAUSE OF MY DEFINITION OF imagePane.scale
 				let scale:CGFloat = 2.0
 				imagePane.scale(by:scale, around:location, inTreeView: treeView)
+				imagePane.reloadImageToFitPaneSizeIfNeeded()
 				self.treeView.setNeedsDisplay()
 			default:
 				break
@@ -647,7 +683,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				imagePane.scale(by:scale, around:location, inTreeView: treeView)
 				self.treeView.setNeedsDisplay() // needed to update the diagonal lines
 			case UIGestureRecognizerState.ended:
-				imagePane.reloadImageToFitPaneSize ()
+				imagePane.reloadImageToFitPaneSizeIfNeeded()
 
 			default:
 				break
@@ -699,6 +735,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 	//  If it is larger than minimum size it is reduced to min
 	//  If it is equal to minimum size it is maximized
 
+/*
 	func handleDoubleTap(gesture: UITapGestureRecognizer)
 		{
 		if treeView.imagesAreVisible
@@ -716,6 +753,15 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				}
 			}
 		}
+*/
+
+	func getPickedLeafNode(withLeafIndex lix:Int)->Node?
+		{
+		guard lix >= 0 && lix < treeView.xTree.nodeArray.count
+			else { return nil }
+		return treeView.xTree.nodeArray[lix]
+		}
+
 
 // ***********************************************************************************
 
@@ -730,31 +776,19 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 		//Location is in the superview's absolute coordinates, i.e., not local coords
 		//let location = sender.location(in: self.view)
 		var anyOpen:Bool=false
-		//let location = sender.location(in: treeView)
 
 		if treeView.imagesAreVisible == false
 			{ return }
 
 		let location = gesture.location(in: treeView)
 
-		if treeView.decoratedTreeRectMinusImageIcons.contains(location) // tap is in tree+taxa zone; check if an image
-			{ //...and move to front then
-			let treeLocation = treePoint(fromWindowPoint:location)
-			let leafIndex = treeView.xTree.imageCollection.getFrontmostImageView(atTreeCoord:treeLocation, inTreeView:treeView)
-			if leafIndex != nil
-				{
-				treeView.setNeedsDisplay()
-				}
-			}
-		else
 		if treeView.imageIconsRect.contains(location)	// tap is in image icon zone, handle
 			{
-
-
 			let (ixLow,ixHigh) = windowYToLeafIndexRange(windowY:location.y)
 			for ix in (ixLow...ixHigh)
 				{
-				if treeView.xTree.imageCollection.leafImageisOpen(withLeafIndex:ix) // close image if open (works under old code)
+				//if treeView.xTree.imageCollection.leafImageisOpen(withLeafIndex:ix) // close image if open (works under old code)
+				if getPickedLeafNode(withLeafIndex:ix)!.imageIsLoaded() // close image if open (works under old code)
 						{
 						anyOpen=true
 						break
@@ -763,42 +797,20 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 
 			for ix in (ixLow...ixHigh)
 				{
-				let pickedNode = treeView.xTree.imageCollection.getPickedLeafNode(withLeafIndex:ix)
+				let pickedNode = getPickedLeafNode(withLeafIndex:ix)!
 				if anyOpen // close any that are open, instead of opening one or more
 					{
 					if let imagePane = pickedNode.imagePaneView
-						{
-						imagePane.isHidden = true
-						pickedNode.isDisplayingImage = false
-						}
+						{ closeImagePane(imagePane) }
 					}
-				else // open one or more
+				else // open one or more images in range
 					{
-					if let imagePane = pickedNode.imagePaneView
-						{
-						imagePane.isHidden = false
-						pickedNode.isDisplayingImage = true
-						treeView.setNeedsLayout() // When an image has been hidden and then tree is panned, it may be in wrong
-									// place and won't be updated by the setNeedsLayout prop observer in treeView...(apparently)
-									// so need to do this explicitly when the pane becomes visible again
-						}
-					else
-						{
-						if pickedNode.imageIconAlpha > treeSettings.imageIconAlphaThreshold || (pickedNode.nodeIsMaximallyVisible && treeView.showingImageAddButtons)
-								{ addImagePane(atNode:pickedNode) }
-						}
-
+					if pickedNode.imageIconAlpha > treeSettings.imageIconAlphaThreshold || (pickedNode.nodeIsMaximallyVisible && treeView.showingImageAddButtons)
+							{ addImagePane(atNode:pickedNode) }
 					}
 				treeView.setNeedsDisplay() // only needed to update the imageIcons! Fix later by making them view objects?
 				}
 
-
-
-
-			}
-		else // tap is not in treeRect
-			{
-				// Occasionally I had a funny response to this empty block; the code getting hung up...
 			}
 	}
 // ***********************************************************************************
@@ -818,11 +830,25 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 					{
 					imageIconsArePanning=true
 					lastPanningIconLeafIndex = windowYToNearestLeafIndex(windowY:location.y)
-					let pickedNode = treeView.xTree.imageCollection.getPickedLeafNode(withLeafIndex:lastPanningIconLeafIndex!)
+					let pickedNode = getPickedLeafNode(withLeafIndex:lastPanningIconLeafIndex!)!
 					// Set up the the pane I will reuse at center of screen. It will not display an image yet.
 					let aFrame = centeredRect(center: CGPoint(x:treeView.decoratedTreeRect.midX,y:treeView.decoratedTreeRect.midY), size: CGSize(width:0,height:0)) // coords of "center" of tree
-					iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:pickedNode, onTree:treeView.xTree)
+
+//iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:pickedNode, onTree:treeView.xTree)
+	if let imageFilePath = pickedNode.imageFileURL?.path // node has an imageFile
+		{
+		let image = UIImage(contentsOfFile:imageFilePath)
+		iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:nil, withImage:image, imageLabel:pickedNode.label,showBorder:true)
+		}
+	else
+		{
+		iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:nil, withImage:nil, imageLabel:pickedNode.label,showBorder:true)
+		}
+
 					iconPanningImagePane!.isFrozen = true // to guarantee stuck in cnter
+
+
+
 					treeView.addSubview(iconPanningImagePane!)
 
 					if pickedNode.imageIconAlpha > treeSettings.imageIconAlphaThreshold
@@ -841,7 +867,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			if imageIconsArePanning // panning an image icon
 				{
 					lastPanningIconLeafIndex = windowYToNearestLeafIndex(windowY:location.y)
-					let pickedNode = treeView.xTree.imageCollection.getPickedLeafNode(withLeafIndex:lastPanningIconLeafIndex!)
+					let pickedNode = getPickedLeafNode(withLeafIndex:lastPanningIconLeafIndex!)!
 
 					if (saveThisIndexForChecking != lastPanningIconLeafIndex!) && pickedNode.imageIconAlpha > treeSettings.imageIconAlphaThreshold
 						// the first condition keeps us from trying to add the same node index over and over as pan gets multiple gestures at roughly same location
@@ -851,7 +877,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 							iconPanningImagePane!.isHidden = false
 							if let image = UIImage(contentsOfFile:url.path)
 								{
-								ip.addImage(image)
+								ip.loadImage(image)
 								ip.imageLabel.text = pickedNode.label
 								saveThisIndexForChecking = lastPanningIconLeafIndex!
 								}
@@ -1034,9 +1060,6 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 
 	func handlePinch(recognizer : UIPinchGestureRecognizer)
 		{
-		var imageWasPicked:Bool = false
-//print ("Entering handlePinch")
-		var leafIndex:Int?
 		killTheAnimationTimer()	// If in the middle of a pan animation, kill the animation and go
 
 		// Now pretty minimalist!! Just fetching the pinch scale factor
@@ -1045,50 +1068,12 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 		var scale=recognizer.scale
 		let location = recognizer.location(in: treeView)
 
-		let treeLocation = treePoint(fromWindowPoint:location)
-		if treeView.imagesAreVisible
-			{
-			leafIndex = treeView.xTree.imageCollection.getFrontmostImageView(atTreeCoord:treeLocation, inTreeView:treeView)
-			if leafIndex != nil
-				{ imageWasPicked=true}
-			else
-				{ imageWasPicked=false}
-			}
-		else
-			{imageWasPicked=false}
 		switch recognizer.state
 			{
 			case UIGestureRecognizerState.began:
-				//print("Began",scale,imageScale)
-				if imageWasPicked
-					{
-					imageIsZooming=true
-					}
-				else
-					{
-					imageIsZooming=false
-					treeView.xTree.imageCollection.setPinchRectangleToStop() // in case this event happened before the zooming ended
-					}
+				break
 			case UIGestureRecognizerState.changed:
 				//print("Changed",scale,imageScale)
-				if imageWasPicked // image is zooming
-					{
-					imageIsZooming=true
-					if treeView.xTree.imageCollection.imageIsBig(withLeafIndex:leafIndex!)! // zoom with a red rectangle if image is biggish
-						{
-						imageScale *= scale
-						treeView.xTree.imageCollection.setPinchRectangleParamsAndStart(at:treeLocation, withScale:imageScale )
-						}
-					else // zoom the usual way if image is smallish
-						{
-						treeView.xTree.imageCollection.scaleImage(withLeafIndex:leafIndex!, by:scale, around:treeLocation, inTreeView:treeView)
-						}
-					treeView.xTree.imageCollection.setImageNotMaxOrMin(withLeafIndex:leafIndex!) // sets some flags to indicate this
-					}
-				else // tree is zooming
-					{
-					imageIsZooming=false
-					treeView.xTree.imageCollection.setPinchRectangleToStop() // in case this event happened before the zooming ended
 
 					// tree can get too small with this scaling so reduce by just correct amount to make scaleTreeBy=1
 					if treeView.scaleTreeBy * scale < 1.0
@@ -1115,23 +1100,10 @@ func killTheAnimationTimer() // If in the middle of a pan animation, kill the an
 					else if (topGap > 0.0) {treeView.panTranslateTree -= topGap}
 		//treeView.setNeedsDisplay()
 treeView.layoutSubviews()
-					}
+					
 			
 			case UIGestureRecognizerState.ended:
-				//print("Ended",scale,imageScale)
-				if imageWasPicked
-					{
-					treeView.xTree.imageCollection.scaleImage(withLeafIndex:leafIndex!, by:imageScale, around:treeLocation, inTreeView:treeView)
-					treeView.xTree.imageCollection.setPinchRectangleToStop() // in case this event happened before the zooming ended
-					imageIsZooming=false
-					imageScale = 1.0
-					}
-				else
-					{
-					treeView.xTree.imageCollection.setPinchRectangleToStop() // in case this event happened before the zooming ended
-					imageIsZooming=false
-					imageScale = 1.0
-					}
+				break
 
 			default:
 				break

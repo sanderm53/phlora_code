@@ -88,7 +88,13 @@ image to represent the new study.</p>
 
 <p>is the "clade comprising all leaves more closely related to lion than to house_cat". The order of the specifiers on the right of the '=' is important, and only two specifiers can be given.</p>
 
-
-
+<p><b>Memory considerations</b></p>
+<p>Phlora can use large amounts of device RAM when several to numerous images are open at the same time. There should be few problems if
+ images are kept to ~ 1 MB in size, but when images are much larger than this (as in high resolution herbarium specimen images, for example),
+ memory requires some active management. When an image first becomes visible it is displayed at "low resolution". When it is zoomed by a matter of
+ two double clicks (~ 4x magnification), it switchs to the full high resolution version of the image. If memory runs low, the program will close
+ images that are open in other trees than the one currently displayed, as well as images in the current tree that are offscreen at the moment.
+ A closed image has its image icon presented in blue to indicate that the user has viewed it at least once. It may also be worth manually
+ closing some currently visible images to improve performance. If all else fails the program will quit unceremoniously.</p>
 </body>
 </html>
