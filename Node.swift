@@ -68,7 +68,11 @@ class Node {
   var closestImageIconNeighberDistance:Int = 10000
 
 	
-  func hasImageFile()->Bool
+ func hasImagePaneView()->Bool
+  	{
+	return imagePaneView != nil
+	}
+ func hasImageFile()->Bool
   	{
 	return imageFileURL != nil
 	}
@@ -368,6 +372,10 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 			{
 			for child in children
 				{ child.ladderize(direction:whichWay) }
+			if numDescLvs == UInt(children.count)
+				{ return } // trap for the special case of a terminal polytomy of just leaves. Swift's array sort is "unstable" and may rearrange the order of leaves
+							// in this polytomy because it can't handle equality comparisons, which I don't want, because I may have alphabetized them in making the tree file
+							// Gotcha!
 			switch whichWay
 				{
 				case .left:

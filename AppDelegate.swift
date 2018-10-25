@@ -75,6 +75,9 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 		// Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 	}
 
-
+func applicationDidReceiveMemoryWarning(_ application: UIApplication)
+	{
+	print ("App did receive memory warning: emergency minimizing...")
+	}
 }
 

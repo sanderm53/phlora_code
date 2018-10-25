@@ -22,8 +22,8 @@ import UIKit
 class ImageCollection {
 	var nodeArray: [Node]=[]
 	var openImagesArray: [Int]=[]
-	let imageMinimumWidth=treeSettings.initialImageSize
-	var imageMaximumWidth=treeSettings.initialImageSize // this can change with rotations of screen and will be reset to something else
+	let imageMinimumWidth=treeSettings.initialImagePaneSize
+	var imageMaximumWidth=treeSettings.initialImagePaneSize // this can change with rotations of screen and will be reset to something else
 	var imageXCenter:CGFloat? //initialized later in DrawTreeView
 	//var isDisplayingImage: Bool = false
 	var hasImages:Bool = false
@@ -428,7 +428,7 @@ class MyImageView
 		originalImageSize = originalLeafImage!.size
 		//self.leafVertIndex=leafVertIndex
 		leafNode = leaf
-		let L=treeSettings.initialImageSize
+		let L=treeSettings.initialImagePaneSize
 		let aspect = leafImage!.size.height/leafImage!.size.width
 		if aspect >= 1.0
 			{ rectMult=L/leafImage!.size.height }
@@ -436,7 +436,7 @@ class MyImageView
 			{ rectMult=L/leafImage!.size.width }
 		rect = CGRect(x: 0, y: 0, width: leafImage!.size.width, height: leafImage!.size.height)
 
-// center it in tree coord system around 0,0, with an adjusted size to fit the 'initialImageSize' box without changing aspect ratio
+// center it in tree coord system around 0,0, with an adjusted size to fit the 'initialImagePaneSize' box without changing aspect ratio
 
 		var transform = CGAffineTransform(translationX:-leafImage!.size.width/2,y:-leafImage!.size.height/2) // center it in tree coord system around 0,0
 		rect = rect.applying(transform)
@@ -532,9 +532,9 @@ class MyImageView
 			{
 			return k*originalImageSize!.width/rect.size.width
 			}
-		if rect.size.width * scale < treeSettings.initialImageSize
+		if rect.size.width * scale < treeSettings.initialImagePaneSize
 			{
-			return treeSettings.initialImageSize/rect.size.width
+			return treeSettings.initialImagePaneSize/rect.size.width
 			}
 		return scale // default pass through
 		}

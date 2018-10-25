@@ -328,6 +328,14 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 					else
 						{
 						imagePane.setLocationRelativeTo(treeView:self) //... didn't work; i need the frame for gesture recogz, diagonal, etc...
+
+
+						if self.bounds.intersects(imagePane.frame) == false && imagePane.imageLoadedAtResolution == .high // if it's hires but offscreen, reduce resolution
+							{
+							imagePane.minimize()
+							}
+
+
 						}
 					}
 				}

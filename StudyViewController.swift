@@ -296,7 +296,7 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 		if treeInfo.treeViewController == nil
 			{ treeInfo.treeViewController = TreeViewController() }
-		treeInfo.treeViewController!.treesData = treesData
+		treeInfo.treeViewController!.treesData = treesData // seems like this should be done when vc is init-ed?
 		treeInfo.treeViewController!.pickedRowIndex = pickedRowIndex
 
 		self.navigationController?.pushViewController(treeInfo.treeViewController!, animated: true)

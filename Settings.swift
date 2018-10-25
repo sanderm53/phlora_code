@@ -39,7 +39,7 @@ struct Settings
 	let truncateLabelsLength:CGFloat
 	let replaceUnderscore:Bool
 	let replaceSingleQuotes:Bool
-	let initialImageSize:CGFloat
+	let initialImagePaneSize:CGFloat
 	let initialImageXPos:CGFloat // X position of center of image, in tree coords
 	let imageToIconLineColor:CGColor
 	let treeViewInsetX:CGFloat
@@ -49,6 +49,8 @@ struct Settings
 	let studyTableLabelFontSize:CGFloat
 	let studyTableReferenceFontSize:CGFloat
 	let studyTableNLeafFontSize:CGFloat
+	let imageSizeAtLowRes:CGFloat
+	let imageResolutionSmallSize:CGFloat // product of height and width of image is compared to this cutoff to determine its "resolution"
 	}
 
 let iPhoneTreeSettings=Settings(
@@ -81,7 +83,7 @@ let iPhoneTreeSettings=Settings(
 	truncateLabelsLength:100.0,
 	replaceUnderscore:true,
 	replaceSingleQuotes:true,
-	initialImageSize:150.0,
+	initialImagePaneSize:150.0,
 	initialImageXPos:300.0,
 	imageToIconLineColor:UIColor.yellow.cgColor,
 	treeViewInsetX:15,
@@ -90,7 +92,9 @@ let iPhoneTreeSettings=Settings(
 	studyTableImageHeight:100,
 	studyTableLabelFontSize:16,
 	studyTableReferenceFontSize:12,
-	studyTableNLeafFontSize:12
+	studyTableNLeafFontSize:12,
+	imageSizeAtLowRes:1000.0,
+	imageResolutionSmallSize:1000000.0
 	)
 
 	let iPadTreeSettings=Settings(
@@ -123,7 +127,8 @@ let iPhoneTreeSettings=Settings(
 	truncateLabelsLength:200.0,
 	replaceUnderscore:true,
 	replaceSingleQuotes:true,
-	initialImageSize:250.0,
+	//initialImagePaneSize:250.0,
+	initialImagePaneSize:500.0,
 	initialImageXPos:300.0,
 	imageToIconLineColor:UIColor.yellow.cgColor,
 	treeViewInsetX:15,
@@ -132,7 +137,9 @@ let iPhoneTreeSettings=Settings(
 	studyTableImageHeight:150,
 	studyTableLabelFontSize:24,
 	studyTableReferenceFontSize:14,
-	studyTableNLeafFontSize:18
+	studyTableNLeafFontSize:18,
+	imageSizeAtLowRes:1000.0,
+	imageResolutionSmallSize:1000000.0
 	)
 
 	var treeSettings = iPadTreeSettings // as a default

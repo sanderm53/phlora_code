@@ -46,13 +46,17 @@ enum imageResolutionType
 class ImagePaneView: UIView, UIGestureRecognizerDelegate
         {
 		var imageView: UIImageView!		// I will always put an imageView in place, even if its uiimage is nil
+		var imageSmall: UIImage?
         var imageLabel=UILabel()
         var addImageLabel:UILabel?
         var associatedNode:Node?
 		var imageOriginalSize:CGSize?	// size of the image as it's stored on disk, and max size to be used for 'high' res
 		var imageSmallSize:CGSize?		// keep a size here that is smallish and use it to resize an image to something small when res needs to be low
+		var imageOriginalResolution:imageResolutionType? // i.e., in the file
 		var imageLoadedAtResolution:imageResolutionType? // either low or high
 		let imageResolutionBoundaryFactor:CGFloat = 3.0 // boundary between low and high resolution image to be requested is given in units of the 'scale' parameter that describes the size of the image relative to its original size. This code is sort of wasted if image is really low res
+
+		var imageSizeWidthBoundary:CGFloat? // If size of pane grows above this we will resize image to high resolution and vice versa
 
 		var paneCenter : CGPoint!
 		var scale:CGFloat = 1.0
@@ -73,11 +77,11 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
        init (usingFrame f:CGRect=CGRect(), atNode node:Node?, withImage image:UIImage?, imageLabel:String?, showBorder:Bool) // does it all
                 {
 				paneCenter = CGPoint(x:f.midX,y:f.midY)
-				let initialImageSize = CGSize()
+				let initialImagePaneSize = CGSize()
 				
             	super.init(frame:f)
             	backgroundColor = nil // transparent (should be default)
-				frame = centeredRect(center:paneCenter,size:initialImageSize)
+				frame = centeredRect(center:paneCenter,size:initialImagePaneSize)
 
 				associatedNode = node // will remain nil if this is not a node-associated call
 
@@ -114,41 +118,69 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					}
 				}
 
-		func loadImage (_ image:UIImage) // add image to existing pane at small size , get rid of addAdd label. Can be used to reload image overwriting an existing one
+		func delete() // delete pane but leave image file on disk
 			{
+				if let node = associatedNode
+					{
+					node.imagePaneView = nil
+					}
+				imageView = nil
+				removeFromSuperview()
+			}
+
+
+		func loadImage (_ image:UIImage) // add image to existing pane at small size , get rid of addAdd label. Can be used to reload image overwriting an existing one
+			// Files are loaded at "low" resolution if they are "high" resolution files and the image pane is set initially to just part of the view.
+			// imageSmallSize is this low resolution. However, if the image itself is low resolution, then low res is going to be the maximum res
+			// Image gets reloaded at max res (original size of image) when the requested size based on the pane size becomes larger than the imageSmallSize property
+			{
+				var initialImagePaneSize:CGSize
+				var targetResolutionSize:CGSize // The file will be loaded and sized to this
+
 				imageOriginalSize = image.size
+
+				if (image.size.height*image.size.width < treeSettings.imageResolutionSmallSize) // a cutoff value to define low and high resolution images
+					{ imageOriginalResolution = .low}
+				else
+					{ imageOriginalResolution = .high}
 				var rectMult:CGFloat
-				let L=treeSettings.initialImageSize
-				var initialImageSize:CGSize
+				let L=treeSettings.initialImagePaneSize
 				let aspect = image.size.height/image.size.width
 				if aspect >= 1.0
 					{ rectMult=L/image.size.height }
 				else
 					{ rectMult=L/image.size.width }
-				initialImageSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+				initialImagePaneSize = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
 
-				if associatedNode == nil // if this is NOT a tree leaf image, let's keep it very small thumb at first
+				if imageOriginalResolution == .low // if its a small image to begin with we will keep it that way
 					{
-					imageSmallSize = initialImageSize
+					targetResolutionSize = image.size
 					}
-				else	// but if it is a tree image might make it bigger by boundary factor
+				else	// but if high res, we will initially load it at a low resolution
 					{
-					imageSmallSize = CGSize(width:initialImageSize.width*imageResolutionBoundaryFactor, height:initialImageSize.height*imageResolutionBoundaryFactor)
-					associatedNode!.hasLoadedImageAtLeastOnce = true
+					let ratio = treeSettings.imageSizeAtLowRes/treeSettings.initialImagePaneSize // required resolution will be this much bigger/smaller than imagePane size
+					targetResolutionSize = CGSize(width:ratio*initialImagePaneSize.width ,height:ratio*initialImagePaneSize.height)
 					}
+				
+				imageSizeWidthBoundary = targetResolutionSize.width // stored and used to trigger resizing to higher or lower resolution
+				imageSmallSize = targetResolutionSize
+				imageOriginalSize = image.size
 				imageLoadedAtResolution = .low
 				imageIsLoaded = true // well, it should anyway, after loading it below
 
 				if imageView == nil
-					{
-					imageView = UIImageView(image: resizeUIImage(image:image, toSize:imageSmallSize!))
-					}
+					{ imageView = UIImageView(image: resizeUIImage(image:image, toSize:targetResolutionSize)) }
 				else
+					{
+					imageView.image = resizeUIImage(image:image, toSize:targetResolutionSize)
+					}
+imageSmall = imageView.image
 
-					{ imageView.image = resizeUIImage(image:image, toSize:imageSmallSize!) }
-				imageOriginalSize = image.size
-
-				bounds.size = initialImageSize // keep it centered on frame center by changing bounds size
+				bounds.size = initialImagePaneSize // keep it centered on frame center by changing bounds size
+				if associatedNode != nil
+					{
+					associatedNode!.hasLoadedImageAtLeastOnce = true
+					}
 				if let addImageLabel = addImageLabel // remove an existing addaddimage label if present
 					{
 					addImageLabel.removeFromSuperview()
@@ -157,11 +189,11 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 
 		func loadEmptyImage() // set up the empty imageView and add the addaddlabel messag to it
 			{
-				let L=treeSettings.initialImageSize
-				let initialImageSize = CGSize(width:L ,height:L)
+				let L=treeSettings.initialImagePaneSize
+				let initialImagePaneSize = CGSize(width:L ,height:L)
 				imageIsLoaded = false // default empty image
 				imageView = UIImageView(image: nil) // works even if image == nil
-				bounds.size = initialImageSize // keep it centered on frame center by changing bounds size
+				bounds.size = initialImagePaneSize // keep it centered on frame center by changing bounds size
 				addAddImageLabel()
 			}
 
@@ -170,7 +202,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				imageOriginalSize = nil
 				self.imageIsLoaded = false
 				imageView.image = nil
-				let L = treeSettings.initialImageSize
+				let L = treeSettings.initialImagePaneSize
 				frame.size =  CGSize(width:L ,height:L) // reset to original square size OR SHOULD IT BE BOUNDS.size?
 				addAddImageLabel()
 			}
@@ -209,23 +241,53 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			addImageLabel!.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
 
 			}
+	
+		func deleteImageFromDiskButKeepPane(updateView viewToUpdate:UIView?) // This leaves the pane but resets to no image; deletes from disk, updates a view if asked
+			{
+			if let node = associatedNode
+				{
+				guard let url = node.imageFileURL else { return }
+				do 	{
+					try FileManager.default.removeItem(at:url)
+					}
+				catch
+					{
+					print ("Error removing file")
+					return
+					}
+				node.imageFileURL = nil
+				node.imageFileDataLocation = nil
+				}
+			unloadImage()
+			if let view = viewToUpdate
+				{ view.setNeedsDisplay()} // to update the image icons in tree view, for example
+			}
 
 
 // ********************* Geometry...
 
 
-/*
-Basic approach to memory management for possibly large collection of possibly large images:
-	- Toggle between a low and high res version of the image, stored at sizes of imageSmallSize, and imageOriginalSize respectively
-	- When first loaded, resize image to low res and display
-	- If image is scaled UP past imageResolutionBoundaryFactor, then reload image at full res and display
-	- If scaled back down, reverse...
-Some setup has to occur in layoutImagePane and addImage functions.
-*/
+		/*
+		Basic approach to memory management for possibly large collection of possibly large images:
+			- Toggle between a low and high res version of the image, stored at sizes of imageSmallSize, and imageOriginalSize respectively
+			- When first loaded, resize image to low res and display
+			- If image is scaled UP past imageResolutionBoundaryFactor, then reload image at full res and display
+			- If scaled back down, reverse...
+		Some setup has to occur in layoutImagePane and addImage functions.
+		*/
+
+	override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) // the VC is a responder so implements this method, usually attached to views
+		{
+		reloadImageToFitPaneSizeIfNeeded ()
+		}
+
 
 		func reloadImageToFitPaneSizeIfNeeded () // add a node's image to existing pane, which may have changed size during zoom; resize image to fit pane's imageView
 			{
-			if scale > imageResolutionBoundaryFactor &&  imageLoadedAtResolution == .low
+
+			guard imageOriginalResolution == .high else { return } // we never resize images that are low res to begin with
+
+			if imageView.frame.width > imageSizeWidthBoundary! &&  imageLoadedAtResolution == .low
 				{
 				if let url = associatedNode?.imageFileURL
 					{
@@ -233,44 +295,35 @@ Some setup has to occur in layoutImagePane and addImage functions.
 						{
 						imageView.image = image
 						imageLoadedAtResolution = .high
-
 						}
 					}
 				}
-
-			if scale <= imageResolutionBoundaryFactor &&  imageLoadedAtResolution == .high
+			// Following assumes that to
+			if imageView.frame.width <= imageSizeWidthBoundary! &&  imageLoadedAtResolution == .high
 				{
-		// could do this just be rescaling current large imageView.image, which sidesteps reloading...
-				if let url = associatedNode?.imageFileURL
+				if let image = imageView.image
 					{
-					if let image = UIImage(contentsOfFile:url.path)
-						{
-						imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!)
-						imageLoadedAtResolution = .low
-						}
+//					imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!)
+imageView.image = imageSmall
+					imageLoadedAtResolution = .low
 					}
 				}
-
-
-
-
 			}
 
 
 
 
-		func minimize(andHide flag:Bool)
+		func minimize()
 			{
+			guard imageOriginalResolution == .high else { return } // we never minimize images that are low res to begin with
 			if imageLoadedAtResolution == .high
 				{
-				if let image = imageView.image
-					{imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!) }
-				}
-			if flag == true
-				{
-				self.isHidden = true
-				//if let node = associatedNode
-				//	{ node.isDisplayingImage = false }
+print ("Minimize")
+				if let imageSmall = imageSmall
+					{
+					imageView.image = imageSmall
+					imageLoadedAtResolution = .low
+					}
 				}
 			}
 
@@ -279,9 +332,6 @@ Some setup has to occur in layoutImagePane and addImage functions.
 
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
 				{
-
-	//print ("Around Pt:",pt)
-	
 				let theTransform = CGAffineTransform.identity.translatedBy(x: pt.x, y: pt.y).scaledBy(x: scale, y: scale).translatedBy(x: -pt.x, y: -pt.y) // note that this order is reversed from how you'd apply them to current transform (I think)
 				let newBounds = bounds.applying(theTransform)
 				let deltaOrigin = newBounds.origin // since original bounds was just 0,0
@@ -336,26 +386,10 @@ Some setup has to occur in layoutImagePane and addImage functions.
 				if let node = associatedNode
 					{
 					let centerY = WindowCoord(fromTreeCoord: node.coord.y, inTreeView: t)
-					//let centerX = center.x
 					self.transform = CGAffineTransform.identity.translatedBy(x:0,y:centerY)
 					}
-
 				}
 
-
-        // Used if view is called programmatically
-
-        override init(frame: CGRect)
-                {
-                super.init(frame:frame)
-                }
-	
-
-        // Used with IB
-        required init?(coder aDecoder: NSCoder) {
-                super.init(coder:aDecoder)
-        }
-	
 		func convert(panePt pt:CGPoint, toTreeView treeView:DrawTreeView) -> CGPoint
 			{
 			let nodeY = self.associatedNode!.coord.y
@@ -364,53 +398,37 @@ Some setup has to occur in layoutImagePane and addImage functions.
 			let X = pt.x
 			return CGPoint(x: X, y: Y)
 			}
-		func isPanePointWithinWindow(panePt pt:CGPoint, ofTreeView treeView:DrawTreeView) -> Bool
+
+		func freeze(inTreeView treeView:DrawTreeView)
 			{
-			let p = convert(panePt:pt, toTreeView:treeView)
-			let r = treeView.decoratedTreeRect!
-			if p.x > r.minX && p.x < r.maxX && p.y > r.minY && p.y < r.maxY
-				{ return true }
-			else
-				{ return false }
+			if let node = associatedNode
+				{
+				isFrozen = true
+				imageWindowCoord = WindowCoord(fromTreeCoord: node.coord.y, inTreeView: treeView)
+				treeView.setNeedsDisplay()
+				}
 			}
 
-		func rectInPaneCoordsDoesIntersectWithWindow(paneRect rect:CGRect, ofTreeView treeView:DrawTreeView) -> Bool
+		func unfreeze(inTreeView treeView:DrawTreeView)
 			{
-			//let pt = rect.origin
-			//let p = convert(panePt:pt, toTreeView:treeView)
-			
-	let convertedRect = self.convert(rect, to: treeView)
-			
-			//let convertedRect = CGRect(origin:p, size:rect.size)
-			let r = treeView.decoratedTreeRect!
-			if r.intersects(convertedRect)
-				{ return true }
-			else
-				{ return false }
+			if let node = associatedNode
+				{
+				isFrozen=false
+				let targetTreeCoord = TreeCoord(fromWindowCoord: imageWindowCoord,inTreeView: treeView)
+				let necessaryRectYCoordOffset = targetTreeCoord - node.coord.y
+				frame = frame.offsetBy(dx: 0, dy: necessaryRectYCoordOffset)
+				treeView.setNeedsDisplay()
+				//self.setNeedsDisplay()
+				}
 			}
-
-	func freeze(inTreeView treeView:DrawTreeView)
-		{
-		if let node = associatedNode
-			{
-			isFrozen = true
-			imageWindowCoord = WindowCoord(fromTreeCoord: node.coord.y, inTreeView: treeView)
-			treeView.setNeedsDisplay()
-			}
-		}
-
-	func unfreeze(inTreeView treeView:DrawTreeView)
-		{
-		if let node = associatedNode
-			{
-			isFrozen=false
-			let targetTreeCoord = TreeCoord(fromWindowCoord: imageWindowCoord,inTreeView: treeView)
-			let necessaryRectYCoordOffset = targetTreeCoord - node.coord.y
-			frame = frame.offsetBy(dx: 0, dy: necessaryRectYCoordOffset)
-			treeView.setNeedsDisplay()
-			//self.setNeedsDisplay()
-			}
-		}
+	
+        override init(frame: CGRect)
+                {
+                super.init(frame:frame)
+                }
+        required init?(coder aDecoder: NSCoder) {
+                super.init(coder:aDecoder)
+        }
 
 	}
 
