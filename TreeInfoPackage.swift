@@ -137,6 +137,7 @@ enum PhloraDataLocation {
 class TreeInfoPackage
 	{
 	var treeName:String
+	var displayTreeName:String
 	var treeDescription:String
 	var treeSource:String
 	var mrcaArray: [Dictionary<String, String>] = []
@@ -145,17 +146,20 @@ class TreeInfoPackage
 	var isHidden:Bool = true
 	var nLeaves:Int=0
 	var dataLocation:PhloraDataLocation?
+	var thumbStudyImage:UIImage?
 
 	init(fromFileName file:String) throws
 		{
 			let nexusString = try String(contentsOfFile: file)
 			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
+			displayTreeName = treeName.replacingOccurrences(of: "_", with: " ")
 		}
 
 	init(fromURL url : URL) throws
 		{
 			let nexusString = try String(contentsOf: url)
 			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
+			displayTreeName = treeName.replacingOccurrences(of: "_", with: " ")
 		}
 	}
 
@@ -218,7 +222,6 @@ class TreeInfoPackage
 					}
 				}
 			}
-
 		guard nLeaves>2 else {throw parserError.invalidTreeDescription}
 		guard treeName != "" else {throw parserError.invalidTreeDescription}
 		guard nRightParens == nLeftParens else {throw parserError.invalidTreeDescription}

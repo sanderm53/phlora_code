@@ -17,6 +17,18 @@ func resizeUIImage(image theImage:UIImage, toSize size:CGSize) -> UIImage?
 			UIGraphicsEndImageContext()
 			return resizedImage
 			}
+func resizeUIImageToFitSquare(_ image:UIImage, withHeight L:CGFloat) -> UIImage
+			{
+			var rectMult:CGFloat
+			let aspect = image.size.height/image.size.width
+			if aspect >= 1.0
+				{ rectMult=L/image.size.height }
+			else
+				{ rectMult=L/image.size.width }
+			let size = CGSize(width:rectMult*image.size.width ,height:rectMult*image.size.height)
+			return resizeUIImage(image: image, toSize:size)!
+			}
+
 
 
 class MainViewController: UIViewController {
@@ -28,28 +40,19 @@ class MainViewController: UIViewController {
 	var pickedRowIndex:Int = 0
 	var safeFrame:CGRect!
 	var studyViewController:StudyViewController?
-	//var initialLocation = CGPoint(x:0,y:0)
-	
-	func studyButtonAction(sender: UIButton!) {
+	var helpViewController:htmlFileTextViewController?
 
+	func studyButtonAction(sender: UIButton!)
+		{
 		if studyViewController == nil
 			{ studyViewController = StudyViewController()}
-		//let svc = StudyViewController() // this is instantiated but the code in viewDidLoad in it is not executed yet.
-		// so set these variables before the VC does load
 		self.navigationController?.pushViewController(studyViewController!, animated: true)
-		//self.navigationController?.pushViewController(svc, animated: true)
-
 // Is there a more approp place for these...? Probably in viewWillAppear of studyVC? and treeVC--Nope tried these, nor viewDidLoad
         navigationController!.setToolbarHidden(false, animated: false)
 		navigationController!.setNavigationBarHidden(false, animated: false)
 
+		}
 
-	}
-
-// NEW TEST OF IMPORT FEATURES ...***********
-
-
-// **************
 
 	func aboutButtonAction(sender: UIButton!)
 		{
@@ -57,11 +60,15 @@ class MainViewController: UIViewController {
 		vc.htmlFilePrefix="About"
 		self.navigationController?.pushViewController(vc, animated: true)
 		}
+
 	func helpButtonAction(sender: UIButton!)
 		{
-		let vc = htmlFileTextViewController()
-		vc.htmlFilePrefix="HelpGuide"
-		self.navigationController?.pushViewController(vc, animated: true)
+		if helpViewController == nil
+			{
+			helpViewController = htmlFileTextViewController()
+			helpViewController!.htmlFilePrefix="HelpGuide"
+			}
+		self.navigationController?.pushViewController(helpViewController!, animated: true)
 		}
 
 

@@ -11,7 +11,7 @@ import UIKit
 
 
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate {
+class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate, ImageSelectorDelegate {
 //class StudyViewController: UITableViewController, UIDocumentPickerDelegate {
 
 	var treeViewStatusBar:UILabel!
@@ -179,16 +179,9 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 						if let ip = studyTableView.indexPathForRow(at:touchPt)
 							{
 							let cell = studyTableView.cellForRow(at:ip) as! StudyTableViewCell
-//print (cell.treeInfo?.treeName)
-
 							let sourceRect = imagePane.frame // This frame is relative to the cell view's bounds rect and works
-							//if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(treeInfo:cell.treeInfo!, ofType: .images)
-								if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(study: cell.treeInfo!.treeName, inLocation:cell.treeInfo!.dataLocation!, ofType:.images, create:true)
-								{
-								let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:cell, atRect: sourceRect)
-								icc.launch()
-								}
-
+							let iS = ImageSelector(receivingImagePane:imagePane, calledFromViewController:self, delegate:self, callingView:cell, atRect: sourceRect)
+							iS.selectImage()
 							}
 						}
 				default:
@@ -198,20 +191,60 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 	}
 
+// Handle the image selected from file system. This is required by the ImageSelector delegate protocol
+func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage)
+	{
+	let cell = imageSelector.sourceView as! StudyTableViewCell
+	cell.treeInfo!.thumbStudyImage = resizeUIImageToFitSquare(image, withHeight:treeSettings.studyTableRowHeight)
+
+	// save to disk...
+	do
+		{
+		if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(study: cell.treeInfo!.treeName, inLocation:cell.treeInfo!.dataLocation!, ofType:.images, create:true)
+			{ _ = try copyImageToDocs(srcImage:image, copyToDir: targetDir, usingFileNameBase: fileNameBase) }
+		}
+	catch
+		{
+		print ("Error saving image file to Phlora")
+		let alert = UIAlertController(title:"Error saving image file to Phlora",message:nil, preferredStyle: .alert)
+		alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
+		present(alert,animated:true,completion:nil)
+		}
+
+	// Tableview nonsense. Tableview won't let me use constraints as normal. Have to reload a row to get the cell to enforce constraints way I want.
+	if let ip = studyTableView.indexPath(for: cell)
+		{
+		studyTableView.beginUpdates()
+		studyTableView.reloadRows(at: [ip], with: .right)
+		studyTableView.endUpdates()
+		}
+
+	}
+
+
+	func deleteAllGestureRecognizersFrom(view:UIView)
+		{
+		if let grs = view.gestureRecognizers
+			{
+			for gr in grs { view.removeGestureRecognizer(gr) }
+			}
+
+		}
+
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 			let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
 			let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-	// I set up the cell using a property observer in cell controller, which watches treeInfo property
+			// I set up the cell using a property observer in cell controller, which watches treeInfo property!!
+			// When tableView needs to display this cell, the prop observer will make sure to (re)load image and setNeedsLayout in that class defn
 			cell.treeInfo = treesData.treeInfoDictionary[treeName]
 
-			if cell.studyImagePane.imageIsLoaded == false  // prepare a cell with no image for possible "add image"
+			deleteAllGestureRecognizersFrom(view:cell.studyImagePane) // yikes, otherwise these could stack up over time with cell reuse
+			if cell.studyImagePane.imageIsLoaded == false  // the new cell row has no study image; add add gesture
 				{
 				let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
-				tapGesture.cancelsTouchesInView = true // lets the touch continue up responder chain to table view
+				tapGesture.cancelsTouchesInView = false // when adding an image, stop the touch event from going up to the tableview and mistakenly leading to selection of the row
 				cell.studyImagePane.addGestureRecognizer(tapGesture)
 				}
-
-
 			if indexPath.row == pickedRowIndex
 				{
 				cell.accessoryType = .checkmark

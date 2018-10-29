@@ -15,17 +15,35 @@ class StudyTableViewCell: UITableViewCell {
 var studyLabel: UILabel!
 var nLeafLabel: UILabel!
 var referenceLabel: UILabel!
-var studyImageView: UIImageView!
 var studyImagePane: ImagePaneView!
 
 var treeInfo: TreeInfoPackage? {
     didSet {
         if let t = treeInfo {
-        	studyLabel.text = t.treeName
+        	studyLabel.text = t.displayTreeName
         	nLeafLabel.text = "\(t.nLeaves) leaves"
 			referenceLabel.text = t.treeSource
 			// fetch an image file with the same filename prefix as the treeName (e.g., "Cactaceae.png" )
 
+			if let image = t.thumbStudyImage
+				{
+				studyImagePane.loadImage(image)
+				}
+			else
+				{
+				if let image = getStudyImage(forStudyName:t.treeName)
+					{
+					studyImagePane.loadImage(image)
+					//t.thumbStudyImage = image
+					t.thumbStudyImage = resizeUIImageToFitSquare(image, withHeight:treeSettings.studyTableRowHeight)
+					}
+				else
+					{
+					if studyImagePane.imageIsLoaded
+						{ studyImagePane.unloadImage()} // in case we are reusing a cell with an image pane already populated
+					}
+				}
+/*
 			if let image = getStudyImage(forStudyName:t.treeName)
 				{
 				studyImagePane.loadImage(image)
@@ -35,7 +53,7 @@ var treeInfo: TreeInfoPackage? {
 				if studyImagePane.imageIsLoaded
 					{ studyImagePane.unloadImage()} // in case we are reusing a cell with an image pane already populated
 				}
-
+*/
             setNeedsLayout()
         }
     }
@@ -47,7 +65,6 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 	//backgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
 	backgroundColor = nil
     selectionStyle = .none
-
 
 	studyImagePane = ImagePaneView(atNode:nil, withImage:nil, imageLabel:nil, showBorder:false)
 	studyImagePane.contentMode = .scaleAspectFit // important

@@ -26,6 +26,8 @@ func rectFromTwoPoints(_ pt1:CGPoint, _ pt2:CGPoint)->CGRect
 
 	}
 
+// NB! When embedding a pane in a table view, have to use reloadRows to get constraints to work right. The usual ..Needs..() flags won't hack it.
+
 /*
 NB. I needed to keep the frame size of the imagePane to be a superset of the imageView because the gesture recognizer
 chain works by intersecting the frames of the hierarchy of views down to the imageView. If the frame of imagePane is merely intersecting
@@ -54,7 +56,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		var imageSmallSize:CGSize?		// keep a size here that is smallish and use it to resize an image to something small when res needs to be low
 		var imageOriginalResolution:imageResolutionType? // i.e., in the file
 		var imageLoadedAtResolution:imageResolutionType? // either low or high
-		let imageResolutionBoundaryFactor:CGFloat = 3.0 // boundary between low and high resolution image to be requested is given in units of the 'scale' parameter that describes the size of the image relative to its original size. This code is sort of wasted if image is really low res
+		//let imageResolutionBoundaryFactor:CGFloat = 3.0 // boundary between low and high resolution image to be requested is given in units of the 'scale' parameter that describes the size of the image relative to its original size. This code is sort of wasted if image is really low res
 
 		var imageSizeWidthBoundary:CGFloat? // If size of pane grows above this we will resize image to high resolution and vice versa
 
@@ -85,7 +87,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 
 				associatedNode = node // will remain nil if this is not a node-associated call
 
-				// This will set up pane's imageView appropriately, and then constraints follow below
+				// This will set up pane's imageView either with or without an image, and then constraints follow below
 				if let image = image
 					{
 					loadImage(image)
@@ -115,6 +117,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					{
 					layer.borderColor=UIColor.white.cgColor
 					layer.borderWidth=2.0
+
 					}
 				}
 
@@ -129,10 +132,18 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			}
 
 
-		func loadImage (_ image:UIImage) // add image to existing pane at small size , get rid of addAdd label. Can be used to reload image overwriting an existing one
-			// Files are loaded at "low" resolution if they are "high" resolution files and the image pane is set initially to just part of the view.
-			// imageSmallSize is this low resolution. However, if the image itself is low resolution, then low res is going to be the maximum res
-			// Image gets reloaded at max res (original size of image) when the requested size based on the pane size becomes larger than the imageSmallSize property
+
+		func loadImage (_ image:UIImage)
+			// Load image to an existing pane , get rid of addAdd label.
+			// Regardless of size, an image is loaded at "low" resolution (size = imageSmallSize), and a UIImage at this size is kept in 'smallImage' property.
+			// If the image is originally low resolution, this is the only version that is ever displayed. However,
+			// if the image is high resolution, then we do some switching back and forth:
+			// 		If the imagePane and thus imageView grows larger than imageSizeWidthBoundary.width, then load the original image and use it.
+			//		Use the saved smallImage if the pane is zoomed out, and let the hi-res copy be deallocated by ARC
+			//		When a hi-res image scrolls off screen, the treeView.layoutSubviews function will call switchToLowResImage() on it to use the smallImage again.
+			//		When that image returns to view, it will be fuzzy. A touch down on it will call touchesBegan() function below to reload from disk the hi res version.
+			
+			
 			{
 				var initialImagePaneSize:CGSize
 				var targetResolutionSize:CGSize // The file will be loaded and sized to this
@@ -174,7 +185,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					{
 					imageView.image = resizeUIImage(image:image, toSize:targetResolutionSize)
 					}
-imageSmall = imageView.image
+				imageSmall = imageView.image
 
 				bounds.size = initialImagePaneSize // keep it centered on frame center by changing bounds size
 				if associatedNode != nil
@@ -267,18 +278,12 @@ imageSmall = imageView.image
 // ********************* Geometry...
 
 
-		/*
-		Basic approach to memory management for possibly large collection of possibly large images:
-			- Toggle between a low and high res version of the image, stored at sizes of imageSmallSize, and imageOriginalSize respectively
-			- When first loaded, resize image to low res and display
-			- If image is scaled UP past imageResolutionBoundaryFactor, then reload image at full res and display
-			- If scaled back down, reverse...
-		Some setup has to occur in layoutImagePane and addImage functions.
-		*/
-
 	override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) // the VC is a responder so implements this method, usually attached to views
 		{
-		reloadImageToFitPaneSizeIfNeeded ()
+		super.touchesBegan(touches, with: event) // vital to do this
+//print ("Touch in pane")
+		if associatedNode != nil
+			{ reloadImageToFitPaneSizeIfNeeded () }// check this only on treeview
 		}
 
 
@@ -301,10 +306,10 @@ imageSmall = imageView.image
 			// Following assumes that to
 			if imageView.frame.width <= imageSizeWidthBoundary! &&  imageLoadedAtResolution == .high
 				{
-				if let image = imageView.image
+				if imageSmall != nil // the save low res version
 					{
 //					imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!)
-imageView.image = imageSmall
+					imageView.image = imageSmall
 					imageLoadedAtResolution = .low
 					}
 				}
@@ -313,13 +318,12 @@ imageView.image = imageSmall
 
 
 
-		func minimize()
+		func switchToLowResImage()
 			{
 			guard imageOriginalResolution == .high else { return } // we never minimize images that are low res to begin with
 			if imageLoadedAtResolution == .high
 				{
-print ("Minimize")
-				if let imageSmall = imageSmall
+				if imageSmall != nil // just load the save low res image
 					{
 					imageView.image = imageSmall
 					imageLoadedAtResolution = .low

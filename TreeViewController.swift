@@ -13,7 +13,7 @@ import Photos
 var appleBlue = UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0).cgColor
 
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class TreeViewController: UIViewController, UIGestureRecognizerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class TreeViewController: UIViewController, UIGestureRecognizerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, ImageSelectorDelegate {
 
 var timer: CADisplayLink?
 var startAnimation: TimeInterval = 0
@@ -202,11 +202,14 @@ var showingImageAddButtons:Bool = false
 	override func didReceiveMemoryWarning() {
 		super.didReceiveMemoryWarning()
 		print ("Treeviewcontroller received memory warning")
-		self.emergencyMinimizeImages()
+		self.emergencyDeleteImages()
 		// Dispose of any resources that can be recreated.
 		}
 
-	func emergencyMinimizeImages()
+	func emergencyDeleteImages()
+		// Used to handle low memory warnings, almost always caused by too many hi-res images being displayed
+		// If this is a hidden treeview controller, all images are deleted (though signalled by blue icons)
+		// If it is a visible treeview controller, offscreen images are deleted. Others are kept.
 		{
 		var vcIsVisible:Bool = false
 		if self == navigationController?.visibleViewController
@@ -238,7 +241,7 @@ var showingImageAddButtons:Bool = false
 
 	override func viewWillLayoutSubviews()
 		{
-//print ("View will layout subviews")
+		//print ("View will layout subviews")
 		super.viewWillLayoutSubviews()
 		}
   	override func viewDidLayoutSubviews()
@@ -511,10 +514,6 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 				break
 			case UIGestureRecognizerState.ended:
 
-				//if imagePane.imageIsLoaded
-
-				//		{ imagePane.reloadImageToFitPaneSizeIfNeeded() } // this tap lets us focus a hi-res image when it re-pans to visible screen
-
 				if imagePane.imageIsLoaded == false // stuff to add new image
 					{
 
@@ -527,12 +526,18 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 
 
 							//if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:treeView.treeInfo!.dataLocation!, ofType:.images, create:true)
+/*
 							if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:.inDocuments, ofType:.images, create:true)
 								// Note targetDir is an URL we are copying TO. Therefore image must always go to docs, not bundle location
 							{
 							let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:treeView, atRect: sourceRect)
 							icc.launch()
 							}
+*/
+							let iS = ImageSelector(receivingImagePane:imagePane, calledFromViewController:self, delegate:self, callingView:treeView, atRect: sourceRect)
+							iS.selectImage()
+
+
 						}
 					}
 			default:
@@ -540,6 +545,41 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 
 			}
 		}
+
+// Handle the image selected from file system. This is required by the ImageSelector delegate protocol
+func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage)
+	{
+	let treeView = imageSelector.sourceView as! DrawTreeView
+	let imagePane = imageSelector.imagePane
+	guard let node = imagePane.associatedNode  else  { return }
+
+	imagePane.loadImage(image)
+
+
+	// save to disk...
+	do
+		{
+		if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:.inDocuments, ofType:.images, create:true)
+				{
+				if let destURL = try copyImageToDocs(srcImage:image, copyToDir: targetDir, usingFileNameBase: fileNameBase)
+						{
+						node.imageFileURL = destURL
+						node.imageFileDataLocation = .inDocuments
+						}
+				}
+		}
+	catch
+		{
+		print ("Error saving image file to Phlora")
+		let alert = UIAlertController(title:"Error saving image file to Phlora",message:nil, preferredStyle: .alert)
+		alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
+		present(alert,animated:true,completion:nil)
+		}
+
+	treeView.setNeedsDisplay()
+	}
+
+
 
 // ***********************************************************************************
 
