@@ -13,6 +13,7 @@ import Photos
 protocol ImageSelectorDelegate: class
 	{
 	func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage)
+	func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 	}
 
 class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIDocumentPickerDelegate
@@ -73,11 +74,15 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 		}
 
 
-	func choosePhotoFromFiles()
+	func choosePhotoFromFiles() // reads any image file recognized by public.image UTI
 		{
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.jpeg"],in: .import)
+		let vc = UIDocumentPickerViewController(documentTypes: ["public.image","public.directory"],in: .import)
 		vc.delegate = self
-		viewController!.present(vc, animated: true)
+		
+		viewController!.present(vc, animated: false) {if #available(iOS 11.0, *) {
+				vc.allowsMultipleSelection = true
+				}
+			}
 		}
 	
 	func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
@@ -88,11 +93,20 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 	func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
 		{
 		//print (urls.first)
-		if let url = urls.first
+
+		if let url = urls.first // just picking FIRST at the moment if multiple selected
 			{
-			if let image = UIImage(contentsOfFile:url.path)
+			if url.hasDirectoryPath
 				{
-					delegate.imageSelector(self, didSelectImage:image)
+				print ("This is a directory")
+						delegate.imageSelector(self, didSelectDirectory:url)
+				}
+			else
+				{
+				if let image = UIImage(contentsOfFile:url.path)
+					{
+						delegate.imageSelector(self, didSelectImage:image)
+					}
 				}
 			}
 		}
@@ -102,6 +116,9 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 	func choosePhotoFromLibrary()
 		{
 		//checkPermission()
+		
+//viewController!.dismiss(animated: true) // dismiss alert before calling this vc
+		
 		pickerController.delegate = self
 		pickerController.sourceType = .photoLibrary
 

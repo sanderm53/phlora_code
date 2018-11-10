@@ -250,88 +250,6 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		return rangeOfIDs
 		}
 
-	// ***************************** IMAGE STUFF *****************************************
-	
-	// Given any node lacking an imageView, try to load an image for it.
-	// Must run initImageFilesExistence() first!
-	// Sets the node's hasImage field to true if an image was properly instantiated
-
-/*
-	func initImage(onTree xTree:XTree)
-		{
-		if hasImageFile
-			{
-			if imageView == nil
-				{
-				if (self.originalLabel != nil)
-					{
-					imageView  = MyImageView(leafNode:self,onTree:xTree)
-					if imageView == nil
-						{hasImage = false}
-					else
-						{hasImage = true}
-					}
-				}
-			}
-		else
-			{hasImage = false}
-		return
-		}
-
-	func initImages(onTree xTree:XTree)
-		{
-		if isLeaf()
-			{
-			self.initImage(onTree:xTree)
-			return
-			}
-		else
-			{
-			for child in children
-				{ child.initImages(onTree:xTree) }
-			return
-			}
-		
-		}
-
-*/
-
-	// check if image file is present for each leaf taxon name and note that for the node and for the image collection as a whole (via return val)
-/*
-	func initImageFilesExistence(usingTreeNameAsDirName treeNameDir:String)->Bool
-		{
-		let ext = ["jpg","png"]
-		var hasFoundImageFileSomewhere:Bool = false
-		if isLeaf()
-			{
-			if (self.originalLabel != nil)
-				{
-				let fileManager = FileManager.default
-				let pathToImageBundle = "\(Bundle.main.bundlePath)/\(treeSettings.imageBundleLoc)" + "/" + treeNameDir
-				let filePath0 = pathToImageBundle + "/" + self.originalLabel! + "." + ext[0]
-				let filePath1 = pathToImageBundle + "/" + self.originalLabel! + "." + ext[1]
-				if fileManager.fileExists(atPath: filePath0) || fileManager.fileExists(atPath: filePath1)
-					{ self.hasImageFile=true }
-				else
-					{ self.hasImageFile=false }
-				}
-			else // improbable event that no leaf label!
-				{ self.hasImageFile=false }
-			hasFoundImageFileSomewhere = self.hasImageFile
-			}
-		else
-			{
-			for child in children
-				{
-				hasFoundImageFileSomewhere = (child.initImageFilesExistence(usingTreeNameAsDirName:treeNameDir) || hasFoundImageFileSomewhere)
-				// note Swift uses short circuit evaluation on binary OR and if you reverse the operands on the right, it may not recurse into the tree! Sheesh
-				}
-			}
-		return hasFoundImageFileSomewhere
-		}
-
-*/
-
 
 	// **********************************************************************
 	
@@ -453,26 +371,20 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 				//let nudge = CGFloat(4.0)
 				// handle writing the label here
 
-var	cladeLabelAttributes = [
-		NSForegroundColorAttributeName : UIColor.yellow,
-		NSFontAttributeName : UIFont(name:treeSettings.labelFontName, size:30)!
-		]								// attributes for leaf labels; paragraph style for truncation setup in setup()
-let paragraphStyle = NSMutableParagraphStyle()
-paragraphStyle.lineBreakMode = .byTruncatingTail
-cladeLabelAttributes[NSParagraphStyleAttributeName]=paragraphStyle
+				var	cladeLabelAttributes = [
+						NSForegroundColorAttributeName : UIColor.yellow,
+						NSFontAttributeName : UIFont(name:treeSettings.labelFontName, size:30)!
+						]								// attributes for leaf labels; paragraph style for truncation setup in setup()
+				let paragraphStyle = NSMutableParagraphStyle()
+				paragraphStyle.lineBreakMode = .byTruncatingTail
+				cladeLabelAttributes[NSParagraphStyleAttributeName]=paragraphStyle
 
 
 				let aText=NSAttributedString(string:self.label!,attributes: cladeLabelAttributes)
 
 				let textHeight = aText.size().height
 				
-
-				//let leafNodeUpper = nodeArray[Int(self.descendantRangeOfIDs.0)] // Upper refers to screen direction!
-				//let leafNodeLower = nodeArray[Int(self.descendantRangeOfIDs.1)] // arrays don't want UInt subscripts
-
-				//let cladeCenterPt = CGPoint(x: (leafNodeUpper.coord.x+2*self.coord.x)/3, y: (leafNodeLower.coord.y+leafNodeUpper.coord.y)/2 - textHeight/2)
-				//let textRectCentered = CGRect(x:cladeCenterPt.x, y:cladeCenterPt.y,width:nakedTreeRect.maxX - cladeCenterPt.x, height:textHeight)
-let nudge:CGFloat = 5.0
+				let nudge:CGFloat = 5.0
 
 				let allowedTextWidthWithinClade = nakedTreeRect.maxX - self.coord.x-nudge
 				let allowedTextWidthLeftOfClade = self.coord.x - nudge
@@ -512,30 +424,6 @@ let nudge:CGFloat = 5.0
 			return
 			}
 		}
-//***************************************************
-/*
-	func newClosedCladePath(havingNodeArray nodeArray:[Node]) -> (Int,[CGPoint])
-		{
-		let leafNodeUpper = nodeArray[Int(self.descendantRangeOfIDs.0)] // Upper refers to screen direction!
-		let leafNodeLower = nodeArray[Int(self.descendantRangeOfIDs.1)] // arrays don't want UInt subscripts
-		let nodeArrayUpper = newNodeArrayPath(fromLeafNode:leafNodeUpper, toInternalNode:self)
-		let rootElementIndex = nodeArrayUpper.count-1
-		var nodeArrayLower = newNodeArrayPath(fromLeafNode:leafNodeLower, toInternalNode:self)
-
-		// creat path starting from upper leaf node, moving to clade root, then out to lower leaf node and finally close path by moving to upper leaf
-		nodeArrayLower.removeLast() // this is the root node of the clade, and is redundant with the last node in nodeArrayUpper
-		var nodeArrayComplete = nodeArrayUpper + nodeArrayLower.reversed()
-		nodeArrayComplete.append(nodeArrayUpper[0]) // we add the starting node also to the end of the array for convenience in looping
-//print (self.label!)
-//for node in nodeArrayComplete { print (node.label,node.coord)}
-		var pathCoords = [CGPoint]()
-		for node in nodeArrayComplete
-			{
-			pathCoords.append(node.coord)
-			}
-		return (rootElementIndex,pathCoords)
-		}
-*/
 //***************************************************
 // Heinous code to make sure balloons remain nested. Following function is used to check for the length of the longest top right edge in any
 // balloon that is nested within this one. We need this to correct for the balloon that will be drawn here. See drawRoundedRectClade()
@@ -638,41 +526,25 @@ let nudge:CGFloat = 5.0
 		ctx.closePath()
 		let path = ctx.path
 
-let cladebgcolor = UIColor(red: 0.0, green: 0.2, blue: 0.0, alpha: 1.0)
+		let cladebgcolor = UIColor(red: 0.0, green: 0.2, blue: 0.0, alpha: 1.0)
 
-// HACK TEMP!!
-let cladeAlpha = 0.8 * 200.0 / (leafNodeLower.coord.y - leafNodeUpper.coord.y) // about right for 10.5" iPad
+		// HACK TEMP!!
+		let cladeAlpha = 0.8 * 200.0 / (leafNodeLower.coord.y - leafNodeUpper.coord.y) // about right for 10.5" iPad
 
-let cladeBorderAlpha = clamp(cladeAlpha, between:0.6, and:0.6)
+		let cladeBorderAlpha = clamp(cladeAlpha, between:0.6, and:0.6)
 
-ctx.setAlpha(cladeAlpha)
-//ctx.setFillColor(UIColor.green.cgColor)
-ctx.setFillColor(cladebgcolor.cgColor)
-ctx.drawPath(using: .fill)
-ctx.addPath(path!)
-ctx.setAlpha(cladeBorderAlpha)
-ctx.setStrokeColor(UIColor.yellow.cgColor)
-ctx.drawPath(using: .stroke)
-
+		ctx.setAlpha(cladeAlpha)
+		//ctx.setFillColor(UIColor.green.cgColor)
+		ctx.setFillColor(cladebgcolor.cgColor)
+		ctx.drawPath(using: .fill)
+		ctx.addPath(path!)
+		ctx.setAlpha(cladeBorderAlpha)
+		ctx.setStrokeColor(UIColor.yellow.cgColor)
+		ctx.drawPath(using: .stroke)
 
 		return
 		}
 
-/*
-	// Return an array of nodes from the leaf to the internal node inclusive
-	func newNodeArrayPath(fromLeafNode leafNode:Node, toInternalNode intNode:Node)-> [Node]
-		{
-		var nodePathArray = [Node]()
-		var node = leafNode
-		nodePathArray.append(node)
-		while node !== intNode
-			{
-			node = node.parent!
-			nodePathArray.append(node)
-			}
-		return nodePathArray
-		}
-*/
 	// **********************************************************************
 
 
@@ -898,11 +770,6 @@ ctx.drawPath(using: .stroke)
 				} // end ifTreeCoordInRect
 			} // end isLeaf
 
-
-
-
-
-
 		else
 			{
 			for child in children
@@ -1034,7 +901,6 @@ ctx.drawPath(using: .stroke)
 			{
 			maxELT=self.maxEdgeLengthToLeaf(isRoot:true) // for phylogram find longest path to tip
 			}
-//		self.assignX(TreeRectPtr->left,TreeRectPtr->right,TreeRectPtr->right-TreeRectPtr->left+1,withMaxToLeafLength:maxEdgeLengthToLeaf, forTreeType:treeMode)
 
 		self.assignX(xLeft:rect.origin.x,  xRight:rect.origin.x+rect.size.width,  xWidth:rect.size.width, withMaxToLeafLength:maxELT, forTreeType:treeType, isRoot: true)
 		

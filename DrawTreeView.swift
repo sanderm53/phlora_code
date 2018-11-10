@@ -162,6 +162,34 @@ class DrawTreeView: UIView
 
 		}
 
+	func updateTreeViewIfNeeded() // Basic initialization of tree layout; called in viewDidLayoutSubviews, and applicationDidBecomeActive
+		{
+		switch UIApplication.shared.applicationState
+			{
+			case .background: // Don't permit any changes to treeView layout here
+//print ("VDL: App is in background")
+				return
+			case .active, .inactive: // I include inactive state here, because that happens when app is transitioning from background to active state, and this is a useful time to update the treeView
+//print ("VDL: App is active or inactive")
+				if previousBounds == nil // treeview's bounds have not been set up; do the following the first time thru
+					{
+					setupViewDependentTreeRectsEtc()
+					setupTreeCoordsForTreeToFill()
+					previousBounds = bounds
+					setNeedsDisplay()
+					}
+				else
+					{
+					if bounds != previousBounds // treeview's been set up once anyway, change it if size has changed
+						{
+						updateTreeViewWhenSizeChanged(oldWindowHeight:previousBounds!.height)
+						previousBounds = bounds
+						setNeedsDisplay()
+						}
+					}
+			}
+		}
+
 
 func treeOpensGapAtTopByThisMuch()->CGFloat
 	{

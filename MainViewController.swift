@@ -17,6 +17,7 @@ func resizeUIImage(image theImage:UIImage, toSize size:CGSize) -> UIImage?
 			UIGraphicsEndImageContext()
 			return resizedImage
 			}
+
 func resizeUIImageToFitSquare(_ image:UIImage, withHeight L:CGFloat) -> UIImage
 			{
 			var rectMult:CGFloat
@@ -140,9 +141,7 @@ class MainViewController: UIViewController {
 		stackView.translatesAutoresizingMaskIntoConstraints = false
 		view.addSubview(stackView)
 		
-//		stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
 		stackView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
-		//stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
 		stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
 		stackView.widthAnchor.constraint(equalToConstant: treeSettings.largeButtonSize.width).isActive = true
 		stackView.heightAnchor.constraint(equalToConstant: treeSettings.largeButtonSize.height).isActive = true

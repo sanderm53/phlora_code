@@ -6,6 +6,8 @@
 //  Copyright © 2018 mcmanderson. All rights reserved.
 //
 
+/*DEPRECATED ... see ImageSelector()
+
 import Foundation
 import UIKit
 import Photos
@@ -183,5 +185,5 @@ sourceView.setNeedsDisplay()
 	}
 
 
-
+*/
 

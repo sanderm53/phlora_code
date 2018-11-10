@@ -128,7 +128,7 @@ let iPhoneTreeSettings=Settings(
 	replaceUnderscore:true,
 	replaceSingleQuotes:true,
 	//initialImagePaneSize:250.0,
-	initialImagePaneSize:500.0,
+	initialImagePaneSize:400.0,
 	initialImageXPos:300.0,
 	imageToIconLineColor:UIColor.yellow.cgColor,
 	treeViewInsetX:15,

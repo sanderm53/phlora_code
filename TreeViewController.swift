@@ -8,6 +8,7 @@
 
 import UIKit
 import Photos
+import MobileCoreServices
 
 
 var appleBlue = UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0).cgColor
@@ -123,7 +124,7 @@ var showingImageAddButtons:Bool = false
 		let treeInfo = treesData.treeInfoDictionary[treeName]!
 		//treeView = DrawTreeView(frame:safeFrame,using:treeInfo)
 
-		self.title = treeName + " (\(nLeaves) leaves)" // This will be displayed in middle button of navigation bar at top
+		self.title = treeInfo.displayTreeName + " (\(nLeaves) leaves)" // This will be displayed in middle button of navigation bar at top
 
 		if infoViewController == nil
 			{ infoViewController = TextFileViewController(treeInfo:treeInfo) }
@@ -253,30 +254,7 @@ var showingImageAddButtons:Bool = false
 		// Need to include the application state because of an apparent reportd bug where switching apps (i.e., sending this
 		// to background) actually forces spurious calls to this func and viewWillTransition. Since these reset the TreeParams
 		// it was causing unneeded resets to unzoomed, unpanned tree.
-		switch UIApplication.shared.applicationState
-			{
-			case .background: // Don't permit any changes to treeView layout here
-				//print ("App is in background")
-				return
-			case .active, .inactive: // I include inactive state here, because that happens when app is transitioning from background to active state, and this is a useful time to update the treeView
-				//print ("App is active or inactive")
-				if treeView.previousBounds == nil // treeview's bounds have not been set up; do the following the first time thru
-					{
-					treeView.setupViewDependentTreeRectsEtc()
-					treeView.setupTreeCoordsForTreeToFill()
-					treeView.previousBounds = treeView.bounds
-					treeView.setNeedsDisplay()
-					}
-				else
-					{
-					if treeView.bounds != treeView.previousBounds // treeview's been set up once anyway, change it if size has changed
-						{
-						treeView.updateTreeViewWhenSizeChanged(oldWindowHeight:treeView.previousBounds!.height)
-						treeView.previousBounds = treeView.bounds
-						treeView.setNeedsDisplay()
-						}
-					}
-			}
+		treeView.updateTreeViewIfNeeded()
     	}
 
 // Handle recomputing tree coords on a device rotation event.
@@ -422,50 +400,20 @@ func addImagePane(atNode node:Node)
 
 	doubleTapGesture.require(toFail: tripleTapGesture) // ensures double and triple tap sequenced right
 
-	// This is a GR to long press imagePane to delete; only allow for user added data
-	addLongTapGestureToDeleteImageFrom(imagePane)
+	// This is a GR to long press imagePane to delete; will only do so for a pane with an image and image was user-added
+	if node.imageFileDataLocation == .inDocuments
+		{ addLongTapGestureToDeleteImageFrom(imagePane) }
 
 	}
 
 func addLongTapGestureToDeleteImageFrom(_ ip:ImagePaneView)
 	{
-	if ip.associatedNode?.imageFileDataLocation == .inDocuments
-		{
 		let longTapGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleImagePaneLongPress(recognizer:)))
 		longTapGesture.delegate = self
 		ip.addGestureRecognizer(longTapGesture)
 		longTapGesture.minimumPressDuration = 1.0
-		}
-
 	}
 
-// ***********************************************************************************
-
-/*
-func deleteImageInPaneAndDisk(_ imagePane:ImagePaneView) // This leaves the pane but resets to no image; deletes from disk
-	{
-		if let node = imagePane.associatedNode
-			{
-			//node.hasImage = false
-			//node.hasImageFile() = false
-			//node.imageIsNowLoaded = false
-			//node.imagePaneView = nil
-			guard let url = node.imageFileURL else { return }
-			do 	{
-				try FileManager.default.removeItem(at:url)
-				}
-			catch
-				{
-				print ("Error removing file")
-				return
-				}
-			node.imageFileURL = nil
-			node.imageFileDataLocation = nil
-			imagePane.unloadImage()
-			}
-		self.treeView.setNeedsDisplay() // to update the image icons 
-	}
-*/
 
 // ***********************************************************************************
 
@@ -489,7 +437,6 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 						{ (action:UIAlertAction) in self.dismiss(animated:true) }
 					let action2 = UIAlertAction(title: "Delete", style: .default)
 						{ (action:UIAlertAction) in
-						//self.deleteImagePane(imagePane)
 						imagePane.deleteImageFromDiskButKeepPane(updateView:self.treeView)
 						}
 					alert!.addAction(action1)
@@ -554,7 +501,14 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 	guard let node = imagePane.associatedNode  else  { return }
 
 	imagePane.loadImage(image)
-
+	
+	// I am adding an image from a picker, not from the file on disk. The imagepane already exists at this point but it might have two histories
+	//		a. pane might have been empty before, in which case it was initialized with "add" message and no long press gesture...
+	//		b. might have had an image and imagefile before, then was deleted, but in that case it WOULD have a GR before...
+	if node.imageFileURL == nil  // ... so this is case (a)
+		{
+		addLongTapGestureToDeleteImageFrom(imagePane)
+		}
 
 	// save to disk...
 	do
@@ -579,7 +533,77 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 	treeView.setNeedsDisplay()
 	}
 
+func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
+	{
+	let treeView = imageSelector.sourceView as! DrawTreeView
+	let fileManager = FileManager.default
 
+
+	// save to disk...
+	do
+		{
+		if let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:.inDocuments, ofType:.images, create:true)
+				{
+				if let fileURLs = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+					{
+					for fileURL in fileURLs
+						{
+						print (fileURL)
+						if URLConformsToImageType(fileURL)
+							{
+							print ("This file conforms to image")
+							let fileNameBase = fileURL.deletingPathExtension().lastPathComponent
+							if let node = treeView.xTree.nodeHash[fileNameBase]
+								{
+								let filename = fileURL.lastPathComponent
+								let destURL = targetDir.appendingPathComponent(filename)
+// BLEEPED FOR MOMENT!								//node.imageFileURL = destURL 
+								//node.imageFileDataLocation = .inDocuments
+								//treeView.xTree.hasImageFiles=true
+								
+								// DO THE COPY HERE...
+								// try copyItem(at: fileURL, to: destURL)
+		print (fileURL,destURL)
+								// LEAVE THE IMAGE UNOPENED BUT UPDATE THE IMAGE ICONS
+								}
+
+							
+							
+							}
+						}
+					}
+				}
+/* THERE ARE TWO OF THE FOLLOWING FUNCS IN TWO SRC FILES
+				if let destURL = try copyImageToDocs(srcImage:image, copyToDir: targetDir, usingFileNameBase: fileNameBase)
+						{
+						node.imageFileURL = destURL
+						node.imageFileDataLocation = .inDocuments
+						}
+*/
+		}
+	catch
+		{
+		print ("Error saving image file to Phlora")
+		let alert = UIAlertController(title:"Error saving image file to Phlora",message:nil, preferredStyle: .alert)
+		alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
+		present(alert,animated:true,completion:nil)
+		}
+
+	treeView.setNeedsDisplay()
+	}
+
+
+// a UniformTypeIdentifier is just a string (as CFString), like "public.image",
+// Conformance tests equality within the inheritance hierarchy of UTTs, here any image URL returns true
+func URLConformsToImageType(_ url:URL) ->Bool
+	{ // blech
+	if let val = try? url.resourceValues(forKeys: [.typeIdentifierKey]) // returns an optional
+		{
+		if let typeIdentifier = val.typeIdentifier //another optional , so double unwrapping here
+			{ return UTTypeConformsTo(typeIdentifier as CFString, kUTTypeImage) } // kuTTypeImage is the most generic image type
+		}
+	return false
+	}
 
 // ***********************************************************************************
 

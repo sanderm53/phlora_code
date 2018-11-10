@@ -43,17 +43,6 @@ var treeInfo: TreeInfoPackage? {
 						{ studyImagePane.unloadImage()} // in case we are reusing a cell with an image pane already populated
 					}
 				}
-/*
-			if let image = getStudyImage(forStudyName:t.treeName)
-				{
-				studyImagePane.loadImage(image)
-				}
-			else
-				{
-				if studyImagePane.imageIsLoaded
-					{ studyImagePane.unloadImage()} // in case we are reusing a cell with an image pane already populated
-				}
-*/
             setNeedsLayout()
         }
     }

@@ -220,7 +220,9 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 		}
 
 	}
-
+func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
+	{
+	}
 
 	func deleteAllGestureRecognizersFrom(view:UIView)
 		{
@@ -239,10 +241,11 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 			cell.treeInfo = treesData.treeInfoDictionary[treeName]
 
 			deleteAllGestureRecognizersFrom(view:cell.studyImagePane) // yikes, otherwise these could stack up over time with cell reuse
+			// Note on GR here. If you inadvertantly leave a GR to launch the tree, then it will conflict with the GR to add image and throw runtime error. Make sure to cancelTouchesView for an addimage pane but make sure it is NOT there for cells with images.
 			if cell.studyImagePane.imageIsLoaded == false  // the new cell row has no study image; add add gesture
 				{
 				let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
-				tapGesture.cancelsTouchesInView = false // when adding an image, stop the touch event from going up to the tableview and mistakenly leading to selection of the row
+				tapGesture.cancelsTouchesInView = true // when adding an image, stop the touch event from going up to the tableview and mistakenly leading to selection of the row
 				cell.studyImagePane.addGestureRecognizer(tapGesture)
 				}
 			if indexPath.row == pickedRowIndex

@@ -56,7 +56,6 @@ class TreesData
 		let treeInfo = treeInfoDictionary[treeName]!
 		if treeInfo.treeView == nil // This tree view has never been created, so init it and return it
 			{
-			//treeInfo.treeView = DrawTreeView(frame:frame,using:treeInfo)
 			treeInfo.treeView = DrawTreeView(using:treeInfo)
 			}
 		treeInfo.treeView!.isHidden = false
