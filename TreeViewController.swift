@@ -43,6 +43,7 @@ var helpView: UITextView!
 var infoButton: UIButton!
 var cladeNameButton: UIButton!
 var imagesButton: UIButton!
+var imagesPageButton: UIButton!
 var treePickerButton: UIButton!
 var pkSelectTreeButton: UIButton!
 var tablePopupCancelButton: UIButton!
@@ -58,6 +59,8 @@ var alert: UIAlertController?
 var myNavigationController:UINavigationController!
 var otherVC:UIViewController!
 var infoViewController:TextFileViewController?
+var imageTableViewController:ImageTableViewController?
+
 
 var activityIndicator:UIActivityIndicatorView!
 
@@ -163,11 +166,20 @@ var showingImageAddButtons:Bool = false
 		let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
 		imagesButton.setImage(imagesButtonImage, for: .normal)
 
-			
+// display a toggle button to show images but only if present on tree
+		imagesPageButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
+		imagesPageButton.frame.size = infoButton.frame.size
+		//imagesPageButton.tintColor=UIColor.yellow
+		let imagesPageButtonImage = makeImagesTableButtonImage(size:imagesButton.frame.size)
+		imagesPageButton.setImage(imagesPageButtonImage, for: .normal)
+
+
 		let it1 = UIBarButtonItem(customView: cladeNameButton)
 		let it2 = UIBarButtonItem(customView: imagesButton)
 //		let it3 = UIBarButtonItem(customView: treePickerButton)
 		let it4 = UIBarButtonItem(customView: infoButton)
+		let it5 = UIBarButtonItem(customView: imagesPageButton)
 		let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 		// only add appropriate buttons depending on tree data
 		var buttonArray = [spacer]
@@ -180,7 +192,8 @@ var showingImageAddButtons:Bool = false
 			{
 			buttonArray += [it2,spacer]
 			}
-		buttonArray += [it4,spacer]
+		buttonArray += [it4,spacer,it5]
+		//buttonArray += [it4,spacer]
 		//buttonArray += [it3,spacer,it4,spacer] // add this when I add the taxon list button
 		setToolbarItems(buttonArray,animated: false)
 		}
@@ -369,13 +382,6 @@ func addImagePane(atNode node:Node)
 
 	node.imagePaneView = imagePane // have to do this here after pane is initialized (can't within pane's init)
 
-//print ("Trying to add image pane for node ",node.originalLabel)
-
-//	if imagePane.hasImage
-//		{
-//		node.isDisplayingImage = true //  have to do this here after pane is init
-//		}
-	
 	let imagePanGesture =  UIPanGestureRecognizer(target: self, action: #selector(handleImagePanePan(recognizer:)))
 	imagePane.addGestureRecognizer(imagePanGesture)
 	self.panGesture!.require(toFail: imagePanGesture) // ensures gestures sequenced right
@@ -438,6 +444,12 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 					let action2 = UIAlertAction(title: "Delete", style: .default)
 						{ (action:UIAlertAction) in
 						imagePane.deleteImageFromDiskButKeepPane(updateView:self.treeView)
+						if let node = imagePane.associatedNode
+							{
+							if node.imageThumb != nil
+								{ node.imageThumb = nil } // if the imageTable has been created, might have to delete thumb to make sure it won't be displayed
+								// Hmm, still dosn't update imagetable visibly when deleting it from treeview until the tableview is scrolled and reloaded
+							}
 						}
 					alert!.addAction(action1)
 					alert!.addAction(action2)
@@ -501,6 +513,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 	guard let node = imagePane.associatedNode  else  { return }
 
 	imagePane.loadImage(image)
+	node.hasLoadedImageAtLeastOnce = true
 	
 	// I am adding an image from a picker, not from the file on disk. The imagepane already exists at this point but it might have two histories
 	//		a. pane might have been empty before, in which case it was initialized with "add" message and no long press gesture...
@@ -1123,6 +1136,17 @@ func imagesButtonAction(sender: UIButton!) {
 		{ treeView.setNeedsLayout() } // visible again: layout of images don't get updated when they are hidden
     treeView.setNeedsDisplay()
 	}
+func imagesPageButtonAction(sender: UIButton!) {
+		if imageTableViewController == nil
+			{
+			imageTableViewController = ImageTableViewController()
+			imageTableViewController!.xTree = treeView.xTree
+			}
+		self.navigationController?.pushViewController(imageTableViewController!, animated: true)
+// Is there a more approp place for these...? Probably in viewWillAppear of studyVC? and treeVC--Nope tried these, nor viewDidLoad
+        navigationController!.setToolbarHidden(false, animated: false)
+		navigationController!.setNavigationBarHidden(false, animated: false)
+	}
 
 }
 
@@ -1130,7 +1154,6 @@ func imagesButtonAction(sender: UIButton!) {
 // ************************* GLOBAL FUNCTIONS **********************************************************
 
 	func makeTreePickerButtonImage(size:CGSize) -> UIImage?
-		// Well, efforty function to make bitmap for the clade name button image...
 			{
 			UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
 			let ctx = UIGraphicsGetCurrentContext()!
@@ -1148,13 +1171,53 @@ func imagesButtonAction(sender: UIButton!) {
 			}
 
 	func makeImagesButtonImage(size:CGSize) -> UIImage?
-		// Well, efforty function to make bitmap for the clade name button image...
 			{
 			UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
 			let ctx = UIGraphicsGetCurrentContext()!
 			let rect = CGRect(origin: CGPoint(x:0,y:0), size: size)
 			ctx.setStrokeColor(UIColor.white.cgColor)
 			ctx.stroke(rect)
+
+			let iconImage = UIGraphicsGetImageFromCurrentImageContext()
+			UIGraphicsEndImageContext()
+			return iconImage
+			}
+	func makeImagesTableButtonImage(size:CGSize) -> UIImage?
+			{
+			let offset:CGFloat = 4.0
+			let rect = CGRect(origin: CGPoint(x:0,y:0), size: size)
+			let reducedSize = CGSize(width: size.width-offset, height: size.height-offset)
+			let rect1 = CGRect(origin: CGPoint(x:0,y:offset),size:reducedSize)
+			let rect2 = CGRect(origin: CGPoint(x:offset,y:0),size:reducedSize)
+			UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
+			let ctx = UIGraphicsGetCurrentContext()!
+
+			let a = 0.55 * reducedSize.width
+				
+			let lowerLeftCoord = CGPoint(x:0.0,y:rect.maxY)
+			let lowerRightCoord = CGPoint(x:rect1.maxX,y:rect.maxY) // tricky mixing between rect and rect1...yuck
+			let leftPeakCoord = CGPoint(x: a/2, y: rect.maxY - a)
+			let valleyCoord = CGPoint (x: a, y:rect.maxY)
+			let rightPeakCoord = CGPoint(x: a + (reducedSize.width-a)/2, y:rect.maxY - (reducedSize.width-a)/2  )
+
+			ctx.setStrokeColor(UIColor.white.cgColor)
+			ctx.stroke(rect2)
+			ctx.setFillColor(UIColor.black.cgColor)
+			ctx.fill(rect1) 		// fill then stroke to see the line
+			ctx.stroke(rect1)
+			ctx.setAlpha(1.0)
+			ctx.setFillColor(UIColor.white.cgColor)
+
+			ctx.beginPath()
+			ctx.move(to: lowerLeftCoord)
+			ctx.addLine(to: leftPeakCoord)
+			ctx.addLine(to: valleyCoord)
+			ctx.addLine(to: rightPeakCoord)
+			ctx.addLine(to: lowerRightCoord)
+			ctx.closePath()
+			ctx.drawPath(using: .fill)
+
+			//let bgcolor = UIColor(red: 0.0, green: 0.2, blue: 0.0, alpha: 1.0)
 
 			let iconImage = UIGraphicsGetImageFromCurrentImageContext()
 			UIGraphicsEndImageContext()

@@ -42,6 +42,7 @@ class MainViewController: UIViewController {
 	var safeFrame:CGRect!
 	var studyViewController:StudyViewController?
 	var helpViewController:htmlFileTextViewController?
+	var databaseViewController:DatabaseTableViewController?
 
 	func studyButtonAction(sender: UIButton!)
 		{
@@ -72,8 +73,24 @@ class MainViewController: UIViewController {
 		self.navigationController?.pushViewController(helpViewController!, animated: true)
 		}
 
+	func databaseButtonAction(sender: UIButton!)
+		{
+		if databaseViewController == nil
+			{ databaseViewController = DatabaseTableViewController()}
+		self.navigationController?.pushViewController(databaseViewController!, animated: true)
+// Is there a more approp place for these...? Probably in viewWillAppear of studyVC? and treeVC--Nope tried these, nor viewDidLoad
+        navigationController!.setToolbarHidden(false, animated: false)
+		navigationController!.setNavigationBarHidden(false, animated: false)
 
 
+/*
+		let testURL = URL(string:"ftp://ftp.ncbi.nih.gov/genbank/gbrel.txt")
+		if let s = try? String(contentsOf:testURL!)
+			{
+			print (s)
+			}
+*/
+		}
 
 	override func viewDidAppear(_ animated: Bool)
 		{
@@ -132,8 +149,9 @@ class MainViewController: UIViewController {
 		let studyButton = button(title:"Studies",fontSize:treeSettings.titleFontSize,action:#selector(studyButtonAction))
 		let aboutButton = button(title:"About/Credits",fontSize:treeSettings.titleFontSize,action:#selector(aboutButtonAction))
 		let helpButton = button(title:"Help",fontSize:treeSettings.titleFontSize,action:#selector(helpButtonAction))
+		let databaseButton = button(title:"Remote DB",fontSize:treeSettings.titleFontSize,action:#selector(databaseButtonAction))
 
-		let stackView = UIStackView(arrangedSubviews:[studyButton,helpButton,aboutButton])
+		let stackView = UIStackView(arrangedSubviews:[studyButton,helpButton,aboutButton,databaseButton])
 		stackView.axis = .vertical
 		stackView.distribution = .fillEqually
 		stackView.alignment = .fill

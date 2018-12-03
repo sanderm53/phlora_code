@@ -51,6 +51,7 @@ struct Settings
 	let studyTableNLeafFontSize:CGFloat
 	let imageSizeAtLowRes:CGFloat
 	let imageResolutionSmallSize:CGFloat // product of height and width of image is compared to this cutoff to determine its "resolution"
+	let defaultDatabasePath:String
 	}
 
 let iPhoneTreeSettings=Settings(
@@ -94,11 +95,12 @@ let iPhoneTreeSettings=Settings(
 	studyTableReferenceFontSize:12,
 	studyTableNLeafFontSize:12,
 	imageSizeAtLowRes:1000.0,
-	imageResolutionSmallSize:1000000.0
+	imageResolutionSmallSize:1000000.0,
+	defaultDatabasePath:""
 	)
 
 	let iPadTreeSettings=Settings(
-	largeButtonSize:CGSize(width: 300, height: 400),
+	largeButtonSize:CGSize(width: 300, height: 600),
 	allowedToLoadImages:true,
 	preLoadImages:false,
 	imageBundleLoc:"Images.bundle",
@@ -139,7 +141,8 @@ let iPhoneTreeSettings=Settings(
 	studyTableReferenceFontSize:14,
 	studyTableNLeafFontSize:18,
 	imageSizeAtLowRes:1000.0,
-	imageResolutionSmallSize:1000000.0
+	imageResolutionSmallSize:1000000.0,
+	defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
 	)
 
 	var treeSettings = iPadTreeSettings // as a default

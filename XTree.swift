@@ -42,7 +42,8 @@ class XTree {
 	var root: Node!		// Only solution I've found to problem of the initializer calling makeClade is to make this an optional
 	var tokix: Int=0
 	var tokens: [String]
-	var nodeArray: [Node]=[]
+	var nodeArray: [Node]=[] // leaf node array, nodes laid out in order top to bottom on screen, since ladderize is set by default
+	// MOVE TO IMAGE TABLE... var nodeArraySortedByLabel: [Node] = [] // based on previous but sorted alphabetically by original leaf label; SHOULD DO LAZY SOMEHOW?
 	var nodeHash: [String:Node] = [:]
 	var minY:CGFloat=0.0 // min and max leaf node locations
 	var maxY:CGFloat=0.0
@@ -67,6 +68,8 @@ class XTree {
 		(_,_) = root.assignLeafIDs(startingWith:&startingID)
 		root.putNodeArray(into:&nodeArray)
 		for node in nodeArray { nodeHash [node.originalLabel!] = node }
+
+		// TO IMAGE TABLE... nodeArraySortedByLabel = nodeArray.sorted (by: {$0.originalLabel! < $1.originalLabel! } )
 
 		root.prepareLabels()					// This edits labels as requested, copying originallable->label
 		//root.setEdgeAlphaModifier(haveSeenInternalLabel: root.isLabelPresent()) // works on label, so prepare must be done first

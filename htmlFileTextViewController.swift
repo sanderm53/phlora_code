@@ -70,13 +70,15 @@ class htmlFileTextViewController: UIViewController {
 		textView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
 		textView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
 
-		if title == "About" // Add some logos just for this page;
+		if title == "About" // Add some logos just for this page; hack
 			{
 			let imageView1 = UIImageView(image: UIImage(named:"UA.jpg"))
-			let imageView2 = UIImageView(image: UIImage(named:"NSF.png"))
+			let imageView2 = UIImageView(image: UIImage(named:"Yale.png"))
+			let imageView3 = UIImageView(image: UIImage(named:"NSF.png"))
 			imageView1.contentMode = .scaleAspectFit
 			imageView2.contentMode = .scaleAspectFit
-			let stackView = UIStackView(arrangedSubviews:[imageView1,imageView2])
+			imageView3.contentMode = .scaleAspectFit
+			let stackView = UIStackView(arrangedSubviews:[imageView1,imageView2,imageView3])
 			stackView.axis = .horizontal
 			stackView.distribution = .fillEqually
 			stackView.alignment = .fill

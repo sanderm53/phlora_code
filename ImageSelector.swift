@@ -38,7 +38,10 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 		self.alert = UIAlertController(title:"Choose source of image",message:"", preferredStyle: .alert)
 		super.init()
 		let action1 = UIAlertAction(title: "Cancel", style: .cancel)
-			{ (action:UIAlertAction) in  }
+			{
+			(action:UIAlertAction) in
+			//self.alert.dismiss(animated:false) doesn't matter if this is here or not...
+			}
 		let action2 = UIAlertAction(title: "Photo library", style: .default)
 			{ (action:UIAlertAction) in
 			self.choosePhotoFromLibrary()
@@ -87,13 +90,12 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 	
 	func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
 		{
-		controller.dismiss(animated: true)
+//		controller.dismiss(animated: true) // this apparently is superfluous; cancel command and others in doc picker always dismiss prior to getting here and sometimes do not get here at all
 		}
 
 	func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
 		{
 		//print (urls.first)
-
 		if let url = urls.first // just picking FIRST at the moment if multiple selected
 			{
 			if url.hasDirectoryPath

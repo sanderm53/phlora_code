@@ -15,7 +15,19 @@ class TreesData
 	var treeInfoDictionary = [String:TreeInfoPackage]()
 	var treeInfoNamesSortedArray = [String]()
 
-
+	init(usingMetaDataFileAt url:URL) throws
+		{
+		let s = try String(contentsOf:url)
+		let lines = s.components(separatedBy: "\n")
+		for line in lines
+			{
+			if line == "" { continue } // if lines begins or ends with \n the components method returns ""
+			let treeInfo = try TreeInfoPackage(fromTableLine:line)
+			treeInfo.dataLocation = .inBundle
+			treeInfoDictionary[(treeInfo.treeName)]=treeInfo
+			}
+		treeInfoNamesSortedArray = Array(treeInfoDictionary.keys).sorted(by: <)
+		}
 
 	init() throws
 		{
@@ -62,7 +74,7 @@ class TreesData
 		return treeInfo.treeView!
 		}
 
-	func getNexusFilenamesFromBundle()->[String]
+	func getNexusFilenamesFromBundle()->[String] // THESE HAVE TO HAVE A .NEX EXTENSION!!  No reason, just filename management in the bundle.
 			{
 			var matchingFileNames = [String]()
 			let fileManager = FileManager.default
@@ -93,6 +105,8 @@ class TreesData
 			}
 
 	func getNexusFilenamesFromDocumentsDir()->[String]
+		// If a study was added by document picker, the picker will only allow text files, but regardless of extension
+		// The danger is that any file(s) might end up stored in the Tree directory, so for now, will try to parse first one. It might fail.
 			{
 			var matchingFileNames = [String]()
 			let fileManager = FileManager.default
@@ -144,6 +158,9 @@ class TreeInfoPackage
 	var treeView:DrawTreeView?
 	var isHidden:Bool = true
 	var nLeaves:Int=0
+	var nImages:Int?
+	var imageSpace:Float?
+	
 	var dataLocation:PhloraDataLocation?
 	var thumbStudyImage:UIImage?
 
@@ -160,10 +177,23 @@ class TreeInfoPackage
 			(nLeaves, treeName, treeDescription, treeSource, mrcaArray) = try nexusParser(fromString: nexusString)
 			displayTreeName = treeName.replacingOccurrences(of: "_", with: " ")
 		}
+	init(fromTableLine ln:String) throws
+		{
+print ("**",ln)
+			let fields = ln.components(separatedBy: "\t")
+			treeName = fields[0]
+			displayTreeName = treeName.replacingOccurrences(of: "_", with: " ")
+			treeSource = fields[1]
+			nLeaves = Int(fields[2])!
+			nImages = Int(fields[3])
+			imageSpace = Float(fields[4])
+			treeDescription = ""
+
+			//displayTreeName = treeName.replacingOccurrences(of: "_", with: " ")
+		}
 	}
 
 //*************************************************************************
-
 
 	func nexusParser(fromString nexusString:String) throws ->(Int,String,String,String, [[String:String]])
 		{

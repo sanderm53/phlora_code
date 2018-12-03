@@ -11,13 +11,21 @@ import UIKit
 
 
 //class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate, ImageSelectorDelegate {
-//class StudyViewController: UITableViewController, UIDocumentPickerDelegate {
+class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate, UIGestureRecognizerDelegate {
 
-	var treeViewStatusBar:UILabel!
+	//var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
-	var treesData:TreesData!
+	//var treesData:TreesData!
 	var pickedRowIndex:Int = 0
+	var xTree:XTree!
+	var nodeArraySortedByLabel: [Node] = []
+	var thumbArraySortedByLabel: [UIImage?] = []
+	var alert: UIAlertController?
+	var databaseLocationLabel:UILabel!
+	var button:UIButton!
+	var remoteTreesData:TreesData?
+
+	
 	let editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
 
 	override func viewDidAppear(_ animated: Bool)
@@ -25,7 +33,6 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 		super.viewDidAppear(animated)
 		}
 
-	
 	override func viewWillAppear(_ animated: Bool)
 		{
 		super.viewWillAppear(animated)
@@ -38,7 +45,8 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
 		vc.delegate = self
 		present(vc, animated: true)
-	}
+		}
+
 	func editButtonAction(sender: UIBarButtonItem!) {
 		if studyTableView.isEditing
 			{
@@ -58,7 +66,7 @@ func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
 
 func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
 	{
-	//print (urls.first)
+/*
 	if let url = urls.first
 		{
 		do
@@ -82,21 +90,18 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			}
 		
 		}
+*/
 	}
 
 
 	override func viewDidLoad()
 		{
 		super.viewDidLoad()
-
-	do {
-		treesData = try TreesData() // Initializes this once when the view controller is instantiated
-		}
-	catch
-		{ print ("Error instantiating treesData")}
+		//nodeArraySortedByLabel = xTree.nodeArray.sorted (by: {$0.originalLabel! < $1.originalLabel! } )
+		//nodeArraySortedByLabel = xTree.nodeArray.sorted (by: { 0 > $0.originalLabel!.localizedStandardCompare($1.originalLabel!).rawValue } )
 
 
-		self.title = "Studies" // This will be displayed in middle button of navigation bar at top
+		self.title = "Remote Database" // This will be displayed in middle button of navigation bar at top
 
 // view for the study table popup containing the table view and headers and footers
 
@@ -107,34 +112,111 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
         navigationController!.setToolbarHidden(true,
              animated: false)
 
-//self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
-
-let addButton =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
-let editButton =  UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
-self.navigationItem.rightBarButtonItems = [editButton, addButton]
+//let addButton =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
+//let editButton =  UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
+//self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 // table view
 		studyTableView = UITableView()
 		studyTableView.delegate=self
 		studyTableView.dataSource = self
-		studyTableView.register(StudyTableViewCell.self, forCellReuseIdentifier: "cell") // This is calling a class name for the cell, but here it is just the root UITableViewCell class; if I want to init this to a different default style prob have to subclass it
+		studyTableView.register(DatabaseTableViewCell.self, forCellReuseIdentifier: "cellDatabaseTable") // This is calling a class name for the cell, but here it is just the root UITableViewCell class; if I want to init this to a different default style prob have to subclass it
 		studyTableView.isHidden=false
-		//studyTableView.backgroundColor=studyPUBackgroundColor
-	studyTableView.backgroundColor=nil // transparent, keep view color
+		studyTableView.backgroundColor=nil // transparent, keep view color
 		studyTableView.rowHeight=treeSettings.studyTableRowHeight
 		view.addSubview(studyTableView)
 
-		studyTableView.translatesAutoresizingMaskIntoConstraints=false
+		self.studyTableView.estimatedRowHeight = 0; // Thanks to 'rshinich' on Apple Devel Forum for suggesting these lines to cure the wonky behavior on async updates of the images...
+		self.studyTableView.estimatedSectionHeaderHeight = 0;
+		self.studyTableView.estimatedSectionFooterHeight = 0;
+
+
+		databaseLocationLabel = UILabel()
+		databaseLocationLabel.textColor = UIColor.white
+		databaseLocationLabel.text = "Studies available at remote server:\n\(treeSettings.defaultDatabasePath)"
+		databaseLocationLabel.lineBreakMode = .byWordWrapping
+		databaseLocationLabel.font = UIFont(name:"Helvetica", size:20)
+		databaseLocationLabel.textAlignment = .left
+		databaseLocationLabel.numberOfLines = 2
+		view.addSubview(databaseLocationLabel)
+
+		button = UIButton(type: .roundedRect) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		button.addTarget(self, action: #selector(changeServerLocation), for: .touchUpInside)
+		//button.frame.size = CGSize(width: 200, height: 50)
+		button.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
+		button.layer.borderColor=UIColor.green.cgColor
+		button.layer.borderWidth=2.0
+		button.layer.cornerRadius=10
+		//button.frame = CGRect(origin: CGPoint(x:0,y:0), size: button.frame.size)
+		button.setTitleColor(UIColor.green, for: .normal)
+		let myAttributes = [
+			NSForegroundColorAttributeName : UIColor.green,
+			NSFontAttributeName : UIFont(name:"Helvetica", size:16)!
+			]
+		let mySelectedAttributedTitle = NSAttributedString(string: "Change server location", attributes: myAttributes)
+   		button.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
+		view.addSubview(button)
+
+
 		let margins = view.readableContentGuide
+
+		databaseLocationLabel.translatesAutoresizingMaskIntoConstraints=false
+		databaseLocationLabel.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
+		databaseLocationLabel.heightAnchor.constraint(equalToConstant: 80).isActive = true
+		databaseLocationLabel.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
+		databaseLocationLabel.trailingAnchor.constraint(equalTo: button.leadingAnchor).isActive = true
+
+		button.translatesAutoresizingMaskIntoConstraints=false
+		button.centerYAnchor.constraint(equalTo: databaseLocationLabel.centerYAnchor).isActive = true
+		button.heightAnchor.constraint(equalToConstant: 40).isActive = true
+		button.widthAnchor.constraint(equalToConstant: 200).isActive = true
+		button.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
+
+		studyTableView.translatesAutoresizingMaskIntoConstraints=false
 		studyTableView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
 		studyTableView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
-		studyTableView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
+		studyTableView.topAnchor.constraint(equalTo: button.bottomAnchor).isActive = true
 		studyTableView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
+
+/* SAVE SAVE SAVE SAVE 
+	To read the herbarium server, which is http, not https:, need to modify the info.plist as follows
+	NB! This may cause problems in the app store or when/if Apple disallows this exception
+	NB! To get the source version of the info.plist, do right click on info.plist at left, and open as source
+	NB! Should check this out with testflight
+	
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>db.herbarium.arizona.edu</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+
+*/
+		if let dbMetaDataURL = URL(string:treeSettings.defaultDatabasePath)?.appendingPathComponent("PhloraMetadata.txt")
+			{
+			do
+				{
+				remoteTreesData = try TreesData(usingMetaDataFileAt:dbMetaDataURL)
+				}
+			catch
+				{ print ("Error initializing remoteTreesData") }
+// NEED A SERIOUS CATCH HERE
+			}
 
 
 
 
  		}
+
+	func changeServerLocation(sender:UIButton)
+		{
+		
+		}
 
 	override func didReceiveMemoryWarning() {
 		super.didReceiveMemoryWarning()
@@ -160,7 +242,8 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 // UITableView delegate methods used
 
 	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-			return treesData.treeInfoNamesSortedArray.count
+			guard let treesData = remoteTreesData else {return 0} // might be nil if init failed
+			return treesData.treeInfoNamesSortedArray.count // nodeArraySortedByLabel.count
 		}
 
  	func handleTap(gesture: UITapGestureRecognizer) {
@@ -173,17 +256,7 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 				case UIGestureRecognizerState.changed:
 					break
 				case UIGestureRecognizerState.ended:
-					if imagePane.imageIsLoaded == false
-						{
-						let touchPt = imagePane.convert(gesture.location(in:imagePane), to : studyTableView)
-						if let ip = studyTableView.indexPathForRow(at:touchPt)
-							{
-							let cell = studyTableView.cellForRow(at:ip) as! StudyTableViewCell
-							let sourceRect = imagePane.frame // This frame is relative to the cell view's bounds rect and works
-							let iS = ImageSelector(receivingImagePane:imagePane, calledFromViewController:self, delegate:self, callingView:cell, atRect: sourceRect)
-							iS.selectImage()
-							}
-						}
+					break
 				default:
 					break
 
@@ -191,70 +264,14 @@ self.navigationItem.rightBarButtonItems = [editButton, addButton]
 
 	}
 
-// Handle the image selected from file system. This is required by the ImageSelector delegate protocol
-func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage)
-	{
-	let cell = imageSelector.sourceView as! StudyTableViewCell
-	cell.treeInfo!.thumbStudyImage = resizeUIImageToFitSquare(image, withHeight:treeSettings.studyTableRowHeight) // necessary to resize this every time NO? Mucked with prop observer in cell code
 
-	// save to disk...
-	do
-		{
-		if let fileNameBase = cell.treeInfo?.treeName, let targetDir = docDirectoryNameFor(study: cell.treeInfo!.treeName, inLocation:cell.treeInfo!.dataLocation!, ofType:.images, create:true)
-			{ _ = try copyImageToDocs(srcImage:image, copyToDir: targetDir, usingFileNameBase: fileNameBase) }
-		}
-	catch
-		{
-		print ("Error saving image file to Phlora")
-		let alert = UIAlertController(title:"Error saving image file to Phlora",message:nil, preferredStyle: .alert)
-		alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
-		present(alert,animated:true,completion:nil)
-		}
-
-	// Tableview nonsense. Tableview won't let me use constraints as normal. Have to reload a row to get the cell to enforce constraints way I want.
-	if let ip = studyTableView.indexPath(for: cell)
-		{
-		studyTableView.beginUpdates()
-		studyTableView.reloadRows(at: [ip], with: .right)
-		studyTableView.endUpdates()
-		}
-
-	}
-func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
-	{
-	}
-
-	func deleteAllGestureRecognizersFrom(view:UIView)
-		{
-		if let grs = view.gestureRecognizers
-			{
-			for gr in grs { view.removeGestureRecognizer(gr) }
-			}
-
-		}
 
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-			let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! StudyTableViewCell
-			let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-			// I set up the cell using a property observer in cell controller, which watches treeInfo property!!
-			// When tableView needs to display this cell, the prop observer will make sure to (re)load image and setNeedsLayout in that class defn
-			cell.treeInfo = treesData.treeInfoDictionary[treeName]
-
-			deleteAllGestureRecognizersFrom(view:cell.studyImagePane) // yikes, otherwise these could stack up over time with cell reuse
-			// Note on GR here. If you inadvertantly leave a GR to launch the tree, then it will conflict with the GR to add image and throw runtime error. Make sure to cancelTouchesView for an addimage pane but make sure it is NOT there for cells with images.
-			if cell.studyImagePane.imageIsLoaded == false  // the new cell row has no study image; add add gesture
+			let cell = tableView.dequeueReusableCell(withIdentifier: "cellDatabaseTable", for: indexPath) as! DatabaseTableViewCell
+			if let treesData = remoteTreesData  // might be nil if init failed
 				{
-				let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
-				tapGesture.cancelsTouchesInView = true // when adding an image, stop the touch event from going up to the tableview and mistakenly leading to selection of the row
-				cell.studyImagePane.addGestureRecognizer(tapGesture)
-				}
-			if indexPath.row == pickedRowIndex
-				{
-				cell.accessoryType = .checkmark
-				}
-			else
-				{
-				cell.accessoryType = .none
+				let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
+				cell.treeInfo = treesData.treeInfoDictionary[treeName]
 				}
 			return cell
 		}
@@ -272,21 +289,26 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 				}
 			pickedRowIndex = indexPath.row
 
-			transitionToTreeView(atStudyIndex: pickedRowIndex)
+			//transitionToTreeView(atStudyIndex: pickedRowIndex)
 			}
 
 	func tableView(_ tableView:UITableView, canEditRowAt indexPath:IndexPath)->Bool
 		{
 		// only allow deletion of user added studies
+/*
 			let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
 			let treeInfo = treesData.treeInfoDictionary[treeName]
 			if treeInfo?.dataLocation == .inDocuments
 				{ return true }
 			else
 				{ return false }
+*/
+return false
 		}
+	
 	func tableView(_ tableView:UITableView, commit editingStyle:UITableViewCellEditingStyle, forRowAt indexPath:IndexPath)
 		{
+/*
 		if editingStyle == .delete
 			{
 			let alert = UIAlertController(title:"Really delete all data for this study from Phlora?",message:"", preferredStyle: .alert)
@@ -300,8 +322,9 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 			alert.addAction(action2)
 			present(alert, animated: true, completion: nil)
 			}
+*/
 		}
-
+/*
 	func deleteStudyFromDocuments(at indexPath:IndexPath)
 		{
 		let studyName = treesData.treeInfoNamesSortedArray[indexPath.row]
@@ -322,7 +345,9 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 				{print ("There was a problem deleting everything at \(studyDir)") }
 			}
 		}
+*/
 
+/*
 	func transitionToTreeView(atStudyIndex ix:Int)
 		{
 
@@ -338,7 +363,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 		self.navigationController?.pushViewController(treeInfo.treeViewController!, animated: true)
 
 		}
-
+*/
 
 	
 

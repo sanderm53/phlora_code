@@ -52,7 +52,7 @@ class Node {
   //var hasImage: Bool?  // maybe totally deprecated??????
   var imageFileURL:URL?
   var imageFileDataLocation:PhloraDataLocation?
-
+  var imageThumb:UIImage?
 
   var imagePaneView:ImagePaneView?
   //var hasImageFile: Bool = false
@@ -207,7 +207,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 */
 	// **********************************************************************
 	
-	func putNodeArray(into nodeAr:inout [Node])
+	func putNodeArray(into nodeAr:inout [Node]) // leaf node array
 		{
 		if self.isLeaf() {nodeAr.append(self)}
 		for child in children

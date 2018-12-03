@@ -188,10 +188,10 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				imageSmall = imageView.image
 
 				bounds.size = initialImagePaneSize // keep it centered on frame center by changing bounds size
-				if associatedNode != nil
-					{
-					associatedNode!.hasLoadedImageAtLeastOnce = true
-					}
+				//if associatedNode != nil
+				//	{
+				//	associatedNode!.hasLoadedImageAtLeastOnce = true
+				//	}
 				if let addImageLabel = addImageLabel // remove an existing addaddimage label if present
 					{
 					addImageLabel.removeFromSuperview()
