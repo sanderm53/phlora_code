@@ -10,35 +10,36 @@ import Foundation
 import UIKit
 
 
+
+protocol DatabaseTableViewCellDelegate
+	{
+	func downloadTapped(_ cell:DatabaseTableViewCell)
+	}
+
 class DatabaseTableViewCell: UITableViewCell {
 
-//var studyLabel: UILabel!
-var leafLabel: UILabel!
+	var delegate:DatabaseTableViewCellDelegate?
 
-var studyLabel:UILabel!
-var sourceLabel:UILabel!
-var nLeafLabel:UILabel!
-var nImagesLabel:UILabel!
-var imageSpaceLabel:UILabel!
-var downloadButton:UIButton!
+	var leafLabel: UILabel!
+	var studyLabel:UILabel!
+	var sourceLabel:UILabel!
+	var nLeafLabel:UILabel!
+	var nImagesLabel:UILabel!
+	var imageSpaceLabel:UILabel!
+	var downloadButton:UIButton!
 
-var treeInfo: TreeInfoPackage? {
-    didSet {
-        if let t = treeInfo {
-			
-        	studyLabel.text = t.displayTreeName
-			sourceLabel.text = t.treeSource
-        	nLeafLabel.text = "\(t.nLeaves) leaves"
-        	nImagesLabel.text = "\(t.nImages!) images"
-       		imageSpaceLabel.text = "\(t.imageSpace!) GB"
 
-			// fetch an image file with the same filename prefix as the treeName (e.g., "Cactaceae.png" )
-
-            setNeedsLayout()
-        }
-    }
-}
-
+	var treeInfo: TreeInfoPackage?
+	
+func configure(using t:TreeInfoPackage)
+	{
+	treeInfo = t
+	studyLabel.text = t.displayTreeName
+	sourceLabel.text = t.treeSource
+	nLeafLabel.text = "\(t.nLeaves) leaves"
+	nImagesLabel.text = "\(t.nImages!) images"
+	imageSpaceLabel.text = "\(t.imageSpace!) GB"
+	}
 
 override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
     super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -49,7 +50,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 
 		let margins = contentView.layoutMarginsGuide
 
-		studyLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!,textColor:UIColor.white)
+		studyLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableLabelFontSize)!,textColor:UIColor.white)
 		sourceLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!,textColor:UIColor.white)
 		nLeafLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!,textColor:UIColor.white)
 		nImagesLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!,textColor:UIColor.white)
@@ -98,11 +99,12 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 
 
 }
-
 	func handleDownloadButton(sender:UIButton)
 		{
-		
+		delegate?.downloadTapped(self)
 		}
+
+
 	func label (text t:String, font :UIFont, textColor color:UIColor)->UILabel
 		{
 		let label = UILabel()
@@ -113,18 +115,18 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		return label
 		}
 
-required init(coder aDecoder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-}
+	required init(coder aDecoder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
+	}
 
-override func prepareForReuse() {
-    super.prepareForReuse()
+	override func prepareForReuse() {
+		super.prepareForReuse()
 
-}
+	}
 
-override func layoutSubviews() {
-    super.layoutSubviews()
-}
+	override func layoutSubviews() {
+		super.layoutSubviews()
+	}
 
 
 }

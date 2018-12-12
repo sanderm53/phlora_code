@@ -6,11 +6,14 @@
 	<string></string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>db.herbarium.arizona.edu</key>
 			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<key>NSIncludesSubdomains</key>
+      			<true/>
+      			<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
 			</dict>
 		</dict>

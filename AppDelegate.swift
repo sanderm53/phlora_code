@@ -13,23 +13,29 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	var window: UIWindow?
+	var backgroundSessionCompletionHandler: (() -> Void)? // See DownloadService.swift
+	
+	func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+	  	backgroundSessionCompletionHandler = completionHandler
+		} // See DownloadService.swift
 
-func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-		let mainVC = MainViewController()
-		let navigationController = UINavigationController(rootViewController: mainVC)
-        navigationController.setToolbarHidden(true,
-             animated: false)
-		navigationController.toolbar.barTintColor = UIColor.black
-		navigationController.toolbar.tintColor = UIColor.black
-		navigationController.navigationBar.barStyle = .blackOpaque
-       // Override point for customization after application launch.
-        window = UIWindow(frame: UIScreen.main.bounds)
-        if let window = window {
-          window.rootViewController = navigationController
-          window.makeKeyAndVisible()
-        }
-        return true
-    }
+
+	func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+			let mainVC = MainViewController()
+			let navigationController = UINavigationController(rootViewController: mainVC)
+			navigationController.setToolbarHidden(true,
+				 animated: false)
+			navigationController.toolbar.barTintColor = UIColor.black
+			navigationController.toolbar.tintColor = UIColor.black
+			navigationController.navigationBar.barStyle = .blackOpaque
+		   // Override point for customization after application launch.
+			window = UIWindow(frame: UIScreen.main.bounds)
+			if let window = window {
+			  window.rootViewController = navigationController
+			  window.makeKeyAndVisible()
+			}
+			return true
+		}
 	
 	func applicationWillResignActive(_ application: UIApplication) {
 		// Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.

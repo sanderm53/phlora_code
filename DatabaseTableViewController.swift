@@ -6,6 +6,7 @@
 //  Copyright © 2018 mcmanderson. All rights reserved.
 //
 
+import Foundation
 import UIKit
 
 
@@ -24,8 +25,17 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 	var databaseLocationLabel:UILabel!
 	var button:UIButton!
 	var remoteTreesData:TreesData?
+	var manifestList:[(DataFileType , URL )] = []
+	let downloadService = DownloadService()
 
-	
+lazy var downloadsSession: URLSession = {
+  //let configuration = URLSessionConfiguration.default
+  let configuration = URLSessionConfiguration.background(withIdentifier:
+  "bgSessionConfiguration")
+  return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+}()
+
+
 	let editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
 
 	override func viewDidAppear(_ animated: Bool)
@@ -208,9 +218,9 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 // NEED A SERIOUS CATCH HERE
 			}
 
+  		downloadService.downloadsSession = downloadsSession
 
-
-
+ 
  		}
 
 	func changeServerLocation(sender:UIButton)
@@ -271,7 +281,10 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			if let treesData = remoteTreesData  // might be nil if init failed
 				{
 				let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-				cell.treeInfo = treesData.treeInfoDictionary[treeName]
+				let treeInfo = treesData.treeInfoDictionary[treeName]
+				cell.delegate = self
+				cell.configure(using: treeInfo!)
+
 				}
 			return cell
 		}
@@ -370,5 +383,49 @@ return false
 
 }
 
+extension DatabaseTableViewController: DatabaseTableViewCellDelegate
+	{
+	func downloadTapped(_ cell: DatabaseTableViewCell)
+		{
+		if let indexPath = studyTableView.indexPath(for:cell)
+			{
+			print ("Preparing to fetch manifest and download...")
+			downloadService.startDownload(forStudy:cell.treeInfo!)
+			}
+		}
+	
+	}
 
+extension DatabaseTableViewController: URLSessionDownloadDelegate
+	{
+	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tempLocalURL: URL)
+		{
+		print("Finished downloading to \(tempLocalURL).")
 
+		guard let sourceURL = downloadTask.originalRequest?.url else { return }
+		if let download = downloadService.activeDownloads[sourceURL] // info I need for copyURL..() below is in this dictionary
+			{
+			if let targetURL = try? copyURLToDocs(src:tempLocalURL, srcFileType: download.srcFileType, srcFilename: download.srcFileName, forStudy: download.studyName,overwrite:true)
+				{
+				print ("file copied to", targetURL)
+				}
+			else
+				{ print ("Error in url copying")}
+			}
+		}
+			
+	}
+extension DatabaseTableViewController: URLSessionDelegate { // see copyright in DownloadService.swift
+
+  // Standard background session handler
+  func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+    DispatchQueue.main.async {
+      if let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+        let completionHandler = appDelegate.backgroundSessionCompletionHandler {
+        appDelegate.backgroundSessionCompletionHandler = nil
+        completionHandler()
+      }
+    }
+  }
+
+}

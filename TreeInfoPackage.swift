@@ -297,11 +297,72 @@ func matches(for regex: String, in text: String, withOptions options:NSRegularEx
 enum DataFileType {
 	case treeFile
 	case imageFile
+	case textFile
+	}
+
+// Newest version of this ...must provide source file names, whether from a node or elsewhere
+func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, srcFilename:String, forStudy studyName:String, overwrite:Bool) throws -> URL?
+	// Copy a treefile, textfile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.
+	// For tree or text, set node to nil.
+	// If an image file, do special handling
+	//		if node == nil, just copy to Images dir keeping the filename from the source URL
+	//		if node is present, however, rename the new URL so that its name reflects the name of the node label!
+
+	{
+	var targetDir:URL
+	var destURL:URL
+	// May need to creat Studies dir, StudyName dir and either Tree/Images directory as needed
+	let fileManager = FileManager.default
+	if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+		{
+		targetDir = docsDir.appendingPathComponent("Studies").appendingPathComponent(studyName)
+		switch fileType
+			{
+			case .textFile:
+				targetDir = targetDir.appendingPathComponent("Text")
+			case .treeFile:
+				targetDir = targetDir.appendingPathComponent("Tree")
+			case .imageFile:
+				targetDir = targetDir.appendingPathComponent("Images")
+			}
+		destURL = targetDir.appendingPathComponent(srcFilename) // node was set to nil when called; just use original URL filename
+		if fileManager.fileExists(atPath: targetDir.path) == false  // create the correct Study folder (and ancestors) if needed
+			{
+			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+			// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
+			}
+		do
+			{
+			if fileManager.fileExists(atPath: destURL.path)
+				{
+				if overwrite
+					{
+					try? fileManager.removeItem(at: destURL) // if it's there get rid of it, then copy to it
+					try fileManager.copyItem(at: srcURL, to: destURL)
+	print ("Deleting \(destURL) before overwriting")
+					}
+				else
+					{ return nil }
+				}
+			else
+				{
+				try fileManager.copyItem(at: srcURL, to: destURL)
+				}
+			}
+		catch
+			{print ("Copy didn't succeed", error)}
+		return destURL
+		}
+	return nil
 	}
 
 func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy studyName:String, atNode node:Node?) throws -> URL?
-	// Copy a treefile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.
-	// If an image file, rename its copy based on the leaf label for that node.
+	// Copy a treefile, textfile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.
+	// For tree or text, set node to nil.
+	// If an image file, do special handling
+	//		if node == nil, just copy to Images dir keeping the filename from the source URL
+	//		if node is present, however, rename the new URL so that its name reflects the name of the node label!
+
 	{
 	var targetDir:URL
 	var destURL:URL?
@@ -313,6 +374,9 @@ func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy s
 		let srcFilename = srcURL.lastPathComponent
 		switch fileType
 			{
+			case .textFile:
+				targetDir = targetDir.appendingPathComponent("Text")
+				destURL = targetDir.appendingPathComponent(srcFilename)
 			case .treeFile:
 				targetDir = targetDir.appendingPathComponent("Tree")
 				destURL = targetDir.appendingPathComponent(srcFilename)
@@ -323,19 +387,23 @@ func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, forStudy s
 					let fileExtension = srcURL.pathExtension
 					let fileName = node.originalLabel!
 					destURL = targetDir.appendingPathComponent(fileName).appendingPathExtension(fileExtension)
-//print ("-->",destURL)
+					}
+				else
+					{
+					destURL = targetDir.appendingPathComponent(srcFilename) // node was set to nil when called; just use original URL filename
 					}
 			}
 		if fileManager.fileExists(atPath: targetDir.path) == false  // create the correct Study folder (and ancestors) if needed
 			{
 			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
-	// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
+			// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
 			}
-//print (srcURL,destURL)
-do {
-		try fileManager.copyItem(at: srcURL, to: destURL!)
-	}
-catch {print ("Copy didn't succeed", error)}
+		do
+			{
+			try fileManager.copyItem(at: srcURL, to: destURL!)
+			}
+		catch
+			{print ("Copy didn't succeed", error)}
 		return destURL
 		}
 	return nil
@@ -355,6 +423,8 @@ func copyImageToDocs(srcImage image:UIImage, srcFileType fileType:DataFileType, 
 		//let srcFilename = srcURL.lastPathComponent
 		switch fileType
 			{
+			case .textFile:
+				break // FINISH THIS!!!!!!!!!!!!!!!!!!
 			case .treeFile:
 				return nil
 			case .imageFile:
@@ -385,3 +455,33 @@ catch {print ("Copy didn't succeed", destURL!, error)}
 	return nil
 	}
 
+func getManifestData(forStudy study:String, atRemoteServerPath serverPath:String) throws -> [(DataFileType , URL)]
+	{
+	var manifestArray:[(DataFileType , URL)] = []
+	var fileType:DataFileType?
+	guard let manifestURL = URL(string:serverPath)?.appendingPathComponent("Studies").appendingPathComponent(study).appendingPathComponent("Manifest.txt") else {return manifestArray}
+	let s = try String(contentsOf:manifestURL)
+	let lines = s.components(separatedBy: "\n")
+	for line in lines
+		{
+		if line == "" { continue } // if lines begins or ends with \n the components method returns ""
+
+		let fields = line.components(separatedBy: "\t")
+		switch fields[0]
+			{
+			case "Image": // note this is 'Image' not 'Images', which is the directory name. This is a file type
+				fileType = .imageFile
+			case "Tree":
+				fileType = .treeFile
+			case "Text":
+				fileType = .textFile
+			default:
+				break
+			}
+		if let url = URL(string:fields[1]),let fileType = fileType
+			{
+			manifestArray.append((fileType,url))
+			}
+		}
+	return manifestArray
+	}
