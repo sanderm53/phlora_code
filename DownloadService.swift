@@ -37,53 +37,40 @@
 
 import Foundation
 
-class DownloadService // Instantiate this once for the entire database table view
+enum DownloadServiceError: Error {
+	case busy
+	case manifestError
+	}
+
+class DownloadService // Instantiate this once for the entire database table view to represent one study's download service only
 	{
 	var downloadsSession: URLSession!
 	var treeInfo:TreeInfoPackage! // but this gets set to appropriate tree/study when download begins
 	var activeDownloads: [URL: Download] = [:] // provides info needed by the delegate, keyed to the source URL
-	
-	func startDownload(forStudy t:TreeInfoPackage)
+	var nFilesToDownload: Int = 0
+	var nFilesHaveDownloaded: Int = 0 // just setting thse to dummy values
+	var isDownloading: Bool = false
+
+	func startDownload(forStudy t:TreeInfoPackage) throws
 		{
+		if isDownloading { throw DownloadServiceError.busy }
 		treeInfo = t
-		do
+		nFilesHaveDownloaded = 0
+		if let manifestList = try? getManifestData(forStudy:t.treeName, atRemoteServerPath:treeSettings.defaultDatabasePath)
 			{
-				let manifestList = try getManifestData(forStudy:t.treeName, atRemoteServerPath:treeSettings.defaultDatabasePath)
-				try downloadFiles(forStudyName:t.treeName, using:manifestList)
+			nFilesToDownload = manifestList.count
+			isDownloading = true
+			downloadFiles(forStudyName:t.treeName, using:manifestList)
 			}
-		catch
-			{ print ("Error fetching manifest data or files") }
-
+		else
+			{ throw DownloadServiceError.manifestError}
 		}
 	
-/* KEEP!! This code can be used for a quick URLsession w/o delegates, background download, etc.
-	func downloadFiles(forStudyName studyName:String, using manifestList: [(DataFileType , URL )]) throws
+	func downloadFiles(forStudyName studyName:String, using manifestList: [(DataFileType , URL )]) // throws
 		{
 		for (fileType,url) in manifestList
 			{
-			print (fileType,url)
-			let srcFileName = url.lastPathComponent // copy saved to local temp file has a weird name; have to reconstute it
-			let task = URLSession.shared.downloadTask(with: url) { localURL, urlResponse, error in
-				if let localURL = localURL
-					{
-					if let targetURL = try? copyURLToDocs(src:localURL, srcFileType: fileType, srcFilename: srcFileName, forStudy: studyName)
-						{
-						print ("file copied to", targetURL)
-						}
-					else
-						{ print ("Error in url copying")}
-					}
-				}
-			task.resume()
-			}
-		}
-*/
-
-	func downloadFiles(forStudyName studyName:String, using manifestList: [(DataFileType , URL )]) throws
-		{
-		for (fileType,url) in manifestList
-			{
-			print (fileType,url)
+			//print (fileType,url)
 			let srcFileName = url.lastPathComponent // copy saved to local temp file has a weird name; have to reconstute it
 			let download = Download(studyName:studyName, srcFileName:srcFileName,srcFileType:fileType)
 			download.task = downloadsSession.downloadTask(with: url)
@@ -118,4 +105,34 @@ class Download {
   var progress: Float = 0
 
 }
+
+
+
+
+
+
+
+/* KEEP!! This code can be used for a quick URLsession w/o delegates, background download, etc.
+	func downloadFiles(forStudyName studyName:String, using manifestList: [(DataFileType , URL )]) throws
+		{
+		for (fileType,url) in manifestList
+			{
+			print (fileType,url)
+			let srcFileName = url.lastPathComponent // copy saved to local temp file has a weird name; have to reconstute it
+			let task = URLSession.shared.downloadTask(with: url) { localURL, urlResponse, error in
+				if let localURL = localURL
+					{
+					if let targetURL = try? copyURLToDocs(src:localURL, srcFileType: fileType, srcFilename: srcFileName, forStudy: studyName)
+						{
+						print ("file copied to", targetURL)
+						}
+					else
+						{ print ("Error in url copying")}
+					}
+				}
+			task.resume()
+			}
+		}
+*/
+
 

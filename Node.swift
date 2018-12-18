@@ -67,6 +67,7 @@ class Node {
   var nodeFlag:Bool = false
   var closestImageIconNeighberDistance:Int = 10000
 
+  var foundInSearch:Bool = false
 	
  func hasImagePaneView()->Bool
   	{
@@ -647,8 +648,20 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 			// Only handle label writing if it will be visible!
 			if treeCoordIsInRect(coord: coord.y, theRect: nakedTreeRect, withPanTranslate: panTranslate)
 				{
+
+
+
 				let aText=NSAttributedString(string:self.label!,attributes: textAttributes)
 				let vertCenteredPt = CGPoint(x:self.coord.x+labelSpacing,y:self.coord.y-yOffset)
+
+
+if foundInSearch
+	{
+	let leafPt = CGPoint(x:self.coord.x,y:self.coord.y)
+	drawImageIcon(ofType:.filledCircle(UIColor.red.cgColor,1.0), inContext:ctx, atPointCenter:leafPt,withRadius:5.0)
+	}
+
+
 
 				// Following code sets up a fade out for the text labels as we zoom tree in out, controlled
 				// by setting context alpha value

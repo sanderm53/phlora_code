@@ -9,14 +9,16 @@
 import Foundation
 import UIKit
 
+func showAlertMessage (_ s:String, onVC vc:UIViewController)
+	{
+	let alert = UIAlertController(title:s,message:nil, preferredStyle: .alert)
+	alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil ))
+	vc.present(alert,animated:true,completion:nil)
+	}
 
+class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITableViewDataSource,  UIGestureRecognizerDelegate {
 
-//class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate, UIGestureRecognizerDelegate {
-
-	//var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
-	//var treesData:TreesData!
 	var pickedRowIndex:Int = 0
 	var xTree:XTree!
 	var nodeArraySortedByLabel: [Node] = []
@@ -27,16 +29,13 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 	var remoteTreesData:TreesData?
 	var manifestList:[(DataFileType , URL )] = []
 	let downloadService = DownloadService()
+	var annotatedProgressView = AnnotatedProgressView()
 
-lazy var downloadsSession: URLSession = {
-  //let configuration = URLSessionConfiguration.default
-  let configuration = URLSessionConfiguration.background(withIdentifier:
-  "bgSessionConfiguration")
-  return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
-}()
+	lazy var downloadsSession: URLSession = {
+		let configuration = URLSessionConfiguration.background(withIdentifier: "bgSessionConfiguration")
+		return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+		}()
 
-
-	let editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
 
 	override func viewDidAppear(_ animated: Bool)
 		{
@@ -50,67 +49,11 @@ lazy var downloadsSession: URLSession = {
 		//navigationController!.setNavigationBarHidden(false, animated: false)
 		}
 
-	func addButtonAction(sender: UIBarButtonItem!) {
-
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.text"],in: .import)
-		vc.delegate = self
-		present(vc, animated: true)
-		}
-
-	func editButtonAction(sender: UIBarButtonItem!) {
-		if studyTableView.isEditing
-			{
-			studyTableView.setEditing(false, animated: true)
-			sender.title = "Edit"
-			}
-		else
-			{
-			studyTableView.setEditing(true, animated: true)
-			sender.title = "Done"
-			}
-	}
-func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
-	{
-	dismiss(animated: true)
-	}
-
-func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
-	{
-/*
-	if let url = urls.first
-		{
-		do
-			{
-			let treeInfo = try TreeInfoPackage(fromURL: url)
-			treeInfo.dataLocation = .inDocuments // have to initialize this here when loading new tree on the fly
-			treesData.appendTreesData(withTreeInfo: treeInfo)
-			//studyTableView.reloadData()
-			studyTableView.beginUpdates()
-			studyTableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .right) // maybe should insert alphabetically?
-			studyTableView.endUpdates()
-
-			_ = try copyURLToDocs(src:url, srcFileType: .treeFile, forStudy: treeInfo.treeName, atNode:nil)
-			}
-		catch
-			{
-			//print ("Failed to read file or parse file")
-			let alert = UIAlertController(title:"Error accessing tree file",message:"Failed to read, parse or save tree file", preferredStyle: .alert)
-			alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
-			self.present(alert,animated:true,completion:nil)
-			}
-		
-		}
-*/
-	}
 
 
 	override func viewDidLoad()
 		{
 		super.viewDidLoad()
-		//nodeArraySortedByLabel = xTree.nodeArray.sorted (by: {$0.originalLabel! < $1.originalLabel! } )
-		//nodeArraySortedByLabel = xTree.nodeArray.sorted (by: { 0 > $0.originalLabel!.localizedStandardCompare($1.originalLabel!).rawValue } )
-
-
 		self.title = "Remote Database" // This will be displayed in middle button of navigation bar at top
 
 // view for the study table popup containing the table view and headers and footers
@@ -122,11 +65,7 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
         navigationController!.setToolbarHidden(true,
              animated: false)
 
-//let addButton =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
-//let editButton =  UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonAction))
-//self.navigationItem.rightBarButtonItems = [editButton, addButton]
-
-// table view
+		// Table
 		studyTableView = UITableView()
 		studyTableView.delegate=self
 		studyTableView.dataSource = self
@@ -134,79 +73,42 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 		studyTableView.isHidden=false
 		studyTableView.backgroundColor=nil // transparent, keep view color
 		studyTableView.rowHeight=treeSettings.studyTableRowHeight
-		view.addSubview(studyTableView)
+		studyTableView.estimatedRowHeight = 0; // Thanks to 'rshinich' on Apple Devel Forum for suggesting these lines to cure the wonky behavior on async updates of the images...
+		studyTableView.estimatedSectionHeaderHeight = 0;
+		studyTableView.estimatedSectionFooterHeight = 0;
 
-		self.studyTableView.estimatedRowHeight = 0; // Thanks to 'rshinich' on Apple Devel Forum for suggesting these lines to cure the wonky behavior on async updates of the images...
-		self.studyTableView.estimatedSectionHeaderHeight = 0;
-		self.studyTableView.estimatedSectionFooterHeight = 0;
-
-
+		// Server location label
 		databaseLocationLabel = UILabel()
-		databaseLocationLabel.textColor = UIColor.white
-		databaseLocationLabel.text = "Studies available at remote server:\n\(treeSettings.defaultDatabasePath)"
+		databaseLocationLabel.textColor = UIColor.lightGray
+		databaseLocationLabel.text = "Contents of Database at:\(treeSettings.defaultDatabasePath)"
+		databaseLocationLabel.textAlignment = .center
 		databaseLocationLabel.lineBreakMode = .byWordWrapping
 		databaseLocationLabel.font = UIFont(name:"Helvetica", size:20)
-		databaseLocationLabel.textAlignment = .left
 		databaseLocationLabel.numberOfLines = 2
-		view.addSubview(databaseLocationLabel)
 
-		button = UIButton(type: .roundedRect) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+
+/*
+		// Change-server button
+		button = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
 		button.addTarget(self, action: #selector(changeServerLocation), for: .touchUpInside)
-		//button.frame.size = CGSize(width: 200, height: 50)
-		button.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
-		button.layer.borderColor=UIColor.green.cgColor
-		button.layer.borderWidth=2.0
-		button.layer.cornerRadius=10
-		//button.frame = CGRect(origin: CGPoint(x:0,y:0), size: button.frame.size)
+		button.backgroundColor = studyPUBackgroundColor
 		button.setTitleColor(UIColor.green, for: .normal)
 		let myAttributes = [
-			NSForegroundColorAttributeName : UIColor.green,
+			NSForegroundColorAttributeName : UIColor(cgColor: appleBlue),
 			NSFontAttributeName : UIFont(name:"Helvetica", size:16)!
 			]
-		let mySelectedAttributedTitle = NSAttributedString(string: "Change server location", attributes: myAttributes)
+		let mySelectedAttributedTitle = NSAttributedString(string: "Change", attributes: myAttributes)
    		button.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
-		view.addSubview(button)
-
-
-		let margins = view.readableContentGuide
-
-		databaseLocationLabel.translatesAutoresizingMaskIntoConstraints=false
-		databaseLocationLabel.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
-		databaseLocationLabel.heightAnchor.constraint(equalToConstant: 80).isActive = true
-		databaseLocationLabel.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
-		databaseLocationLabel.trailingAnchor.constraint(equalTo: button.leadingAnchor).isActive = true
-
-		button.translatesAutoresizingMaskIntoConstraints=false
-		button.centerYAnchor.constraint(equalTo: databaseLocationLabel.centerYAnchor).isActive = true
-		button.heightAnchor.constraint(equalToConstant: 40).isActive = true
-		button.widthAnchor.constraint(equalToConstant: 200).isActive = true
-		button.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
-
-		studyTableView.translatesAutoresizingMaskIntoConstraints=false
-		studyTableView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
-		studyTableView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
-		studyTableView.topAnchor.constraint(equalTo: button.bottomAnchor).isActive = true
-		studyTableView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
-
-/* SAVE SAVE SAVE SAVE 
-	To read the herbarium server, which is http, not https:, need to modify the info.plist as follows
-	NB! This may cause problems in the app store or when/if Apple disallows this exception
-	NB! To get the source version of the info.plist, do right click on info.plist at left, and open as source
-	NB! Should check this out with testflight
-	
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>db.herbarium.arizona.edu</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-		</dict>
-	</dict>
-
 */
+
+		view.addSubview(studyTableView)
+		view.addSubview(databaseLocationLabel)
+		//view.addSubview(button)
+		view.addSubview(annotatedProgressView)
+
+		addConstraints()
+
+		// Initialize the data for the table from the remote metadata file
 		if let dbMetaDataURL = URL(string:treeSettings.defaultDatabasePath)?.appendingPathComponent("PhloraMetadata.txt")
 			{
 			do
@@ -214,18 +116,50 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 				remoteTreesData = try TreesData(usingMetaDataFileAt:dbMetaDataURL)
 				}
 			catch
-				{ print ("Error initializing remoteTreesData") }
-// NEED A SERIOUS CATCH HERE
+				{
+				print ("Error fetching remoteTreesData")
+				showAlertMessage ("Error fetching remote trees metadata", onVC:self)
+				}
+			
 			}
 
   		downloadService.downloadsSession = downloadsSession
-
- 
  		}
+	
+	func addConstraints()
+		{
+		let margins = view.readableContentGuide
 
+		databaseLocationLabel.translatesAutoresizingMaskIntoConstraints=false
+		databaseLocationLabel.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
+		databaseLocationLabel.heightAnchor.constraint(equalToConstant: 80).isActive = true
+		databaseLocationLabel.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
+		databaseLocationLabel.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
+//		databaseLocationLabel.trailingAnchor.constraint(equalTo: button.leadingAnchor).isActive = true
+/*
+		button.translatesAutoresizingMaskIntoConstraints=false
+		button.centerYAnchor.constraint(equalTo: databaseLocationLabel.centerYAnchor).isActive = true
+		button.heightAnchor.constraint(equalToConstant: 40).isActive = true
+		button.widthAnchor.constraint(equalToConstant: 75).isActive = true
+		button.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
+*/
+		studyTableView.translatesAutoresizingMaskIntoConstraints=false
+		studyTableView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
+		studyTableView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
+		studyTableView.topAnchor.constraint(equalTo: databaseLocationLabel.bottomAnchor).isActive = true
+		studyTableView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
+
+		annotatedProgressView.translatesAutoresizingMaskIntoConstraints=false
+		annotatedProgressView.heightAnchor.constraint(equalToConstant: 150).isActive = true
+		annotatedProgressView.widthAnchor.constraint(equalToConstant: 300).isActive = true
+		annotatedProgressView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+		annotatedProgressView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+		}
+	
+	
 	func changeServerLocation(sender:UIButton)
 		{
-		
+		print ("Change the server location")
 		}
 
 	override func didReceiveMemoryWarning() {
@@ -233,14 +167,10 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 		// Dispose of any resources that can be recreated.
 		}
 
-
-   override func viewDidLayoutSubviews()
+   	override func viewDidLayoutSubviews()
    		{
 		super.viewDidLayoutSubviews()
     	}
-
-
-
 
 	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
 	
@@ -256,26 +186,6 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			return treesData.treeInfoNamesSortedArray.count // nodeArraySortedByLabel.count
 		}
 
- 	func handleTap(gesture: UITapGestureRecognizer) {
-			//print ("Time to add an image")
-			let imagePane = gesture.view as! ImagePaneView
-			switch gesture.state
-				{
-				case UIGestureRecognizerState.began:
-					break
-				case UIGestureRecognizerState.changed:
-					break
-				case UIGestureRecognizerState.ended:
-					break
-				default:
-					break
-
-				}
-
-	}
-
-
-
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 			let cell = tableView.dequeueReusableCell(withIdentifier: "cellDatabaseTable", for: indexPath) as! DatabaseTableViewCell
 			if let treesData = remoteTreesData  // might be nil if init failed
@@ -289,97 +199,6 @@ func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumen
 			return cell
 		}
 
-	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
-			{
-			tableView.deselectRow(at: indexPath, animated: true)
-			if indexPath.row != pickedRowIndex
-				{
-				var cell = tableView.cellForRow(at: IndexPath(row:pickedRowIndex, section:0))
-				cell?.accessoryType = .none
-				cell = tableView.cellForRow(at: indexPath)
-				cell?.accessoryType = .checkmark
-				//pickedRowIndex = indexPath.row
-				}
-			pickedRowIndex = indexPath.row
-
-			//transitionToTreeView(atStudyIndex: pickedRowIndex)
-			}
-
-	func tableView(_ tableView:UITableView, canEditRowAt indexPath:IndexPath)->Bool
-		{
-		// only allow deletion of user added studies
-/*
-			let treeName = treesData.treeInfoNamesSortedArray[indexPath.row]
-			let treeInfo = treesData.treeInfoDictionary[treeName]
-			if treeInfo?.dataLocation == .inDocuments
-				{ return true }
-			else
-				{ return false }
-*/
-return false
-		}
-	
-	func tableView(_ tableView:UITableView, commit editingStyle:UITableViewCellEditingStyle, forRowAt indexPath:IndexPath)
-		{
-/*
-		if editingStyle == .delete
-			{
-			let alert = UIAlertController(title:"Really delete all data for this study from Phlora?",message:"", preferredStyle: .alert)
-			let action1 = UIAlertAction(title: "Cancel", style: .cancel)
-				{ (action:UIAlertAction) in self.dismiss(animated:true) }
-			let action2 = UIAlertAction(title: "Delete", style: .default)
-				{ (action:UIAlertAction) in
-				self.deleteStudyFromDocuments(at: indexPath)
-				}
-			alert.addAction(action1)
-			alert.addAction(action2)
-			present(alert, animated: true, completion: nil)
-			}
-*/
-		}
-/*
-	func deleteStudyFromDocuments(at indexPath:IndexPath)
-		{
-		let studyName = treesData.treeInfoNamesSortedArray[indexPath.row]
-		guard let treeInfo = treesData.treeInfoDictionary[studyName]
-		else { return }
-		treesData.treeInfoNamesSortedArray.remove(at:indexPath.row)
-		treesData.treeInfoNamesSortedArray = treesData.treeInfoNamesSortedArray.sorted(by: <)
-		studyTableView.beginUpdates()
-		studyTableView.deleteRows(at: [indexPath], with: .fade)
-		studyTableView.endUpdates()
-		if let studyDir = docDirectoryNameFor(study: treeInfo.treeName, inLocation:treeInfo.dataLocation!, ofType:.study,create:false)
-		//if let studyDir = docDirectoryNameFor(treeInfo:treeInfo, ofType:.study)
-			{
-			do {
-				try FileManager.default.removeItem(at: studyDir)
-				}
-			catch
-				{print ("There was a problem deleting everything at \(studyDir)") }
-			}
-		}
-*/
-
-/*
-	func transitionToTreeView(atStudyIndex ix:Int)
-		{
-
-		let treeName = treesData.treeInfoNamesSortedArray[ix]
-		let treeInfo = treesData.treeInfoDictionary[treeName]!
-
-
-		if treeInfo.treeViewController == nil
-			{ treeInfo.treeViewController = TreeViewController() }
-		treeInfo.treeViewController!.treesData = treesData // seems like this should be done when vc is init-ed?
-		treeInfo.treeViewController!.pickedRowIndex = pickedRowIndex
-
-		self.navigationController?.pushViewController(treeInfo.treeViewController!, animated: true)
-
-		}
-*/
-
-	
-
 
 }
 
@@ -387,10 +206,21 @@ extension DatabaseTableViewController: DatabaseTableViewCellDelegate
 	{
 	func downloadTapped(_ cell: DatabaseTableViewCell)
 		{
-		if let indexPath = studyTableView.indexPath(for:cell)
+		do
 			{
-			print ("Preparing to fetch manifest and download...")
-			downloadService.startDownload(forStudy:cell.treeInfo!)
+			try downloadService.startDownload(forStudy:cell.treeInfo!)
+			annotatedProgressView.start(title:cell.treeInfo!.displayTreeName, nFilesToDownload: downloadService.nFilesToDownload)
+			}
+		catch (DownloadServiceError.busy) // errors defined in DownloadService
+			{
+			showAlertMessage ("Download service busy", onVC:self)
+			}
+		catch (DownloadServiceError.manifestError)
+			{
+			showAlertMessage ("Error fetching manifest file", onVC:self)
+			}
+		catch
+			{
 			}
 		}
 	
@@ -405,12 +235,30 @@ extension DatabaseTableViewController: URLSessionDownloadDelegate
 		guard let sourceURL = downloadTask.originalRequest?.url else { return }
 		if let download = downloadService.activeDownloads[sourceURL] // info I need for copyURL..() below is in this dictionary
 			{
+			downloadService.activeDownloads[sourceURL] = nil
 			if let targetURL = try? copyURLToDocs(src:tempLocalURL, srcFileType: download.srcFileType, srcFilename: download.srcFileName, forStudy: download.studyName,overwrite:true)
 				{
+
+				downloadService.nFilesHaveDownloaded += 1
+				let progress = Float(downloadService.nFilesHaveDownloaded)/Float(downloadService.nFilesToDownload)
+				DispatchQueue.main.async
+					{
+					self.annotatedProgressView.updateProgress(int1: self.downloadService.nFilesHaveDownloaded, int2: self.downloadService.nFilesToDownload)
+					}
+				if (progress == 1.0)
+					{
+					DispatchQueue.main.async
+						{
+						self.annotatedProgressView.isHidden = true
+						self.downloadService.isDownloading = false
+						}
+					}
+
+				//print ("Progress = ", progress)
 				print ("file copied to", targetURL)
 				}
 			else
-				{ print ("Error in url copying")}
+				{ showAlertMessage ("Error downloading/saving remote file", onVC:self) }
 			}
 		}
 			
@@ -429,3 +277,23 @@ extension DatabaseTableViewController: URLSessionDelegate { // see copyright in 
   }
 
 }
+
+/* SAVE SAVE SAVE SAVE
+	To read the herbarium server, which is http, not https:, need to modify the info.plist as follows
+	NB! This may cause problems in the app store or when/if Apple disallows this exception
+	NB! To get the source version of the info.plist, do right click on info.plist at left, and open as source
+	NB! Should check this out with testflight
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>db.herbarium.arizona.edu</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+
+*/

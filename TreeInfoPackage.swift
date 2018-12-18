@@ -179,7 +179,6 @@ class TreeInfoPackage
 		}
 	init(fromTableLine ln:String) throws
 		{
-print ("**",ln)
 			let fields = ln.components(separatedBy: "\t")
 			treeName = fields[0]
 			displayTreeName = treeName.replacingOccurrences(of: "_", with: " ")

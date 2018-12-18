@@ -58,6 +58,10 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		downloadButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
 		downloadButton.addTarget(self, action: #selector(handleDownloadButton), for: .touchUpInside)
 		downloadButton.setTitleColor(UIColor.red, for: .normal)
+
+		//sourceLabel.lineBreakMode = .byWordWrapping Doesnt work, maybe vert constr
+		//sourceLabel.numberOfLines = 2
+
 		let myAttributes = [
 			NSForegroundColorAttributeName : UIColor.red,
 			NSFontAttributeName : UIFont(name:"Helvetica", size:18)!

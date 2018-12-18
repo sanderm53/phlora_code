@@ -13,8 +13,7 @@ import MobileCoreServices
 
 var appleBlue = UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0).cgColor
 
-//class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
-class TreeViewController: UIViewController, UIGestureRecognizerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, ImageSelectorDelegate {
+class TreeViewController: UIViewController, UIGestureRecognizerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, ImageSelectorDelegate, UISearchBarDelegate {
 
 var timer: CADisplayLink?
 var startAnimation: TimeInterval = 0
@@ -36,8 +35,6 @@ var deviceType:UIUserInterfaceIdiom!
 var imageScale:CGFloat = 1.0
 let buttonGap:CGFloat = 60
 
-//@IBOutlet weak var treeView: DrawTreeView!
-//weak var treeView: DrawTreeView!
 var treeView: DrawTreeView!  // had to drop the 'weak' to do the programmatic view handling
 var helpView: UITextView!
 var infoButton: UIButton!
@@ -61,7 +58,6 @@ var otherVC:UIViewController!
 var infoViewController:TextFileViewController?
 var imageTableViewController:ImageTableViewController?
 
-
 var activityIndicator:UIActivityIndicatorView!
 
 var treesData:TreesData! // Initializes this once when the view controller is instantiated
@@ -79,9 +75,48 @@ var lastTime: TimeInterval?
 
 var showingImageAddButtons:Bool = false
 
-//Utilities
+// .........................................
+// Search bar stuff
+let searchController = UISearchController(searchResultsController: nil)
+var filteredNodeArray = [Node]()
 
+func searchButtonAction(sender: UIBarButtonItem!)
+	{
+	if #available(iOS 11.0, *)
+		{ navigationItem.searchController = searchController }
+	}
 
+func searchBarCancelButtonClicked(_ searchBar: UISearchBar)
+	{
+	// NB. I also put a line in touchesBegan() to bail out of search box when touching outside of screen...
+	for node in treeView.xTree.nodeArray
+  			{
+  			node.foundInSearch = false
+			}
+	if #available(iOS 11.0, *)
+		{ navigationItem.searchController = nil } // This seems needed to actually recover the screen real estate at top of view
+	treeView.updateTreeViewIfNeeded()
+	}
+	
+func searchBarIsEmpty() -> Bool
+	{
+	// Returns true if the text is empty or nil
+	return searchController.searchBar.text?.isEmpty ?? true
+	}
+	
+func filterContentForSearchText(_ searchText: String, scope: String = "All")
+	{
+	for node in filteredNodeArray
+		{ node.foundInSearch = false }
+	if searchText.isEmpty { return } // Needed so default view before typing is to show all nodes ; have to call this AFTER clearing the filteredNodeArray
+	filteredNodeArray = treeView.xTree.nodeArray.filter
+		{ $0.label!.lowercased().hasPrefix(searchText.lowercased()) } // Matches from beginning of string
+	for node in filteredNodeArray
+		{ node.foundInSearch = true }
+	treeView.setNeedsDisplay()
+	}
+
+// .........................................
 /*
 	Order of view controller calls here:
 	1. viewDidLoad
@@ -96,16 +131,93 @@ var showingImageAddButtons:Bool = false
 		{
 		super.viewDidLoad()
 		// Do any additional setup after loading the view, typically from a nib.
+		
+		// Fetch some data
+		let treeName = treesData.treeInfoNamesSortedArray[pickedRowIndex]
+		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
+		let treeInfo = treesData.treeInfoDictionary[treeName]!
 
+		self.title = treeInfo.displayTreeName + " (\(nLeaves) leaves)" // This will be displayed in middle button of navigation bar at top
+
+		// Setup the Search Controller and its searchBar
+		searchController.searchResultsUpdater = self
+		searchController.obscuresBackgroundDuringPresentation = false
+		searchController.searchBar.placeholder = "Search leaf labels"
+		searchController.searchBar.barStyle = .black
+		searchController.searchBar.delegate = self
+		searchController.hidesNavigationBarDuringPresentation = true
+		definesPresentationContext = true
+
+		// Set up navigation toolbar
         navigationController!.setToolbarHidden(false, animated: false)
-		self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction)) // docs advisee initializing this when vc is initialized, but I want the action code to be here...
+		let addButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
+		let searchButtonItem = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(searchButtonAction))
+		self.navigationItem.rightBarButtonItems = [addButtonItem, searchButtonItem]
 
-	// Add gesture recognizers NOTE I'M NOW ATTACHING THESE TO THE VIEW RATHER THAN THE treeView
+		// Treeview
+		treeView = treesData.selectTreeView(forTreeName:treeName)
+		self.view.addSubview(treeView)
+		treeView.translatesAutoresizingMaskIntoConstraints=false
+		treeView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+		treeView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
+		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
+		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
 
+		// Info button toggle
+		if infoViewController == nil
+			{ infoViewController = TextFileViewController(treeInfo:treeInfo) }
+		infoButton = UIButton(type: .infoDark)
+		infoButton.addTarget(self, action: #selector(infoButtonAction), for: .touchUpInside)
+		infoButton.tintColor=UIColor.white
 
+  		// Button to toggle clade names but only if present on tree
+		cladeNameButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		cladeNameButton.addTarget(self, action: #selector(cladeNameButtonAction), for: .touchUpInside)
+		cladeNameButton.frame.size = infoButton.frame.size
+		cladeNameButton.tintColor=UIColor.yellow
+		let cladeNameButtonImage = makeCladeNameButtonImage(size:cladeNameButton.frame.size)
+		cladeNameButton.setImage(cladeNameButtonImage, for: .normal)
+
+ 		// Toggle button to show or hide images en masse but only if present on tree (only images that have been opened)
+		imagesButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		imagesButton.addTarget(self, action: #selector(imagesButtonAction), for: .touchUpInside)
+		imagesButton.frame.size = infoButton.frame.size
+		imagesButton.tintColor=UIColor.yellow
+		let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
+		imagesButton.setImage(imagesButtonImage, for: .normal)
+
+		// Button to go to VC for image list
+		imagesPageButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
+		imagesPageButton.frame.size = infoButton.frame.size
+		//imagesPageButton.tintColor=UIColor.yellow
+		let imagesPageButtonImage = makeImagesTableButtonImage(size:imagesButton.frame.size)
+		imagesPageButton.setImage(imagesPageButtonImage, for: .normal)
+
+		// Buttons in toolbar at bottom of screen
+		let it1 = UIBarButtonItem(customView: cladeNameButton)
+		let it2 = UIBarButtonItem(customView: imagesButton)
+		let it4 = UIBarButtonItem(customView: infoButton)
+		let it5 = UIBarButtonItem(customView: imagesPageButton) // disabled for now
+		let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+		// only add appropriate buttons depending on tree data
+		var buttonArray = [spacer]
+		if treeView.xTree.hasCladeNames
+			{
+			buttonArray += [it1,spacer]
+			}
+		if treeView.xTree.hasImageFiles
+			{
+			buttonArray += [it2,spacer]
+			}
+		buttonArray += [it4,spacer]
+		//buttonArray += [it4,spacer,it5]
+		//buttonArray += [it4,spacer]
+		setToolbarItems(buttonArray,animated: false)
+
+		// Gesture recognizers: attached to view rather than treeView
 		let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:)))
-
-	// I can delete this if I move it to its own view controller
+		// I can delete this if I move it to its own view controller
 		tapGesture.cancelsTouchesInView = false /* This takes a while to explain...the default for a GR is true.
 			GRs are the easy way to handle gestures, but you can configure views to handle them in some fancy custom way. If a GR is
 			present, the window first tries to detect whether it recognizes a gesture, like a single tap; if so, it handles it; if not,
@@ -114,88 +226,12 @@ var showingImageAddButtons:Bool = false
 			happens, the default is to discard the gesture even if our handler does nothing special with it. Hence, here we turn off the discarding
 			and pass the touches along to the view, which apparently passes them along to all subviews, incl the tableview.
 			Sheesh, but this explains the mystery of where touches go on the way to controllers when there is no code in my viewcontroller for this. */
-
 		view.addGestureRecognizer(tapGesture)
 		self.panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(recognizer:)))
 		view.addGestureRecognizer(panGesture!)
-
 		let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(recognizer:)))
 		view.addGestureRecognizer(pinchGesture)
 
-		let treeName = treesData.treeInfoNamesSortedArray[pickedRowIndex]
-		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
-		let treeInfo = treesData.treeInfoDictionary[treeName]!
-		//treeView = DrawTreeView(frame:safeFrame,using:treeInfo)
-
-		self.title = treeInfo.displayTreeName + " (\(nLeaves) leaves)" // This will be displayed in middle button of navigation bar at top
-
-		if infoViewController == nil
-			{ infoViewController = TextFileViewController(treeInfo:treeInfo) }
-
-		//treeView = treesData.selectTreeView(forTreeName:treeName, usingSameFrameAs:safeFrame)
-		treeView = treesData.selectTreeView(forTreeName:treeName)
-
-
-		self.view.addSubview(treeView)
-		treeView.translatesAutoresizingMaskIntoConstraints=false
-		treeView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-		treeView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
-
-		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
-		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
-
-		infoButton = UIButton(type: .infoDark)
-		infoButton.addTarget(self, action: #selector(infoButtonAction), for: .touchUpInside)
-		infoButton.tintColor=UIColor.white
-
-  	// display a toggle button to show clade names but only if present on tree
-
-		cladeNameButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		cladeNameButton.addTarget(self, action: #selector(cladeNameButtonAction), for: .touchUpInside)
-		cladeNameButton.frame.size = infoButton.frame.size
-		cladeNameButton.tintColor=UIColor.yellow
-		let cladeNameButtonImage = makeCladeNameButtonImage(size:cladeNameButton.frame.size)
-		cladeNameButton.setImage(cladeNameButtonImage, for: .normal)
-		//self.view.addSubview(cladeNameButton)
-
- // display a toggle button to show images but only if present on tree
-		imagesButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		imagesButton.addTarget(self, action: #selector(imagesButtonAction), for: .touchUpInside)
-		imagesButton.frame.size = infoButton.frame.size
-		imagesButton.tintColor=UIColor.yellow
-		let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
-		imagesButton.setImage(imagesButtonImage, for: .normal)
-
-// display a toggle button to show images but only if present on tree
-		imagesPageButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
-		imagesPageButton.frame.size = infoButton.frame.size
-		//imagesPageButton.tintColor=UIColor.yellow
-		let imagesPageButtonImage = makeImagesTableButtonImage(size:imagesButton.frame.size)
-		imagesPageButton.setImage(imagesPageButtonImage, for: .normal)
-
-
-		let it1 = UIBarButtonItem(customView: cladeNameButton)
-		let it2 = UIBarButtonItem(customView: imagesButton)
-//		let it3 = UIBarButtonItem(customView: treePickerButton)
-		let it4 = UIBarButtonItem(customView: infoButton)
-		let it5 = UIBarButtonItem(customView: imagesPageButton)
-		let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-		// only add appropriate buttons depending on tree data
-		var buttonArray = [spacer]
-		if treeView.xTree.hasCladeNames
-			{
-			buttonArray += [it1,spacer]
-			}
-		//if treeView.xTree.imageCollection.hasImageFiles
-		if treeView.xTree.hasImageFiles
-			{
-			buttonArray += [it2,spacer]
-			}
-		buttonArray += [it4,spacer,it5]
-		//buttonArray += [it4,spacer]
-		//buttonArray += [it3,spacer,it4,spacer] // add this when I add the taxon list button
-		setToolbarItems(buttonArray,animated: false)
 		}
 
 // ****************************** Other view cycle overrides *******************************
@@ -481,22 +517,8 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 						let coord = node.coord
 						let origin = CGPoint(x:coord.x, y:WindowCoord(fromTreeCoord:coord.y, inTreeView: treeView)  )
 						let sourceRect = CGRect(origin:origin, size:CGSize(width:0, height:0))
-						//if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(treeInfo:treeView.treeInfo!, ofType: .images)
-
-
-							//if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:treeView.treeInfo!.dataLocation!, ofType:.images, create:true)
-/*
-							if let fileNameBase = node.originalLabel, let targetDir = docDirectoryNameFor(study: treeView.treeInfo!.treeName, inLocation:.inDocuments, ofType:.images, create:true)
-								// Note targetDir is an URL we are copying TO. Therefore image must always go to docs, not bundle location
-							{
-							let icc = ImageChooserController(receivingImagePane:imagePane, calledFromViewController:self, copyToDir:targetDir, usingFileNameBase:fileNameBase, callingView:treeView, atRect: sourceRect)
-							icc.launch()
-							}
-*/
-							let iS = ImageSelector(receivingImagePane:imagePane, calledFromViewController:self, delegate:self, callingView:treeView, atRect: sourceRect)
-							iS.selectImage()
-
-
+						let iS = ImageSelector(receivingImagePane:imagePane, calledFromViewController:self, delegate:self, callingView:treeView, atRect: sourceRect)
+						iS.selectImage()
 						}
 					}
 			default:
@@ -749,6 +771,9 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 	override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) // the VC is a responder so implements this method, usually attached to views
 		{
 		killTheAnimationTimer()
+		searchController.searchBar.endEditing(true) // This bails me out of the search box
+    	//searchController.searchBar.resignFirstResponder() Do i really need this
+
 		}
 
 
@@ -1115,7 +1140,6 @@ func addButtonAction(sender: UIBarButtonItem!) {
 	treeView.showingImageAddButtons = !treeView.showingImageAddButtons
 	treeView.setNeedsDisplay()
 	}
-
 func infoButtonAction(sender: UIButton!) {
 	self.navigationController?.pushViewController(infoViewController!, animated: true)
 	}
@@ -1261,7 +1285,13 @@ func imagesPageButtonAction(sender: UIButton!) {
 			return iconImage
 			}
 
-
+extension TreeViewController: UISearchResultsUpdating
+	{
+	  func updateSearchResults(for searchController: UISearchController)
+	  {
+		filterContentForSearchText(searchController.searchBar.text!)
+	  }
+	}
 /* How to add an activity indicator...terminated in viewDidAppear above
 activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .whiteLarge)
 self.view.addSubview(activityIndicator)
