@@ -28,9 +28,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 	var button:UIButton!
 	var remoteTreesData:TreesData?
 	var manifestList:[(DataFileType , URL )] = []
-	let downloadService = DownloadService()
-	var annotatedProgressView = AnnotatedProgressView()
-
+	var downloadService:DownloadService!
 	lazy var downloadsSession: URLSession = {
 		let configuration = URLSessionConfiguration.background(withIdentifier: "bgSessionConfiguration")
 		return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
@@ -104,7 +102,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		view.addSubview(studyTableView)
 		view.addSubview(databaseLocationLabel)
 		//view.addSubview(button)
-		view.addSubview(annotatedProgressView)
+		//view.addSubview(annotatedProgressView)
 
 		addConstraints()
 
@@ -122,7 +120,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 				}
 			
 			}
-
+		downloadService = DownloadService(viewController:self)
   		downloadService.downloadsSession = downloadsSession
  		}
 	
@@ -148,12 +146,13 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		studyTableView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
 		studyTableView.topAnchor.constraint(equalTo: databaseLocationLabel.bottomAnchor).isActive = true
 		studyTableView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
-
+/*
 		annotatedProgressView.translatesAutoresizingMaskIntoConstraints=false
 		annotatedProgressView.heightAnchor.constraint(equalToConstant: 150).isActive = true
 		annotatedProgressView.widthAnchor.constraint(equalToConstant: 300).isActive = true
 		annotatedProgressView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
 		annotatedProgressView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+*/
 		}
 	
 	
@@ -206,77 +205,36 @@ extension DatabaseTableViewController: DatabaseTableViewCellDelegate
 	{
 	func downloadTapped(_ cell: DatabaseTableViewCell)
 		{
-		do
-			{
-			try downloadService.startDownload(forStudy:cell.treeInfo!)
-			annotatedProgressView.start(title:cell.treeInfo!.displayTreeName, nFilesToDownload: downloadService.nFilesToDownload)
-			}
-		catch (DownloadServiceError.busy) // errors defined in DownloadService
-			{
-			showAlertMessage ("Download service busy", onVC:self)
-			}
-		catch (DownloadServiceError.manifestError)
-			{
-			showAlertMessage ("Error fetching manifest file", onVC:self)
-			}
-		catch
-			{
-			}
+		downloadService.downloadAll(forStudy:cell.treeInfo!)
 		}
-	
+
 	}
 
 extension DatabaseTableViewController: URLSessionDownloadDelegate
 	{
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tempLocalURL: URL)
 		{
-		print("Finished downloading to \(tempLocalURL).")
-
 		guard let sourceURL = downloadTask.originalRequest?.url else { return }
-		if let download = downloadService.activeDownloads[sourceURL] // info I need for copyURL..() below is in this dictionary
+		downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL)
+		}
+	}
+
+extension DatabaseTableViewController: URLSessionDelegate
+	{ 	// see copyright in DownloadService.swift
+		// Standard background session handler
+	func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession)
+		{
+		DispatchQueue.main.async
 			{
-			downloadService.activeDownloads[sourceURL] = nil
-			if let targetURL = try? copyURLToDocs(src:tempLocalURL, srcFileType: download.srcFileType, srcFilename: download.srcFileName, forStudy: download.studyName,overwrite:true)
+			if let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+			let completionHandler = appDelegate.backgroundSessionCompletionHandler
 				{
-
-				downloadService.nFilesHaveDownloaded += 1
-				let progress = Float(downloadService.nFilesHaveDownloaded)/Float(downloadService.nFilesToDownload)
-				DispatchQueue.main.async
-					{
-					self.annotatedProgressView.updateProgress(int1: self.downloadService.nFilesHaveDownloaded, int2: self.downloadService.nFilesToDownload)
-					}
-				if (progress == 1.0)
-					{
-					DispatchQueue.main.async
-						{
-						self.annotatedProgressView.isHidden = true
-						self.downloadService.isDownloading = false
-						}
-					}
-
-				//print ("Progress = ", progress)
-				print ("file copied to", targetURL)
+				appDelegate.backgroundSessionCompletionHandler = nil
+				completionHandler()
 				}
-			else
-				{ showAlertMessage ("Error downloading/saving remote file", onVC:self) }
 			}
 		}
-			
 	}
-extension DatabaseTableViewController: URLSessionDelegate { // see copyright in DownloadService.swift
-
-  // Standard background session handler
-  func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
-    DispatchQueue.main.async {
-      if let appDelegate = UIApplication.shared.delegate as? AppDelegate,
-        let completionHandler = appDelegate.backgroundSessionCompletionHandler {
-        appDelegate.backgroundSessionCompletionHandler = nil
-        completionHandler()
-      }
-    }
-  }
-
-}
 
 /* SAVE SAVE SAVE SAVE
 	To read the herbarium server, which is http, not https:, need to modify the info.plist as follows

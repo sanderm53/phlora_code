@@ -299,6 +299,32 @@ enum DataFileType {
 	case textFile
 	}
 
+
+func fileExistsInDocs(srcFileType fileType:DataFileType, srcFilename:String, forStudy studyName:String) ->Bool
+	// Check if a filename of a given type is present in the appropriate dir
+
+	{
+	var targetURL:URL
+	let fileManager = FileManager.default
+	if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+		{
+		targetURL = docsDir.appendingPathComponent("Studies").appendingPathComponent(studyName)
+		switch fileType
+			{
+			case .textFile:
+				targetURL = targetURL.appendingPathComponent("Text")
+			case .treeFile:
+				targetURL = targetURL.appendingPathComponent("Tree")
+			case .imageFile:
+				targetURL = targetURL.appendingPathComponent("Images")
+			}
+		targetURL = targetURL.appendingPathComponent(srcFilename)
+		return fileManager.fileExists(atPath: targetURL.path)
+		}
+	return false
+	}
+
+
 // Newest version of this ...must provide source file names, whether from a node or elsewhere
 func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, srcFilename:String, forStudy studyName:String, overwrite:Bool) throws -> URL?
 	// Copy a treefile, textfile or imagefile from some URL to correct Docs folder. Create such a folder if doesn't exist.

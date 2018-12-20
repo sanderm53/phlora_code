@@ -80,6 +80,15 @@ var showingImageAddButtons:Bool = false
 let searchController = UISearchController(searchResultsController: nil)
 var filteredNodeArray = [Node]()
 
+var downloadService:DownloadService!
+lazy var downloadsSession: URLSession = {
+	let configuration = URLSessionConfiguration.background(withIdentifier: "bgSessionConfigurationTreeView")
+	return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+	}()
+
+
+
+
 func searchButtonAction(sender: UIBarButtonItem!)
 	{
 	if #available(iOS 11.0, *)
@@ -188,7 +197,12 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 
 		// Button to go to VC for image list
 		imagesPageButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
+		//imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
+
+imagesPageButton.addTarget(self, action: #selector(updateImagesButtonAction), for: .touchUpInside) // TEMP TEMP TEMP
+
+
+
 		imagesPageButton.frame.size = infoButton.frame.size
 		//imagesPageButton.tintColor=UIColor.yellow
 		let imagesPageButtonImage = makeImagesTableButtonImage(size:imagesButton.frame.size)
@@ -210,8 +224,8 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 			{
 			buttonArray += [it2,spacer]
 			}
-		buttonArray += [it4,spacer]
-		//buttonArray += [it4,spacer,it5]
+		//buttonArray += [it4,spacer]
+		buttonArray += [it4,spacer,it5]
 		//buttonArray += [it4,spacer]
 		setToolbarItems(buttonArray,animated: false)
 
@@ -231,6 +245,10 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		view.addGestureRecognizer(panGesture!)
 		let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(recognizer:)))
 		view.addGestureRecognizer(pinchGesture)
+
+
+		downloadService = DownloadService(viewController:self)
+  		downloadService.downloadsSession = downloadsSession
 
 		}
 
@@ -1172,6 +1190,12 @@ func imagesPageButtonAction(sender: UIButton!) {
 		navigationController!.setNavigationBarHidden(false, animated: false)
 	}
 
+func updateImagesButtonAction (sender: UIButton!)
+	{
+	downloadService.downloadAll(forStudy:treeView.xTree.treeInfo)
+	}
+
+
 }
 
 
@@ -1292,6 +1316,56 @@ extension TreeViewController: UISearchResultsUpdating
 		filterContentForSearchText(searchController.searchBar.text!)
 	  }
 	}
+
+// URLSession stuff...
+
+
+extension TreeViewController: URLSessionDownloadDelegate
+	{
+	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tempLocalURL: URL)
+		{
+		guard let sourceURL = downloadTask.originalRequest?.url else { return }
+		if let finalURL = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL)
+		//  NEED TO AVOID DOWNLOADING TREE FILE IF IT IS IN MANIFEST!! MAYBE????
+			{
+			let fileNameBase = finalURL.deletingPathExtension().lastPathComponent
+			if let node = treeView.xTree.nodeHash[fileNameBase]
+				{
+				node.imageFileURL = finalURL
+				DispatchQueue.main.async
+						{
+						self.treeView.setNeedsDisplay()
+						}
+				}
+			}
+
+		}
+	}
+
+extension TreeViewController: URLSessionDelegate
+	{ 	// see copyright in DownloadService.swift
+		// Standard background session handler
+	func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession)
+		{
+		DispatchQueue.main.async
+			{
+			if let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+			let completionHandler = appDelegate.backgroundSessionCompletionHandler
+				{
+				appDelegate.backgroundSessionCompletionHandler = nil
+				completionHandler()
+				}
+			}
+		}
+	}
+
+
+
+
+
+
+
+
 /* How to add an activity indicator...terminated in viewDidAppear above
 activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .whiteLarge)
 self.view.addSubview(activityIndicator)

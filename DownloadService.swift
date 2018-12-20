@@ -3,7 +3,7 @@
 //  QGTut
 //
 //  Created by mcmanderson on 12/10/18.
-//  Borrowing heavily from the following... and snippets used elsewhere in URLSession code
+//  Borrowing and modifying some code from the following...and snippets used elsewhere in URLSession code
 //
 /**
  * Copyright (c) 2017 Razeware LLC
@@ -36,11 +36,16 @@
  */
 
 import Foundation
+import UIKit
 
 enum DownloadServiceError: Error {
 	case busy
 	case manifestError
+	case noNewFiles
 	}
+
+
+// Manage download of a collection of files in a new or existing study in the app
 
 class DownloadService // Instantiate this once for the entire database table view to represent one study's download service only
 	{
@@ -50,17 +55,76 @@ class DownloadService // Instantiate this once for the entire database table vie
 	var nFilesToDownload: Int = 0
 	var nFilesHaveDownloaded: Int = 0 // just setting thse to dummy values
 	var isDownloading: Bool = false
+	var viewController:UIViewController
+	var annotatedProgressView = AnnotatedProgressView()
+
+	init(viewController vc:UIViewController)
+		{
+		self.viewController = vc
+		if let view = self.viewController.view
+			{
+			view.addSubview(annotatedProgressView)
+			annotatedProgressView.translatesAutoresizingMaskIntoConstraints=false
+			annotatedProgressView.heightAnchor.constraint(equalToConstant: 150).isActive = true
+			annotatedProgressView.widthAnchor.constraint(equalToConstant: 300).isActive = true
+			annotatedProgressView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+			annotatedProgressView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+			}
+		}
+
+	func downloadAll(forStudy t:TreeInfoPackage)
+		{
+		do
+			{
+			try startDownload(forStudy:t)
+			annotatedProgressView.start(title:t.displayTreeName, nFilesToDownload: nFilesToDownload)
+			}
+		catch (DownloadServiceError.busy) // errors defined in DownloadService
+			{
+			showAlertMessage ("Download service busy", onVC:viewController)
+			}
+		catch (DownloadServiceError.manifestError)
+			{
+			showAlertMessage ("Error fetching manifest file", onVC:viewController)
+			}
+		catch (DownloadServiceError.noNewFiles)
+			{
+			showAlertMessage ("No remote files that are missing locally", onVC:viewController)
+			}
+		catch
+			{
+			}
+		}
 
 	func startDownload(forStudy t:TreeInfoPackage) throws
+
+		// Does NOT overwrite local files with remote files of the same name. Checks the names in the remote manifest and skips any
+		// matches to local names. Thus, you'd have to manually delete a local file to overwrite it with a remote one.
+		// Ignores local files in the bundle and makes a duplicate in the docs directory if there is one of the same name
+		// (Code generally prefers any file in the docs dir and ignores matching one in bundle).
+
 		{
 		if isDownloading { throw DownloadServiceError.busy }
 		treeInfo = t
 		nFilesHaveDownloaded = 0
+		var filteredManifestList:[(DataFileType , URL)] = []
 		if let manifestList = try? getManifestData(forStudy:t.treeName, atRemoteServerPath:treeSettings.defaultDatabasePath)
 			{
-			nFilesToDownload = manifestList.count
-			isDownloading = true
-			downloadFiles(forStudyName:t.treeName, using:manifestList)
+			for (fileType,url) in manifestList
+				{
+				if fileExistsInDocs(srcFileType:fileType, srcFilename:url.lastPathComponent, forStudy:t.treeName) == false
+					{
+					filteredManifestList.append((fileType,url))
+					}
+				}
+			nFilesToDownload = filteredManifestList.count
+			if (nFilesToDownload > 0)
+				{
+				isDownloading = true
+				downloadFiles(forStudyName:t.treeName, using:filteredManifestList)
+				}
+			else
+				{throw DownloadServiceError.noNewFiles}
 			}
 		else
 			{ throw DownloadServiceError.manifestError}
@@ -79,6 +143,44 @@ class DownloadService // Instantiate this once for the entire database table vie
 			activeDownloads[url] = download
 			}
 		}
+
+
+	func fileDidFinishDownloading(from sourceURL:URL, to tempLocalURL:URL) -> URL?
+		{
+		if let download = activeDownloads[sourceURL] // info I need for copyURL..() below is in this dictionary
+			{
+			activeDownloads[sourceURL] = nil
+			if let targetURL = try? copyURLToDocs(src:tempLocalURL, srcFileType: download.srcFileType, srcFilename: download.srcFileName, forStudy: download.studyName,overwrite:true)
+				{
+
+				nFilesHaveDownloaded += 1
+				let progress = Float(nFilesHaveDownloaded)/Float(nFilesToDownload)
+				DispatchQueue.main.async
+					{
+					self.annotatedProgressView.updateProgress(int1: self.nFilesHaveDownloaded, int2: self.nFilesToDownload)
+					}
+				if (progress == 1.0)
+					{
+					DispatchQueue.main.async
+						{
+						self.annotatedProgressView.isHidden = true
+						self.isDownloading = false
+						}
+					}
+
+				print ("file copied to", targetURL)
+				return targetURL
+				}
+			else
+				{
+				showAlertMessage ("Error downloading/saving remote file", onVC:viewController)
+				return nil
+				}
+			}
+		return nil
+		}
+
+
 
 	}
 // ************************
