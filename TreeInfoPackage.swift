@@ -12,8 +12,14 @@ import UIKit
 class TreesData
 	{
 	// 
-	var treeInfoDictionary = [String:TreeInfoPackage]()
-	var treeInfoNamesSortedArray = [String]()
+	//var treeInfoDictionary = [String:TreeInfoPackage]()
+	var treeInfoDictionary:[String:TreeInfoPackage] = [:]
+	//var treeInfoNamesSortedArray = [String]()
+	var treeInfoNamesSortedArray:[String] = []
+
+	enum TreesDataError: Error {
+		case zeroEntries
+		}
 
 	init(usingMetaDataFileAt url:URL) throws
 		{
@@ -22,11 +28,13 @@ class TreesData
 		for line in lines
 			{
 			if line == "" { continue } // if lines begins or ends with \n the components method returns ""
-			let treeInfo = try TreeInfoPackage(fromTableLine:line)
+			let treeInfo = try TreeInfoPackage(fromTableLine:line) // right now this dos not throw errors but could in future code
 			treeInfo.dataLocation = .inBundle
 			treeInfoDictionary[(treeInfo.treeName)]=treeInfo
 			}
 		treeInfoNamesSortedArray = Array(treeInfoDictionary.keys).sorted(by: <)
+		if treeInfoNamesSortedArray.count == 0
+			{ throw TreesDataError.zeroEntries}
 		}
 
 	init() throws

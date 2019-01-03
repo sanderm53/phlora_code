@@ -72,11 +72,11 @@ class DownloadService // Instantiate this once for the entire database table vie
 			}
 		}
 
-	func downloadAll(forStudy t:TreeInfoPackage)
+	func downloadAll(forStudy t:TreeInfoPackage,havingFileTypes fileTypes:[DataFileType])
 		{
 		do
 			{
-			try startDownload(forStudy:t)
+			try startDownload(forStudy:t, havingFileTypes:fileTypes)
 			annotatedProgressView.start(title:t.displayTreeName, nFilesToDownload: nFilesToDownload)
 			}
 		catch (DownloadServiceError.busy) // errors defined in DownloadService
@@ -96,14 +96,17 @@ class DownloadService // Instantiate this once for the entire database table vie
 			}
 		}
 
-	func startDownload(forStudy t:TreeInfoPackage) throws
+	func startDownload(forStudy t:TreeInfoPackage, havingFileTypes fileTypes:[DataFileType]) throws
 
+		// Begins process of possibly downloading files for one study only of type given in the array
+		// Fetches and parses the manifest to get filetypes and URLS and then filters them by type.
 		// Does NOT overwrite local files with remote files of the same name. Checks the names in the remote manifest and skips any
 		// matches to local names. Thus, you'd have to manually delete a local file to overwrite it with a remote one.
 		// Ignores local files in the bundle and makes a duplicate in the docs directory if there is one of the same name
 		// (Code generally prefers any file in the docs dir and ignores matching one in bundle).
 
 		{
+		let downloadThreshold = 5 // if > this number, make the user confirm they want to do this
 		if isDownloading { throw DownloadServiceError.busy }
 		treeInfo = t
 		nFilesHaveDownloaded = 0
@@ -112,16 +115,40 @@ class DownloadService // Instantiate this once for the entire database table vie
 			{
 			for (fileType,url) in manifestList
 				{
-				if fileExistsInDocs(srcFileType:fileType, srcFilename:url.lastPathComponent, forStudy:t.treeName) == false
+				//print (fileType,url)
+				if fileTypes.contains(fileType)
 					{
-					filteredManifestList.append((fileType,url))
+					if fileExistsInDocs(srcFileType:fileType, srcFilename:url.lastPathComponent, forStudy:t.treeName) == false
+						{
+						filteredManifestList.append((fileType,url))
+						}
 					}
 				}
 			nFilesToDownload = filteredManifestList.count
+
 			if (nFilesToDownload > 0)
 				{
-				isDownloading = true
-				downloadFiles(forStudyName:t.treeName, using:filteredManifestList)
+				if nFilesToDownload > downloadThreshold // for large downloads do an alert confirm
+					{
+					let alert = UIAlertController(title:"Really download \(nFilesToDownload) files to your device?",message:"", preferredStyle: .alert)
+					let action1 = UIAlertAction(title: "Cancel", style: .cancel)
+						{ (action:UIAlertAction) in
+						self.viewController.dismiss(animated:true)
+						}
+					let action2 = UIAlertAction(title: "Download", style: .default)
+						{ (action:UIAlertAction) in
+						self.isDownloading = true
+						self.downloadFiles(forStudyName:t.treeName, using:filteredManifestList)
+						}
+					alert.addAction(action1)
+					alert.addAction(action2)
+					self.viewController.present(alert, animated: true, completion: nil)
+					}
+				else
+					{
+					self.isDownloading = true
+					self.downloadFiles(forStudyName:t.treeName, using:filteredManifestList)
+					}
 				}
 			else
 				{throw DownloadServiceError.noNewFiles}
@@ -129,7 +156,8 @@ class DownloadService // Instantiate this once for the entire database table vie
 		else
 			{ throw DownloadServiceError.manifestError}
 		}
-	
+
+
 	func downloadFiles(forStudyName studyName:String, using manifestList: [(DataFileType , URL )]) // throws
 		{
 		for (fileType,url) in manifestList
@@ -144,6 +172,15 @@ class DownloadService // Instantiate this once for the entire database table vie
 			}
 		}
 
+	func cancelAll()
+		{
+		for download in activeDownloads.values
+			{
+			download.task?.cancel() // Hmm this is only the right logic if the dictionary is completely populated synchronously prior to getting here
+			}
+		annotatedProgressView.isHidden = true
+		isDownloading = false
+		}
 
 	func fileDidFinishDownloading(from sourceURL:URL, to tempLocalURL:URL) -> URL?
 		{

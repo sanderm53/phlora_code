@@ -52,6 +52,7 @@ class XTree {
 	var treeInfo:TreeInfoPackage
 	var hasCladeNames:Bool=false
 	var hasImageFiles:Bool=false
+	var nImages:Int = 0
 
 	//init(withNwkStr nwktree : String)
 	init(withTreeInfoPackage data : TreeInfoPackage)
@@ -74,22 +75,10 @@ class XTree {
 		root.prepareLabels()					// This edits labels as requested, copying originallable->label
 		//root.setEdgeAlphaModifier(haveSeenInternalLabel: root.isLabelPresent()) // works on label, so prepare must be done first
 		let mrcaArray = treeInfo.mrcaArray
-		//print (mrcaArray)
 		assignLabels(fromMRCAList:mrcaArray)
-		//imageCollection=ImageCollection(forTree:self)
-		do {
-			try checkForImageFiles()
-			}
-		catch
-			{
-			print("Error checking for image files")
-			}
+		nImages = checkForImageFiles()
 
-setupNearestImageIconPositions(for:nodeArray) // also called in process_images() in fetchImageController when adding a new image
-
-//		imageCollection.setup(withNode:root)
-
-
+		setupNearestImageIconPositions(for:nodeArray) // also called in process_images() in fetchImageController when adding a new image
 		}
 	func setupNearestImageIconPositions(for nodeArray:[Node])
 		// the integer distance between the closer image icon above and below;
@@ -133,12 +122,14 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 		return nil
 		}
 
-	func checkForImageFiles() throws
+	func checkForImageFiles() -> Int
 		{
 		// If a data package is annotated as being .inDocuments its image files are ONLY in that location,
 		// but if they are .inBundle, they might be in either place because user may have added their own images
 		// to a bundle data set.
 		// Note this checks for both node and study images...
+		var nImages = 0
+		var nodesWithImagesDict:[String:Bool] = [:]
 		let fileManager = FileManager.default
 
 		// Iff it is a bundle data location,  check there
@@ -156,12 +147,14 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 								//node.hasImageFile() = true
 								node.imageFileURL = fileURL
 								node.imageFileDataLocation = .inBundle
-
+								nodesWithImagesDict[fileNameBase] = true
 								hasImageFiles=true
 								}
 							}
+						nImages = nodesWithImagesDict.keys.count
 						}
 			}
+
 
 		// Also ALWAYS check in docs folder for user added images
 		if let docsDir = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
@@ -170,7 +163,7 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 			let studyDir = docsDir.appendingPathComponent("Studies")
 			if fileManager.fileExists(atPath: studyDir.path) == false
 				{
-				return // This means we've never added images from outside the bundle to our app--bail
+				return nImages // This means we've never added images from outside the bundle to our app--bail
 				}
 			let studyName = treeInfo.treeName
 			let imagesDir = studyDir.appendingPathComponent(studyName).appendingPathComponent("Images")
@@ -185,14 +178,17 @@ setupNearestImageIconPositions(for:nodeArray) // also called in process_images()
 							//node.hasImageFile() = true
 							node.imageFileURL = fileURL
 							node.imageFileDataLocation = .inDocuments
-							hasImageFiles=true
+							nodesWithImagesDict[fileNameBase] = true
+							}
+						else
+							{
+							print ("Filebase not found on tree:",fileNameBase)
 							}
 						}
+					nImages = nodesWithImagesDict.keys.count
 					}
 			}
-
-
-
+		return nImages
 		}
 
 

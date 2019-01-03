@@ -96,7 +96,7 @@ let iPhoneTreeSettings=Settings(
 	studyTableNLeafFontSize:12,
 	imageSizeAtLowRes:1000.0,
 	imageResolutionSmallSize:1000000.0,
-	defaultDatabasePath:""
+	defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
 	)
 
 	let iPadTreeSettings=Settings(

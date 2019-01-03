@@ -37,6 +37,7 @@ let buttonGap:CGFloat = 60
 
 var treeView: DrawTreeView!  // had to drop the 'weak' to do the programmatic view handling
 var helpView: UITextView!
+var updateImagesButton: UIButton!
 var infoButton: UIButton!
 var cladeNameButton: UIButton!
 var imagesButton: UIButton!
@@ -80,12 +81,17 @@ var showingImageAddButtons:Bool = false
 let searchController = UISearchController(searchResultsController: nil)
 var filteredNodeArray = [Node]()
 
+/*
+For a while I experimented with a download from database button at bottom of tree page. However, to do this right I need
+to make DownloadService a singleton because it can be called multiple times, which introduces some havoc. Or, I could have each
+study have its own Download service, with its own identifier...but for now, better to keep all that on the remote DB page only
+
 var downloadService:DownloadService!
 lazy var downloadsSession: URLSession = {
 	let configuration = URLSessionConfiguration.background(withIdentifier: "bgSessionConfigurationTreeView")
 	return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
 	}()
-
+*/
 
 
 
@@ -146,7 +152,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
 		let treeInfo = treesData.treeInfoDictionary[treeName]!
 
-		self.title = treeInfo.displayTreeName + " (\(nLeaves) leaves)" // This will be displayed in middle button of navigation bar at top
 
 		// Setup the Search Controller and its searchBar
 		searchController.searchResultsUpdater = self
@@ -163,7 +168,8 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		let searchButtonItem = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(searchButtonAction))
 		self.navigationItem.rightBarButtonItems = [addButtonItem, searchButtonItem]
 
-		// Treeview
+		// Treeview :: This includes the initialization of the xTree !!
+		
 		treeView = treesData.selectTreeView(forTreeName:treeName)
 		self.view.addSubview(treeView)
 		treeView.translatesAutoresizingMaskIntoConstraints=false
@@ -171,6 +177,19 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		treeView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
 		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
 		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
+
+		switch UIDevice.current.userInterfaceIdiom
+			{
+			case .phone:
+				self.title = treeInfo.displayTreeName + " (\(treeView.xTree.nImages)/\(nLeaves))" // shorter layout for phones
+			case .pad:
+				self.title = treeInfo.displayTreeName + " (\(nLeaves) leaves/\(treeView.xTree.nImages) images)" // to be displayed in middle button of navigation bar at top
+			default:
+				break
+			}
+
+
+
 
 		// Info button toggle
 		if infoViewController == nil
@@ -192,15 +211,23 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		imagesButton.addTarget(self, action: #selector(imagesButtonAction), for: .touchUpInside)
 		imagesButton.frame.size = infoButton.frame.size
 		imagesButton.tintColor=UIColor.yellow
+
 		let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
 		imagesButton.setImage(imagesButtonImage, for: .normal)
 
 		// Button to go to VC for image list
 		imagesPageButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		//imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
+		imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
 
-imagesPageButton.addTarget(self, action: #selector(updateImagesButtonAction), for: .touchUpInside) // TEMP TEMP TEMP
 
+/*
+		updateImagesButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		updateImagesButton.addTarget(self, action: #selector(updateImagesButtonAction), for: .touchUpInside)
+		updateImagesButton.frame.size = infoButton.frame.size
+		updateImagesButton.tintColor=UIColor.white
+		let updateImagesImage = makeUpdateImagesImage(size:imagesButton.frame.size)
+		updateImagesButton.setImage(updateImagesImage, for: .normal)
+*/
 
 
 		imagesPageButton.frame.size = infoButton.frame.size
@@ -212,7 +239,7 @@ imagesPageButton.addTarget(self, action: #selector(updateImagesButtonAction), fo
 		let it1 = UIBarButtonItem(customView: cladeNameButton)
 		let it2 = UIBarButtonItem(customView: imagesButton)
 		let it4 = UIBarButtonItem(customView: infoButton)
-		let it5 = UIBarButtonItem(customView: imagesPageButton) // disabled for now
+		//let it5 = UIBarButtonItem(customView: updateImagesButton)
 		let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 		// only add appropriate buttons depending on tree data
 		var buttonArray = [spacer]
@@ -224,9 +251,8 @@ imagesPageButton.addTarget(self, action: #selector(updateImagesButtonAction), fo
 			{
 			buttonArray += [it2,spacer]
 			}
-		//buttonArray += [it4,spacer]
-		buttonArray += [it4,spacer,it5]
-		//buttonArray += [it4,spacer]
+		buttonArray += [it4,spacer]
+		//buttonArray += [it4,spacer,it5]
 		setToolbarItems(buttonArray,animated: false)
 
 		// Gesture recognizers: attached to view rather than treeView
@@ -247,8 +273,8 @@ imagesPageButton.addTarget(self, action: #selector(updateImagesButtonAction), fo
 		view.addGestureRecognizer(pinchGesture)
 
 
-		downloadService = DownloadService(viewController:self)
-  		downloadService.downloadsSession = downloadsSession
+		//downloadService = DownloadService(viewController:self)
+  		//downloadService.downloadsSession = downloadsSession
 
 		}
 
@@ -585,6 +611,8 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 
 	treeView.setNeedsDisplay()
 	}
+
+// This is for selecting directory only...
 
 func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 	{
@@ -1192,7 +1220,7 @@ func imagesPageButtonAction(sender: UIButton!) {
 
 func updateImagesButtonAction (sender: UIButton!)
 	{
-	downloadService.downloadAll(forStudy:treeView.xTree.treeInfo)
+	//downloadService.downloadAll(forStudy:treeView.xTree.treeInfo, havingFileTypes: [.imageFile])
 	}
 
 
@@ -1225,6 +1253,34 @@ func updateImagesButtonAction (sender: UIButton!)
 			let rect = CGRect(origin: CGPoint(x:0,y:0), size: size)
 			ctx.setStrokeColor(UIColor.white.cgColor)
 			ctx.stroke(rect)
+
+			let iconImage = UIGraphicsGetImageFromCurrentImageContext()
+			UIGraphicsEndImageContext()
+			return iconImage
+			}
+	func makeUpdateImagesImage(size:CGSize) -> UIImage?
+			{
+			UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
+			let ctx = UIGraphicsGetCurrentContext()!
+			let rect = CGRect(origin: CGPoint(x:0,y:0), size: CGSize(width: size.width-3, height: size.height-3))
+			ctx.setStrokeColor(UIColor.white.cgColor)
+			let topCenterCoord = CGPoint(x:rect.midX,y:0)
+			let bottomCenterCoord = CGPoint(x:rect.midX,y:rect.maxY)
+			let left = CGPoint(x:3,y:rect.midY+3)
+			let right = CGPoint (x:rect.maxX-3,y:rect.midY+3)
+			ctx.setFillColor(UIColor.black.cgColor)
+
+			ctx.beginPath()
+			ctx.move(to: topCenterCoord)
+			ctx.addLine(to: bottomCenterCoord)
+			ctx.addLine(to: left)
+			ctx.drawPath(using: .stroke)
+
+			ctx.beginPath()
+			ctx.move(to: bottomCenterCoord)
+			ctx.addLine(to: right)
+			ctx.drawPath(using: .stroke)
+
 
 			let iconImage = UIGraphicsGetImageFromCurrentImageContext()
 			UIGraphicsEndImageContext()
@@ -1317,8 +1373,9 @@ extension TreeViewController: UISearchResultsUpdating
 	  }
 	}
 
-// URLSession stuff...
+/*  Uncomment the following two function if you want to play with this again
 
+// URLSession stuff...
 
 extension TreeViewController: URLSessionDownloadDelegate
 	{
@@ -1326,7 +1383,6 @@ extension TreeViewController: URLSessionDownloadDelegate
 		{
 		guard let sourceURL = downloadTask.originalRequest?.url else { return }
 		if let finalURL = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL)
-		//  NEED TO AVOID DOWNLOADING TREE FILE IF IT IS IN MANIFEST!! MAYBE????
 			{
 			let fileNameBase = finalURL.deletingPathExtension().lastPathComponent
 			if let node = treeView.xTree.nodeHash[fileNameBase]
@@ -1358,7 +1414,7 @@ extension TreeViewController: URLSessionDelegate
 			}
 		}
 	}
-
+*/
 
 
 

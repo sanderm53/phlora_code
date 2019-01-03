@@ -35,6 +35,14 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		}()
 
 
+	func handleCancelDownloadButton(sender:UIButton)
+			{
+			print ("Cancelling download")
+			downloadService.cancelAll()
+			print ("Cancelled download")
+			}
+
+
 	override func viewDidAppear(_ animated: Bool)
 		{
 		super.viewDidAppear(animated)
@@ -52,7 +60,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 	override func viewDidLoad()
 		{
 		super.viewDidLoad()
-		self.title = "Remote Database" // This will be displayed in middle button of navigation bar at top
+		self.title = "Download" // This will be displayed in middle button of navigation bar at top
 
 // view for the study table popup containing the table view and headers and footers
 
@@ -78,7 +86,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		// Server location label
 		databaseLocationLabel = UILabel()
 		databaseLocationLabel.textColor = UIColor.lightGray
-		databaseLocationLabel.text = "Contents of Database at:\(treeSettings.defaultDatabasePath)"
+		databaseLocationLabel.text = "Downloads available from:\(treeSettings.defaultDatabasePath)"
 		databaseLocationLabel.textAlignment = .center
 		databaseLocationLabel.lineBreakMode = .byWordWrapping
 		databaseLocationLabel.font = UIFont(name:"Helvetica", size:20)
@@ -113,10 +121,13 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 				{
 				remoteTreesData = try TreesData(usingMetaDataFileAt:dbMetaDataURL)
 				}
+			catch TreesData.TreesDataError.zeroEntries
+				{
+				showAlertMessage ("Remote trees metadata file had no entries", onVC:self)
+				}
 			catch
 				{
-				print ("Error fetching remoteTreesData")
-				showAlertMessage ("Error fetching remote trees metadata", onVC:self)
+				showAlertMessage ("Error finding or parsing remote trees metadata file", onVC:self)
 				}
 			
 			}
@@ -205,7 +216,7 @@ extension DatabaseTableViewController: DatabaseTableViewCellDelegate
 	{
 	func downloadTapped(_ cell: DatabaseTableViewCell)
 		{
-		downloadService.downloadAll(forStudy:cell.treeInfo!)
+		downloadService.downloadAll(forStudy:cell.treeInfo!,havingFileTypes: [.imageFile, .treeFile, .textFile])
 		}
 
 	}
@@ -215,7 +226,10 @@ extension DatabaseTableViewController: URLSessionDownloadDelegate
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tempLocalURL: URL)
 		{
 		guard let sourceURL = downloadTask.originalRequest?.url else { return }
-		downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL)
+		_ = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL)
+
+		// TODO. Unlike when I call this in TreeViewController, here I do not use the final location of the file to update the node in its tree
+		// because, well, the tree may not be built yet, etc., Thus to see this update you might have to close program and start over.
 		}
 	}
 

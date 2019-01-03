@@ -149,9 +149,9 @@ class MainViewController: UIViewController {
 		let studyButton = button(title:"Studies",fontSize:treeSettings.titleFontSize,action:#selector(studyButtonAction))
 		let aboutButton = button(title:"About/Credits",fontSize:treeSettings.titleFontSize,action:#selector(aboutButtonAction))
 		let helpButton = button(title:"Help",fontSize:treeSettings.titleFontSize,action:#selector(helpButtonAction))
-		let databaseButton = button(title:"Remote DB",fontSize:treeSettings.titleFontSize,action:#selector(databaseButtonAction))
+		let databaseButton = button(title:"Download",fontSize:treeSettings.titleFontSize,action:#selector(databaseButtonAction))
 
-		let stackView = UIStackView(arrangedSubviews:[studyButton,helpButton,aboutButton,databaseButton])
+		let stackView = UIStackView(arrangedSubviews:[studyButton,databaseButton, helpButton,aboutButton])
 		stackView.axis = .vertical
 		stackView.distribution = .fillEqually
 		stackView.alignment = .fill
