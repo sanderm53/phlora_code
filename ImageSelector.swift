@@ -78,14 +78,17 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 
 
 	func choosePhotoFromFiles() // reads any image file recognized by public.image UTI
+		// At the moment I have disabled selecting entire directory, though functions are present throughout to handle this case (need debugging)
 		{
-		let vc = UIDocumentPickerViewController(documentTypes: ["public.image","public.directory"],in: .import)
+		//let vc = UIDocumentPickerViewController(documentTypes: ["public.image","public.directory"],in: .import)
+		let vc = UIDocumentPickerViewController(documentTypes: ["public.image"],in: .import)
 		vc.delegate = self
 		
-		viewController!.present(vc, animated: false) {if #available(iOS 11.0, *) {
-				vc.allowsMultipleSelection = true
-				}
-			}
+		//viewController!.present(vc, animated: false) {if #available(iOS 11.0, *) {
+		//		vc.allowsMultipleSelection = true
+		//		}
+		//	}
+		viewController!.present(vc, animated: false)
 		}
 	
 	func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)

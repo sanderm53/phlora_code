@@ -56,6 +56,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		nImagesLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!,textColor:UIColor.white)
 		imageSpaceLabel = label(text:"",font:UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!,textColor:UIColor.white)
 		downloadButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
+		downloadButton.frame.size = CGSize(width: 75, height: 50)
 		downloadButton.addTarget(self, action: #selector(handleDownloadButton), for: .touchUpInside)
 		downloadButton.setTitleColor(UIColor.red, for: .normal)
 
@@ -64,7 +65,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 
 		let myAttributes = [
 			NSForegroundColorAttributeName : UIColor.red,
-			NSFontAttributeName : UIFont(name:"Helvetica", size:18)!
+			NSFontAttributeName : UIFont(name:"Helvetica", size:treeSettings.studyTableNLeafFontSize)!
 			]
 		let mySelectedAttributedTitle = NSAttributedString(string: "Download", attributes: myAttributes)
    		downloadButton.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
@@ -88,11 +89,35 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		rightStack.spacing = 2
 
 
+
+		leftStack.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(leftStack)
+		centerStack.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(centerStack)
+		rightStack.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(rightStack)
+
+
+// Three columns look like this on iPad | ......springy...... |    200 pts    | 100 pts |
+
+		leftStack.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
+		leftStack.trailingAnchor.constraint(equalTo: centerStack.leadingAnchor).isActive = true
+		leftStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
+
+		centerStack.trailingAnchor.constraint(equalTo: rightStack.leadingAnchor).isActive = true
+		centerStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
+		centerStack.widthAnchor.constraint(equalToConstant: treeSettings.mediumTableColWidth).isActive = true
+
+		rightStack.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
+		rightStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
+		rightStack.widthAnchor.constraint(equalToConstant: treeSettings.smallTableColWidth).isActive = true
+
+/* Couldn't use a row stack and also keep cols aligned and at right positions...
 		let rowStackView = UIStackView(arrangedSubviews:[leftStack,centerStack,rightStack])
 		rowStackView.axis = .horizontal
 		rowStackView.distribution = .fillEqually
 		rowStackView.alignment = .fill
-		rowStackView.spacing = 50
+		rowStackView.spacing = 20
 		rowStackView.translatesAutoresizingMaskIntoConstraints = false
 		contentView.addSubview(rowStackView)
 	
@@ -100,7 +125,7 @@ override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
 		rowStackView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
 		rowStackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
 		rowStackView.heightAnchor.constraint(equalToConstant: 100).isActive = true
-
+*/
 
 }
 	func handleDownloadButton(sender:UIButton)

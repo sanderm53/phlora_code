@@ -10,6 +10,8 @@ import UIKit
 
 struct Settings
 	{
+	let smallTableColWidth:CGFloat
+	let mediumTableColWidth:CGFloat
 	let largeButtonSize:CGSize		// e.g., buttons on main page
 	let allowedToLoadImages:Bool
 	let preLoadImages:Bool
@@ -55,7 +57,9 @@ struct Settings
 	}
 
 let iPhoneTreeSettings=Settings(
-	largeButtonSize:CGSize(width: 200, height: 250),
+	smallTableColWidth:75,
+	mediumTableColWidth:75,
+	largeButtonSize:CGSize(width: 200, height: 400),
 	allowedToLoadImages:true,
 	preLoadImages:false,
 	imageBundleLoc:"Images.bundle",
@@ -96,10 +100,13 @@ let iPhoneTreeSettings=Settings(
 	studyTableNLeafFontSize:12,
 	imageSizeAtLowRes:1000.0,
 	imageResolutionSmallSize:1000000.0,
-	defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
+	//defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
+	defaultDatabasePath:"http://phlora.org"
 	)
 
 	let iPadTreeSettings=Settings(
+	smallTableColWidth:100,
+	mediumTableColWidth:200,
 	largeButtonSize:CGSize(width: 300, height: 600),
 	allowedToLoadImages:true,
 	preLoadImages:false,
@@ -142,7 +149,8 @@ let iPhoneTreeSettings=Settings(
 	studyTableNLeafFontSize:18,
 	imageSizeAtLowRes:1000.0,
 	imageResolutionSmallSize:1000000.0,
-	defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
+	//defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
+	defaultDatabasePath:"http://phlora.org"
 	)
 
 	var treeSettings = iPadTreeSettings // as a default

@@ -308,7 +308,6 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				{
 				if imageSmall != nil // the save low res version
 					{
-//					imageView.image = resizeUIImage(image: image, toSize: imageSmallSize!)
 					imageView.image = imageSmall
 					imageLoadedAtResolution = .low
 					}

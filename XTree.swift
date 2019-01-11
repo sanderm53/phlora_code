@@ -150,6 +150,10 @@ class XTree {
 								nodesWithImagesDict[fileNameBase] = true
 								hasImageFiles=true
 								}
+							else
+								{
+								//print ("Filebase from bundle not found on tree:",fileNameBase)
+								}
 							}
 						nImages = nodesWithImagesDict.keys.count
 						}
@@ -179,10 +183,11 @@ class XTree {
 							node.imageFileURL = fileURL
 							node.imageFileDataLocation = .inDocuments
 							nodesWithImagesDict[fileNameBase] = true
+							hasImageFiles=true
 							}
 						else
 							{
-							print ("Filebase not found on tree:",fileNameBase)
+							//print ("Filebase from docs not found on tree:",fileNameBase)
 							}
 						}
 					nImages = nodesWithImagesDict.keys.count

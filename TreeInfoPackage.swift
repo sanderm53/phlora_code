@@ -279,7 +279,8 @@ enum parserError: Error
 
 let nexusToken = "#nexus"
 let commentTokens = "\\[.*?\\]"
-let nameTokens = "[A-Za-z]\\w*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore
+//let nameTokens = "[A-Za-z]\\w*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore
+let nameTokens = "[A-Za-z][-\\w]*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore. Also, 1/5/19 I added dash to valid raw name token, but it is STILL MISHANDLING DASHES WITHIN A SINGLE QUOTE!
 let puncTokens = "[=\\,\\(\\)\\;\\:]"
 let numberTokens = "[0-9]+\\.?[0-9]+([eE][-+]\\d+)?"
 let nwktokens = nameTokens + "|" + puncTokens   + "|" + numberTokens

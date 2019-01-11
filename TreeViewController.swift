@@ -61,7 +61,8 @@ var imageTableViewController:ImageTableViewController?
 
 var activityIndicator:UIActivityIndicatorView!
 
-var treesData:TreesData! // Initializes this once when the view controller is instantiated
+var treesData:TreesData! // Copies this from elsewhere when the view controller is instantiated
+var treeInfo:TreeInfoPackage! // For this tree...
 
 var panGesture:UIPanGestureRecognizer?
 
@@ -94,6 +95,7 @@ lazy var downloadsSession: URLSession = {
 */
 
 
+// NB! SEARCH FUNCTION ONLY WORKS IN IOS 11! CHECK IF IT WORKS IN 12; STILL DISPLAYS BUTTON IN ALL VERSIONS THOUGH
 
 func searchButtonAction(sender: UIBarButtonItem!)
 	{
@@ -125,7 +127,8 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		{ node.foundInSearch = false }
 	if searchText.isEmpty { return } // Needed so default view before typing is to show all nodes ; have to call this AFTER clearing the filteredNodeArray
 	filteredNodeArray = treeView.xTree.nodeArray.filter
-		{ $0.label!.lowercased().hasPrefix(searchText.lowercased()) } // Matches from beginning of string
+		{ $0.label!.lowercased().contains(searchText.lowercased()) } // Matches anywhere in string, case insensitive
+		//{ $0.label!.lowercased().hasPrefix(searchText.lowercased()) } // Matches from beginning of string, case insensitive
 	for node in filteredNodeArray
 		{ node.foundInSearch = true }
 	treeView.setNeedsDisplay()
@@ -141,17 +144,30 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 	3. viewDidAppear
 */
 
-
+	func updateViewControllerTitle()
+		// Needed initially and any time a photo is added or deleted. Doesn't seem to need a setNeedsDisplay or layout
+		{
+		switch UIDevice.current.userInterfaceIdiom
+			{
+			case .phone:
+				self.title = treeInfo.displayTreeName + " (\(treeView.xTree.nImages)/\(treeView.xTree.numDescLvs!))" // shorter layout for phones
+			case .pad:
+				self.title = treeInfo.displayTreeName + " (\(treeView.xTree.numDescLvs!) leaves/\(treeView.xTree.nImages) images)" // to be displayed in middle button of navigation bar at top
+			default:
+				break
+			}
+		}
 	override func viewDidLoad() // Gets loaded once but not when going back and forth in VC stack
 		{
 		super.viewDidLoad()
 		// Do any additional setup after loading the view, typically from a nib.
 		
-		// Fetch some data
+		// Fetch key data using already initialized treesData structure set up on Studies vc
 		let treeName = treesData.treeInfoNamesSortedArray[pickedRowIndex]
-		let nLeaves = treesData.treeInfoDictionary[treeName]!.nLeaves
-		let treeInfo = treesData.treeInfoDictionary[treeName]!
+		treeView = treesData.selectTreeView(forTreeName:treeName) // Treeview :: This includes the initialization of the xTree !!
+		treeInfo = treesData.treeInfoDictionary[treeName]!
 
+		updateViewControllerTitle()
 
 		// Setup the Search Controller and its searchBar
 		searchController.searchResultsUpdater = self
@@ -168,28 +184,12 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		let searchButtonItem = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(searchButtonAction))
 		self.navigationItem.rightBarButtonItems = [addButtonItem, searchButtonItem]
 
-		// Treeview :: This includes the initialization of the xTree !!
-		
-		treeView = treesData.selectTreeView(forTreeName:treeName)
 		self.view.addSubview(treeView)
 		treeView.translatesAutoresizingMaskIntoConstraints=false
 		treeView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
 		treeView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
 		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
 		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
-
-		switch UIDevice.current.userInterfaceIdiom
-			{
-			case .phone:
-				self.title = treeInfo.displayTreeName + " (\(treeView.xTree.nImages)/\(nLeaves))" // shorter layout for phones
-			case .pad:
-				self.title = treeInfo.displayTreeName + " (\(nLeaves) leaves/\(treeView.xTree.nImages) images)" // to be displayed in middle button of navigation bar at top
-			default:
-				break
-			}
-
-
-
 
 		// Info button toggle
 		if infoViewController == nil
@@ -272,10 +272,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(recognizer:)))
 		view.addGestureRecognizer(pinchGesture)
 
-
-		//downloadService = DownloadService(viewController:self)
-  		//downloadService.downloadsSession = downloadsSession
-
 		}
 
 // ****************************** Other view cycle overrides *******************************
@@ -304,6 +300,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		// Used to handle low memory warnings, almost always caused by too many hi-res images being displayed
 		// If this is a hidden treeview controller, all images are deleted (though signalled by blue icons)
 		// If it is a visible treeview controller, offscreen images are deleted. Others are kept.
+		// UPDATE! New default is to delete all images everywhere. Necessary on some older devices with little RAM
 		{
 		var vcIsVisible:Bool = false
 		if self == navigationController?.visibleViewController
@@ -320,6 +317,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 			{
 			if let imagePane = subview as? ImagePaneView
 				{
+				/*   This is the original nuanced version that keeps currently visible images...
 				if vcIsVisible
 					{
 					if treeView.bounds.intersects(imagePane.frame) == false // this is the visible vc, and pane is offscreen, so close
@@ -327,7 +325,9 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 					}
 				else
 					{ imagePane.delete()  } // pane is in another vc, so close all of its panes
+				*/
 
+				imagePane.delete() // updated version that deletes all images...
 				}
 			}
 		tv.setNeedsDisplay()
@@ -526,6 +526,11 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 						imagePane.deleteImageFromDiskButKeepPane(updateView:self.treeView)
 						if let node = imagePane.associatedNode
 							{
+							if node.hasImageFile() == false
+								{
+								self.treeView.xTree.nImages -= 1
+								self.updateViewControllerTitle()
+								}
 							if node.imageThumb != nil
 								{ node.imageThumb = nil } // if the imageTable has been created, might have to delete thumb to make sure it won't be displayed
 								// Hmm, still dosn't update imagetable visibly when deleting it from treeview until the tableview is scrolled and reloaded
@@ -599,6 +604,8 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 						node.imageFileURL = destURL
 						node.imageFileDataLocation = .inDocuments
 						}
+				self.treeView.xTree.nImages += 1
+				self.updateViewControllerTitle()
 				}
 		}
 	catch
@@ -612,8 +619,8 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 	treeView.setNeedsDisplay()
 	}
 
-// This is for selecting directory only...
 
+// This is for selecting directory only...CURRENTLY DISABLED BECAUSE DIRECTORY SELECTION NOT ALLOWED
 func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 	{
 	let treeView = imageSelector.sourceView as! DrawTreeView
@@ -672,6 +679,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 
 	treeView.setNeedsDisplay()
 	}
+
 
 
 // a UniformTypeIdentifier is just a string (as CFString), like "public.image",
