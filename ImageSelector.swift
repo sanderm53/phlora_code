@@ -103,8 +103,8 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 			{
 			if url.hasDirectoryPath
 				{
-				print ("This is a directory")
-						delegate.imageSelector(self, didSelectDirectory:url)
+				//print ("This is a directory")
+				delegate.imageSelector(self, didSelectDirectory:url)
 				}
 			else
 				{

@@ -57,11 +57,11 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 		var imageOriginalResolution:imageResolutionType? // i.e., in the file
 		var imageLoadedAtResolution:imageResolutionType? // either low or high
 		//let imageResolutionBoundaryFactor:CGFloat = 3.0 // boundary between low and high resolution image to be requested is given in units of the 'scale' parameter that describes the size of the image relative to its original size. This code is sort of wasted if image is really low res
-
 		var imageSizeWidthBoundary:CGFloat? // If size of pane grows above this we will resize image to high resolution and vice versa
 
 		var paneCenter : CGPoint!
 		var scale:CGFloat = 1.0
+		//var scaleWhenResolutionWasLastUpdated:CGFloat = 1.0
 		//var hasImage:Bool = false
 		var imageIsLoaded = false
 		var isFrozen:Bool = false 			// frozen means it stays in place as tree is panned
@@ -275,35 +275,54 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			}
 
 
-// ********************* Geometry...
 
-
-	override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) // the VC is a responder so implements this method, usually attached to views
+/* More appropriate to handle this in the single tap GR of TreeVC
+	override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?)
+		// ** Touching an image checks to see if we need to change resolution
+		//		This is needed when image goes offscreen and has image res reduced
+		// The VC is a responder so implements this method, usually attached to views
+		
 		{
 		super.touchesBegan(touches, with: event) // vital to do this
-//print ("Touch in pane")
-		if associatedNode != nil
-			{ reloadImageToFitPaneSizeIfNeeded () }// check this only on treeview
+		//if associatedNode != nil
+		//	{ reloadImageToFitPaneSizeIfNeeded () }// check this only on treeview.
 		}
+*/
 
-
-		func reloadImageToFitPaneSizeIfNeeded () // add a node's image to existing pane, which may have changed size during zoom; resize image to fit pane's imageView
+		func reloadImageToFitPaneSizeIfNeeded ()
+			// Possibly resize image resolution to fit pane's resized imageView
 			{
-
 			guard imageOriginalResolution == .high else { return } // we never resize images that are low res to begin with
 
-			if imageView.frame.width > imageSizeWidthBoundary! &&  imageLoadedAtResolution == .low
+			if imageView.frame.width > imageSizeWidthBoundary! // Large image?
 				{
-				if let url = associatedNode?.imageFileURL
+				if let oldImageWidth = imageView.image?.size.width
 					{
-					if let image = UIImage(contentsOfFile:url.path)
+					//if  oldImageWidth != imageView.frame.width // imageView has changed size, adjust resolution
+
+					if abs( (oldImageWidth - imageView.frame.width) / oldImageWidth ) > 0.10 // If imageView has changed by at least 10% then do consider changing resolution
+
 						{
-						imageView.image = image
-						imageLoadedAtResolution = .high
+						if let url = associatedNode?.imageFileURL
+							{
+							if let image = UIImage(contentsOfFile:url.path)
+								{
+								if image.size.width > imageView.frame.width  // Image is bigger than view, so downsample it
+									{
+									let targetResolutionSize = CGSize(width:imageView.frame.width ,height:imageView.frame.height)
+									imageView.image = resizeUIImage(image:image, toSize:targetResolutionSize)
+									}
+								else	// Image is smaller than view, so just load image as is
+									{
+									imageView.image = image
+									}
+								imageLoadedAtResolution = .high
+								}
+							}
 						}
 					}
 				}
-			// Following assumes that to
+			else // Transitioning from large to small image size?
 			if imageView.frame.width <= imageSizeWidthBoundary! &&  imageLoadedAtResolution == .high
 				{
 				if imageSmall != nil // the save low res version
@@ -313,9 +332,6 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					}
 				}
 			}
-
-
-
 
 		func switchToLowResImage()
 			{
@@ -433,6 +449,28 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
                 super.init(coder:aDecoder)
         }
 
-	}
 
+// Following is modifed from WWDC 2018 Images Best Practices presentation. I ignore point size and use pixels (and no 'scale')
+// Hmm, I don't think this is any less memory intensive than using my resize() funcs, but may be faster. I don't know.
+
+// Bottom line is UIImage() saves the data buffer but id we need to render the whole thing, that's when it explodes...
+// such as assigning the image to an imageView or writing to a buffer that is this large, of course.
+/* ...KEEP FOR REFERENCE...
+
+	func downsample(imageAt imageURL: URL, to targetSize: CGSize) -> UIImage
+		{
+		let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+		let imageSource = CGImageSourceCreateWithURL(imageURL as CFURL, imageSourceOptions)!
+		let maxDimensionInPixels = max(targetSize.width, targetSize.height)
+		let downsampleOptions =
+			[kCGImageSourceCreateThumbnailFromImageAlways: true,
+			kCGImageSourceShouldCacheImmediately: true, // not explained in documentation but in the WWDC example
+			kCGImageSourceCreateThumbnailWithTransform: true,
+			kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels] as CFDictionary
+		let downsampledImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, downsampleOptions)!
+		return UIImage(cgImage: downsampledImage)
+		}
+*/
+
+	}
 

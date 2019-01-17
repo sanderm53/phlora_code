@@ -373,7 +373,6 @@ func copyURLToDocs(src srcURL:URL, srcFileType fileType:DataFileType, srcFilenam
 					{
 					try? fileManager.removeItem(at: destURL) // if it's there get rid of it, then copy to it
 					try fileManager.copyItem(at: srcURL, to: destURL)
-	print ("Deleting \(destURL) before overwriting")
 					}
 				else
 					{ return nil }

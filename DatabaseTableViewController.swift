@@ -37,9 +37,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 
 	func handleCancelDownloadButton(sender:UIButton)
 			{
-			print ("Cancelling download")
 			downloadService.cancelAll()
-			print ("Cancelled download")
 			}
 
 
@@ -169,7 +167,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 	
 	func changeServerLocation(sender:UIButton)
 		{
-		print ("Change the server location")
+		//print ("Change the server location")
 		}
 
 	override func didReceiveMemoryWarning() {

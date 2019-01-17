@@ -71,7 +71,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	func applicationDidReceiveMemoryWarning(_ application: UIApplication)
 		{
-		//print ("App did receive memory warning: emergency minimizing...")
+		print ("App did receive memory warning in app delegate...")
 		}
 }
 

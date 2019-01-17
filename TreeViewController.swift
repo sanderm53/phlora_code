@@ -278,13 +278,11 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 
 	override func viewDidAppear(_ animated: Bool)
 		{
-//print ("View did appear")
 		super.viewDidAppear(animated)
 		}
 
 	override func viewWillAppear(_ animated: Bool) // Does NOT necessarily get called on return from background!
 		{
-//print ("View will appear")
 		super.viewWillAppear(animated)
         navigationController!.setToolbarHidden(false, animated: false)
 		}
@@ -335,7 +333,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 
 	override func viewWillLayoutSubviews()
 		{
-		//print ("View will layout subviews")
 		super.viewWillLayoutSubviews()
 		}
   	override func viewDidLayoutSubviews()
@@ -357,7 +354,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 // !! The transition animator appears to always call setNeedsLayout because it always jumps into viewDidLayoutSubviews
 
 		{
-//print ("Entering viewWillTransition")
 		// note: size refers to self.view, not self.treeView
 		//let oldH = self.treeView.frame.height
 	super.viewWillTransition(to: size, with: coordinator)
@@ -400,7 +396,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		let yBottom = y + yTouchRadius
 		let ixLow = windowYToNearestLeafIndex(windowY:yTop)
 		let ixHigh = windowYToNearestLeafIndex(windowY:yBottom)
-//print ("y,top,bottom",y,yTop,yBottom)
 		return (ixLow,ixHigh)
 		}
 	
@@ -410,8 +405,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 
 		let iLow:Int = Int((treeCoord(fromWindowCoord: y)-treeView.xTree.minY)/delta)
 		let iHigh:Int = iLow+1
-
-//print ("y,delta,arg,iLow,iHigh",y,delta,(treeCoord(fromWindowCoord: y)-treeView.xTree.minY)/delta,iLow,iHigh)
 
 		if (iLow < 0) // top boundary case // tricky, needs to be strictly <
 			{
@@ -548,6 +541,9 @@ func handleImagePaneLongPress(recognizer:UILongPressGestureRecognizer)
 
 func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 		{
+		// Single tap on image either:
+		//		- Updates resolution if image present
+		//		- Signals a tap on 'add' button when image is absent
 		let imagePane = recognizer.view as! ImagePaneView
 		treeView.bringSubview(toFront: imagePane)
 		switch recognizer.state
@@ -558,7 +554,7 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 				break
 			case UIGestureRecognizerState.ended:
 
-				if imagePane.imageIsLoaded == false // stuff to add new image
+				if imagePane.imageIsLoaded == false // handle case of adding a new image
 					{
 
 					if let node  = imagePane.associatedNode
@@ -569,6 +565,10 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 						let iS = ImageSelector(receivingImagePane:imagePane, calledFromViewController:self, delegate:self, callingView:treeView, atRect: sourceRect)
 						iS.selectImage()
 						}
+					}
+				else // If image present, a single tap lets us possibly update the resolution if it got reduced off screen
+					{
+					imagePane.reloadImageToFitPaneSizeIfNeeded()
 					}
 			default:
 				break
@@ -610,10 +610,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 		}
 	catch
 		{
-		print ("Error saving image file to Phlora")
-		let alert = UIAlertController(title:"Error saving image file to Phlora",message:nil, preferredStyle: .alert)
-		alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
-		present(alert,animated:true,completion:nil)
+		showAlertMessage("Error saving image file to Phlora", onVC:self)
 		}
 
 	treeView.setNeedsDisplay()
@@ -636,10 +633,10 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 					{
 					for fileURL in fileURLs
 						{
-						print (fileURL)
+						//print (fileURL)
 						if URLConformsToImageType(fileURL)
 							{
-							print ("This file conforms to image")
+							//print ("This file conforms to image")
 							let fileNameBase = fileURL.deletingPathExtension().lastPathComponent
 							if let node = treeView.xTree.nodeHash[fileNameBase]
 								{
@@ -651,7 +648,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 								
 								// DO THE COPY HERE...
 								// try copyItem(at: fileURL, to: destURL)
-		print (fileURL,destURL)
+		//print (fileURL,destURL)
 								// LEAVE THE IMAGE UNOPENED BUT UPDATE THE IMAGE ICONS
 								}
 

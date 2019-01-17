@@ -98,7 +98,7 @@ func saveTextToFile(forStudyName studyName:String, text s:String) throws
 			try saveTextToFile(forStudyName:treeInfo.treeName, text:textView.text)
 			}
 		catch {
-			print ("Failed to save edited text")
+			showAlertMessage ("Failed to save edited text", onVC:self)
 			}
 		self.textView.resignFirstResponder()
 	}
