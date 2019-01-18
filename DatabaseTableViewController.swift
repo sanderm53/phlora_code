@@ -60,11 +60,10 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		super.viewDidLoad()
 		self.title = "Download" // This will be displayed in middle button of navigation bar at top
 
-// view for the study table popup containing the table view and headers and footers
+		// view for the study table popup containing the table view and headers and footers
 
 		let studyPUBackgroundColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
 		view.backgroundColor=studyPUBackgroundColor
-		//view.backgroundColor=UIColor.black
 		navigationController!.setNavigationBarHidden(false, animated: false)
         navigationController!.setToolbarHidden(true,
              animated: false)
@@ -84,31 +83,14 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		// Server location label
 		databaseLocationLabel = UILabel()
 		databaseLocationLabel.textColor = UIColor.lightGray
-		databaseLocationLabel.text = "Downloads available from:\(treeSettings.defaultDatabasePath)"
+		databaseLocationLabel.text = "Downloads available from \(treeSettings.defaultDatabasePath)"
 		databaseLocationLabel.textAlignment = .center
 		databaseLocationLabel.lineBreakMode = .byWordWrapping
 		databaseLocationLabel.font = UIFont(name:"Helvetica", size:20)
 		databaseLocationLabel.numberOfLines = 2
 
-
-/*
-		// Change-server button
-		button = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		button.addTarget(self, action: #selector(changeServerLocation), for: .touchUpInside)
-		button.backgroundColor = studyPUBackgroundColor
-		button.setTitleColor(UIColor.green, for: .normal)
-		let myAttributes = [
-			NSForegroundColorAttributeName : UIColor(cgColor: appleBlue),
-			NSFontAttributeName : UIFont(name:"Helvetica", size:16)!
-			]
-		let mySelectedAttributedTitle = NSAttributedString(string: "Change", attributes: myAttributes)
-   		button.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
-*/
-
 		view.addSubview(studyTableView)
 		view.addSubview(databaseLocationLabel)
-		//view.addSubview(button)
-		//view.addSubview(annotatedProgressView)
 
 		addConstraints()
 
@@ -142,26 +124,12 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		databaseLocationLabel.heightAnchor.constraint(equalToConstant: 80).isActive = true
 		databaseLocationLabel.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
 		databaseLocationLabel.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
-//		databaseLocationLabel.trailingAnchor.constraint(equalTo: button.leadingAnchor).isActive = true
-/*
-		button.translatesAutoresizingMaskIntoConstraints=false
-		button.centerYAnchor.constraint(equalTo: databaseLocationLabel.centerYAnchor).isActive = true
-		button.heightAnchor.constraint(equalToConstant: 40).isActive = true
-		button.widthAnchor.constraint(equalToConstant: 75).isActive = true
-		button.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
-*/
+
 		studyTableView.translatesAutoresizingMaskIntoConstraints=false
 		studyTableView.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
 		studyTableView.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
 		studyTableView.topAnchor.constraint(equalTo: databaseLocationLabel.bottomAnchor).isActive = true
 		studyTableView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor).isActive = true
-/*
-		annotatedProgressView.translatesAutoresizingMaskIntoConstraints=false
-		annotatedProgressView.heightAnchor.constraint(equalToConstant: 150).isActive = true
-		annotatedProgressView.widthAnchor.constraint(equalToConstant: 300).isActive = true
-		annotatedProgressView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-		annotatedProgressView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-*/
 		}
 	
 	
@@ -187,7 +155,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 		}
 
 
-// UITableView delegate methods used
+	// UITableView delegate methods used
 
 	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 			guard let treesData = remoteTreesData else {return 0} // might be nil if init failed

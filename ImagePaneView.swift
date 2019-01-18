@@ -20,7 +20,6 @@ func rectFromTwoPoints(_ pt1:CGPoint, _ pt2:CGPoint)->CGRect
 	{
 	let origin = CGPoint(x: min(pt1.x,pt2.x), y:min(pt1.y,pt2.y))
 	let size = CGSize(width: abs(pt1.x-pt2.x), height: abs(pt1.y-pt2.y))
-//print ("**",pt1,pt2,CGRect(origin: origin, size: size))
 	return CGRect(origin: origin, size: size)
 
 

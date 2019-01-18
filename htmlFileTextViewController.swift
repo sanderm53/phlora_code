@@ -108,6 +108,7 @@ class htmlFileTextViewController: UIViewController {
    override func viewDidLayoutSubviews()
    		{
 		super.viewDidLayoutSubviews()
+    	self.textView.setContentOffset(CGPoint.zero, animated: false) // ensures that the top of the text appears visible at top of screen  (else it sometimes gets scrolled up and hidden
     	}
 
 

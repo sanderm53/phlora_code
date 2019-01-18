@@ -90,11 +90,9 @@ class TreesData
 				let files = try fileManager.contentsOfDirectory(atPath:Bundle.main.bundlePath)
 				for file in files
 					{
-			//print (file)
 					let matchesAr = matches(for: "\\.nex", in: file, withOptions:[.caseInsensitive])
 					if matchesAr.count == 1
 						{
-			//print ("Matched")
 						let filePath = Bundle.main.bundlePath + "/" + file
 						if fileManager.fileExists(atPath: filePath)
 							{
@@ -130,7 +128,6 @@ class TreesData
 							{
 							for fileURL in fileURLs
 								{
-	//print (treeDir,fileURLs)
 								if fileURLs.count == 1
 									{
 									matchingFileNames.append(fileURL.path)
@@ -475,18 +472,21 @@ func copyImageToDocs(srcImage image:UIImage, srcFileType fileType:DataFileType, 
 			try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
 	// THIS MIGHT FAIL; NEED TO DO ERROR HANDLING HERE!!
 			}
-do {
-		//try fileManager.copyItem(at: srcURL, to: destURL!)
-		if let jpeg = UIImageJPEGRepresentation(image, 1.0)
+		do
 			{
-			try jpeg.write(to:destURL!,options:[])
+			//try fileManager.copyItem(at: srcURL, to: destURL!)
+			if let jpeg = UIImageJPEGRepresentation(image, 1.0)
+				{
+				try jpeg.write(to:destURL!,options:[])
+				}
 			}
-	}
-catch {print ("Copy didn't succeed", destURL!, error)}
-		return destURL
+		catch
+			{
+			print ("Copy didn't succeed", destURL!, error)}
+			return destURL
+			}
+		return nil
 		}
-	return nil
-	}
 
 func getManifestData(forStudy study:String, atRemoteServerPath serverPath:String) throws -> [(DataFileType , URL)]
 	{

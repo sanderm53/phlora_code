@@ -38,14 +38,10 @@ class AnnotatedProgressView:UIView
 			progressLabel.textColor = UIColor.white
 			progressLabel.textAlignment = .center
 
-			//cancelButton.addTarget(nil, action: #selector(handleCancelDownloadButton), for: .touchUpInside)
 			cancelButton.addTarget(nil, action: #selector(DatabaseTableViewController.handleCancelDownloadButton), for: .touchUpInside)
 // Note: the selector had to be specified at to which class the handle func is defined in, seems to defeat purpose of generic responder chain
 			cancelButton.frame.size = CGSize(width: 100, height: 20)
 			cancelButton.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
-			//cancelButton.layer.borderColor=UIColor.white.cgColor
-			//cancelButton.layer.borderWidth=2.0
-			//cancelButton.layer.cornerRadius=10
 			cancelButton.frame = CGRect(origin: CGPoint(x:0,y:0), size: cancelButton.frame.size)
 			cancelButton.setTitleColor(UIColor.black, for: .normal)
 			let myAttributes = [
@@ -54,8 +50,6 @@ class AnnotatedProgressView:UIView
 				]
 			let mySelectedAttributedTitle = NSAttributedString(string: "Cancel", attributes: myAttributes)
 			cancelButton.setAttributedTitle(mySelectedAttributedTitle, for: .normal)
-
-
 
 			self.addSubview(progressView)
 			self.addSubview(titleLabel)
@@ -91,8 +85,6 @@ class AnnotatedProgressView:UIView
 			cancelButton.widthAnchor.constraint(equalToConstant: 100).isActive = true
 			cancelButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
 			cancelButton.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-
-			
 			}
 
 		func start(title t:String, nFilesToDownload:Int)

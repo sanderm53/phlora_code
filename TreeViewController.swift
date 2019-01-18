@@ -41,7 +41,7 @@ var updateImagesButton: UIButton!
 var infoButton: UIButton!
 var cladeNameButton: UIButton!
 var imagesButton: UIButton!
-var imagesPageButton: UIButton!
+//var imagesPageButton: UIButton!
 var treePickerButton: UIButton!
 var pkSelectTreeButton: UIButton!
 var tablePopupCancelButton: UIButton!
@@ -57,7 +57,7 @@ var alert: UIAlertController?
 var myNavigationController:UINavigationController!
 var otherVC:UIViewController!
 var infoViewController:TextFileViewController?
-var imageTableViewController:ImageTableViewController?
+//var imageTableViewController:ImageTableViewController?
 
 var activityIndicator:UIActivityIndicatorView!
 
@@ -178,7 +178,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		searchController.hidesNavigationBarDuringPresentation = true
 		definesPresentationContext = true
 
-		// Set up navigation toolbar
+		// Set up navigation toolbar at top of screen
         navigationController!.setToolbarHidden(false, animated: false)
 		let addButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonAction))
 		let searchButtonItem = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(searchButtonAction))
@@ -191,6 +191,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		treeView.topAnchor.constraint(equalTo:topLayoutGuide.bottomAnchor).isActive = true
 		treeView.bottomAnchor.constraint(equalTo:bottomLayoutGuide.topAnchor).isActive = true
 
+		// Set up toolbar at bottom of screen
 		// Info button toggle
 		if infoViewController == nil
 			{ infoViewController = TextFileViewController(treeInfo:treeInfo) }
@@ -211,48 +212,27 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		imagesButton.addTarget(self, action: #selector(imagesButtonAction), for: .touchUpInside)
 		imagesButton.frame.size = infoButton.frame.size
 		imagesButton.tintColor=UIColor.yellow
-
 		let imagesButtonImage = makeImagesButtonImage(size:imagesButton.frame.size)
 		imagesButton.setImage(imagesButtonImage, for: .normal)
 
-		// Button to go to VC for image list
-		imagesPageButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		imagesPageButton.addTarget(self, action: #selector(imagesPageButtonAction), for: .touchUpInside)
-
-
-/*
-		updateImagesButton = UIButton(type: .custom) // defaults to frame of zero size! Have to do custom to short circuit the tint color assumption for example
-		updateImagesButton.addTarget(self, action: #selector(updateImagesButtonAction), for: .touchUpInside)
-		updateImagesButton.frame.size = infoButton.frame.size
-		updateImagesButton.tintColor=UIColor.white
-		let updateImagesImage = makeUpdateImagesImage(size:imagesButton.frame.size)
-		updateImagesButton.setImage(updateImagesImage, for: .normal)
-*/
-
-
-		imagesPageButton.frame.size = infoButton.frame.size
-		//imagesPageButton.tintColor=UIColor.yellow
-		let imagesPageButtonImage = makeImagesTableButtonImage(size:imagesButton.frame.size)
-		imagesPageButton.setImage(imagesPageButtonImage, for: .normal)
-
+		
 		// Buttons in toolbar at bottom of screen
-		let it1 = UIBarButtonItem(customView: cladeNameButton)
-		let it2 = UIBarButtonItem(customView: imagesButton)
-		let it4 = UIBarButtonItem(customView: infoButton)
-		//let it5 = UIBarButtonItem(customView: updateImagesButton)
+		let cladeNameButtonItem = UIBarButtonItem(customView: cladeNameButton)
+		let imagesButtonItem = UIBarButtonItem(customView: imagesButton)
+		let infoButtonItem = UIBarButtonItem(customView: infoButton)
 		let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 		// only add appropriate buttons depending on tree data
 		var buttonArray = [spacer]
 		if treeView.xTree.hasCladeNames
 			{
-			buttonArray += [it1,spacer]
+			buttonArray += [cladeNameButtonItem,spacer]
 			}
 		if treeView.xTree.hasImageFiles
 			{
-			buttonArray += [it2,spacer]
+			buttonArray += [imagesButtonItem,spacer]
 			}
-		buttonArray += [it4,spacer]
-		//buttonArray += [it4,spacer,it5]
+		buttonArray += [infoButtonItem,spacer]
+
 		setToolbarItems(buttonArray,animated: false)
 
 		// Gesture recognizers: attached to view rather than treeView
@@ -307,7 +287,6 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		guard let tv = treeView
 		else // sometimes this gets called on an invalid treeviewcontroller that hasn't been initialized yet
 			{
-			print ("treeView not found in emergency minimize")
 			return
 			}
 		
@@ -335,10 +314,9 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		{
 		super.viewWillLayoutSubviews()
 		}
+
   	override func viewDidLayoutSubviews()
-	
 	// Here is the place to adjust the tree size parameters, since here the treeView frame/bounds has finally been established
-	
    		{
 		super.viewDidLayoutSubviews()
 		// Need to include the application state because of an apparent reportd bug where switching apps (i.e., sending this
@@ -351,27 +329,11 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 
 	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
 
-// !! The transition animator appears to always call setNeedsLayout because it always jumps into viewDidLayoutSubviews
-
+		// !! The transition animator appears to always call setNeedsLayout because it always jumps into viewDidLayoutSubviews
+		// so I handle device rotations there by calling updateTreeViewIfNeeded()
 		{
 		// note: size refers to self.view, not self.treeView
-		//let oldH = self.treeView.frame.height
-	super.viewWillTransition(to: size, with: coordinator)
-//print ("In viewwilltransition",UIApplication.shared.applicationState,size, treeView.bounds, treeView.previousBounds)
-/*
-		if UIApplication.shared.applicationState == .active &&  treeView.bounds.size != size
-			{
-			coordinator.animate(alongsideTransition: nil)
-				{ _ in
-				//self.treeView.setupViewDependentTreeParameters()
-//print ("In In viewwilltransition")
-
-//print ("Calling setupvdtp from viewWillTransition")
-				//self.treeView.updateTreeViewWhenSizeChanged(oldWindowHeight:oldH)
-				//self.treeView.setNeedsDisplay() // have to keep
-				}
-			}
-*/
+		super.viewWillTransition(to: size, with: coordinator)
 		}
 
 // ***********************************************************************************
@@ -648,7 +610,6 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 								
 								// DO THE COPY HERE...
 								// try copyItem(at: fileURL, to: destURL)
-		//print (fileURL,destURL)
 								// LEAVE THE IMAGE UNOPENED BUT UPDATE THE IMAGE ICONS
 								}
 
@@ -668,10 +629,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 		}
 	catch
 		{
-		print ("Error saving image file to Phlora")
-		let alert = UIAlertController(title:"Error saving image file to Phlora",message:nil, preferredStyle: .alert)
-		alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: {_ in  NSLog("The alert occurred")}))
-		present(alert,animated:true,completion:nil)
+		showAlertMessage("Error saving image file to Phlora", onVC: self)
 		}
 
 	treeView.setNeedsDisplay()
@@ -964,7 +922,7 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				else if (topGap > 0.0) {treeView.panTranslateTree -= translation.y}
 
 				treeView.setNeedsDisplay()
-treeView.setNeedsLayout()
+				treeView.setNeedsLayout()
 				recognizer.setTranslation(CGPoint(x:0,y:0), in: treeView)
 				}
 			}
@@ -1037,8 +995,7 @@ treeView.setNeedsLayout()
 					let topGap = treeOpensGapAtTopByThisMuch(withPanOffset: treeView.panTranslateTree)
 					if (bottomGap > 0.0) {treeView.panTranslateTree += bottomGap}
 					else if (topGap > 0.0) {treeView.panTranslateTree -= topGap}
-		//treeView.setNeedsDisplay()
-treeView.layoutSubviews()
+					treeView.layoutSubviews()
 			
 			
 			case UIGestureRecognizerState.ended:
@@ -1070,7 +1027,6 @@ treeView.layoutSubviews()
 
 		let yW = treeWindowCoord(fromTreeCoord: -treeView.xTree.maxY) + offset - max(treeView.maxStringHeight/2.0,treeSettings.imageIconRadius)
 		
-//print(treeView.xTree.maxY,offset,treeWindowCoord(fromTreeCoord: -treeView.xTree.maxY),max(treeView.maxStringHeight/2.0,treeSettings.imageIconRadius),yW, treeView.decoratedTreeRect.minY,yW - treeView.decoratedTreeRect.minY)
 		return yW - treeView.decoratedTreeRect.minY
 		}
 
@@ -1211,6 +1167,7 @@ func imagesButtonAction(sender: UIButton!) {
 		{ treeView.setNeedsLayout() } // visible again: layout of images don't get updated when they are hidden
     treeView.setNeedsDisplay()
 	}
+/*
 func imagesPageButtonAction(sender: UIButton!) {
 		if imageTableViewController == nil
 			{
@@ -1222,11 +1179,7 @@ func imagesPageButtonAction(sender: UIButton!) {
         navigationController!.setToolbarHidden(false, animated: false)
 		navigationController!.setNavigationBarHidden(false, animated: false)
 	}
-
-func updateImagesButtonAction (sender: UIButton!)
-	{
-	//downloadService.downloadAll(forStudy:treeView.xTree.treeInfo, havingFileTypes: [.imageFile])
-	}
+*/
 
 
 }

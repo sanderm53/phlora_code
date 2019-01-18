@@ -40,7 +40,6 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 		let action1 = UIAlertAction(title: "Cancel", style: .cancel)
 			{
 			(action:UIAlertAction) in
-			//self.alert.dismiss(animated:false) doesn't matter if this is here or not...
 			}
 		let action2 = UIAlertAction(title: "Photo library", style: .default)
 			{ (action:UIAlertAction) in
@@ -70,7 +69,7 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 		{
 		if let image = info[UIImagePickerControllerOriginalImage] as? UIImage
 			{
-				delegate.imageSelector(self, didSelectImage:image)
+			delegate.imageSelector(self, didSelectImage:image)
 			}
 
 		picker.dismiss(animated: true)
@@ -98,19 +97,17 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 
 	func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
 		{
-		//print (urls.first)
 		if let url = urls.first // just picking FIRST at the moment if multiple selected
 			{
 			if url.hasDirectoryPath
 				{
-				//print ("This is a directory")
 				delegate.imageSelector(self, didSelectDirectory:url)
 				}
 			else
 				{
 				if let image = UIImage(contentsOfFile:url.path)
 					{
-						delegate.imageSelector(self, didSelectImage:image)
+					delegate.imageSelector(self, didSelectImage:image)
 					}
 				}
 			}
@@ -119,11 +116,7 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 
 
 	func choosePhotoFromLibrary()
-		{
-		//checkPermission()
-		
-//viewController!.dismiss(animated: true) // dismiss alert before calling this vc
-		
+		{		
 		pickerController.delegate = self
 		pickerController.sourceType = .photoLibrary
 

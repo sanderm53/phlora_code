@@ -37,7 +37,6 @@ class MainViewController: UIViewController {
 	var imagePane:ImagePaneView!
 	var treeViewStatusBar:UILabel!
 	var studyTableView:UITableView!
-	//let treesData = TreesData() // Initializes this once when the view controller is instantiated
 	var pickedRowIndex:Int = 0
 	var safeFrame:CGRect!
 	var studyViewController:StudyViewController?
@@ -52,7 +51,6 @@ class MainViewController: UIViewController {
 // Is there a more approp place for these...? Probably in viewWillAppear of studyVC? and treeVC--Nope tried these, nor viewDidLoad
         navigationController!.setToolbarHidden(false, animated: false)
 		navigationController!.setNavigationBarHidden(false, animated: false)
-
 		}
 
 
@@ -82,14 +80,6 @@ class MainViewController: UIViewController {
         navigationController!.setToolbarHidden(false, animated: false)
 		navigationController!.setNavigationBarHidden(false, animated: false)
 
-
-/*
-		let testURL = URL(string:"ftp://ftp.ncbi.nih.gov/genbank/gbrel.txt")
-		if let s = try? String(contentsOf:testURL!)
-			{
-			print (s)
-			}
-*/
 		}
 
 	override func viewDidAppear(_ animated: Bool)
@@ -125,8 +115,6 @@ class MainViewController: UIViewController {
         navigationController!.setToolbarHidden(true,
              animated: false)
 
-
-
 		let imageFile = "LupineTableMountain"
 		let image = UIImage(named:imageFile)
 		let imageView = UIImageView(image: image)
@@ -137,8 +125,6 @@ class MainViewController: UIViewController {
 		imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
 		imageView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
 		imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-
-
 
 		navigationController!.setNavigationBarHidden(true, animated: false)
 		let margins = view.layoutMarginsGuide
