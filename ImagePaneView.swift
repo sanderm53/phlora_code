@@ -3,8 +3,11 @@
 //  QGTut
 //
 //  Created by mcmanderson on 6/27/18.
-//  Copyright © 2018 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// Slightly fancy view containing one image and a name annotation
+// Manages lots of stuff about zooming and scale
 
 import Foundation
 import UIKit

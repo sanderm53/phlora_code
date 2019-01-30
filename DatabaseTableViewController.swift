@@ -3,8 +3,10 @@
 //  QGTut
 //
 //  Created by mcmanderson on 6/14/18.
-//  Copyright © 2018 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// Displays a table reporting available data sets for download and manages downloads
 
 import Foundation
 import UIKit
@@ -27,6 +29,7 @@ class DatabaseTableViewController: UIViewController, UITableViewDelegate, UITabl
 	var databaseLocationLabel:UILabel!
 	var button:UIButton!
 	var remoteTreesData:TreesData?
+	var localTreesData:TreesData? // initialized by main vc if it is available already (might use it to update images on a tree vc)
 	var manifestList:[(DataFileType , URL )] = []
 	var downloadService:DownloadService!
 	lazy var downloadsSession: URLSession = {
@@ -192,10 +195,28 @@ extension DatabaseTableViewController: URLSessionDownloadDelegate
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tempLocalURL: URL)
 		{
 		guard let sourceURL = downloadTask.originalRequest?.url else { return }
-		_ = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL)
+		let download = downloadService.activeDownloads[sourceURL] // do this before calling fileDidFinish...
+		guard let finalURL = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL) else { return }
+		// If we have opened a tree view in this session already for the same tree we are downloading to, let's update the nodes' info about an image as we download the images
+		if let localTreesData = localTreesData, let studyName = download?.studyName // no reason to pursue this if we haven't set up local study data yet
+				{
+				if let treeInfo = localTreesData.treeInfoDictionary[studyName]
+					{
+					let fileNameBase = finalURL.deletingPathExtension().lastPathComponent
+					if let node = treeInfo.treeViewController?.treeView.xTree.nodeHash[fileNameBase]
+						{
+						node.imageFileURL = finalURL
+						treeInfo.treeViewController?.treeView.xTree.nImages += 1
+						DispatchQueue.main.async
+							{
+							//treeInfo.treeViewController?.updateViewControllerTitle() I put this in treevc.viewdidappear()
+							treeInfo.treeViewController?.treeView.setNeedsDisplay() // to redraw the image icons
+							// Are there any issues here having possibly many async dispatches for large collection downloads?
+							}
+						}
+					}
+				}
 
-		// TODO. Unlike when I call this in TreeViewController, here I do not use the final location of the file to update the node in its tree
-		// because, well, the tree may not be built yet, etc., Thus to see this update you might have to close program and start over.
 		}
 	}
 

@@ -3,8 +3,11 @@
 //  QGTut
 //
 //  Created by mcmanderson on 5/16/17.
-//  Copyright © 2017 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+
+// The tree data structure
 
 import UIKit
 

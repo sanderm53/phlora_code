@@ -6,7 +6,6 @@ body
 font-size:20px;
 font-family:helvetica;
 color:white;
-
 }
 </style>
 </head>
@@ -21,8 +20,8 @@ color:white;
 <p>In Phlora each leaf of the tree can also be associated with an image provided by the user. The image can be zoomed and moved as
 the tree pans or "frozen" in place.</p>
 
-<p><b>Quick overview of the studies included</b></p>
-<p>The app contains several studies and a small sample of images. To get a sense of image diversity on a sizable phylogenetic tree, look at the "Cactaceae" study first, which includes a sample of 35 images of various species of cacti. Click the "info" page on the bottom of the tree view page for that study for more details about the study and its images. A second study, for the plant genus Viburnum, shows images of leaves from three of its 152 species. Over a hundred additional images can be downloaded from our database via the "Download" page. Finally, the "Legumes of Arizona" study includes three images from its tree of the over 300 species of legume plants found in Arizona. These images are taken from preserved herbarium specimens from the University of Arizona herbarium. Over 200 additional images can be downloaded from our database. Note that these downloads can occupy quite a bit of storage on your device. Several additional studies are included that have no images provided by us -- feel free to add your own (see below).</p>
+<p><b>Quick overview of the studies included in the Phlora app distribution</b></p>
+<p>The app comes with several studies and a small sample of images "built-in". To get a sense of image diversity on a sizable phylogenetic tree, look at the "Cactaceae" study first, which includes a sample of 35 images of various species of cacti. Click the "info" page on the bottom of the tree view page for that study for more details about the study and its images. A second study, for the plant genus Viburnum, shows images of leaves from three of its 152 species. Over a hundred additional images can be downloaded from our database via the "Download" page. Finally, the "Legumes of Arizona" study includes three images from its tree of the over 300 species of legume plants found in Arizona. These images are taken from preserved herbarium specimens from the University of Arizona herbarium. Over 200 additional images can be downloaded from our database. Note that these downloads can occupy quite a bit of storage on your device. Several additional studies are included that have no images provided by us -- feel free to add your own (see below).</p>
 
 
 <p><b>Navigating the Phlora interface</b></p>
@@ -33,12 +32,12 @@ the tree pans or "frozen" in place.</p>
 
 <p>The navigation bar at the top has two icons at upper right. The '+' icon is for adding your own images (see below). The search icon will open a search window allowing you to search for names of leaves in the tree. As you type a query in the search box, the tree view will light up leaves that match this query (matching any text within the leaf name in a case-insensitive way). A red dot will appear next to matching leaf labels. </p>
 
-<p>The toolbar at the bottom of the screen has an information button, which may contain background information on the study. This screen is editable so users can add their own information. Just hit the "Save" button when finished. Optionally, the toolbar may also display other buttons. If images are present for the study a white-outline square button is present. This can be used to toggle currently open images on screen on or off all at once. There may also be a yellow-outline rounded button. If present, tapping this button will display a classification scheme for the tree, consisting of yellow "bubbles" around parts of the tree (see below for more background).</p>
+<p>The toolbar at the bottom of the screen has an information button, which may contain background information about the study. Optionally, the toolbar may also display other buttons. If images are present for the study a white-outline square button is present. This can be used to toggle currently open images on screen on or off all at once. There may also be a yellow-outline rounded button. If present, tapping this button will display a classification scheme for the tree, consisting of yellow "bubbles" around parts of the tree (see below under 'Classification schemes' for more).</p>
 
 
-<p><b>Downloading data from our remote database</b></p>
+<p><b>Downloading data from the Phlora remote database</b></p>
 
-<p>The app includes some large studies with just a small number of images. You can download the remaining images from our remote database by clicking on 'Download' from the main page. Then simply click the 'Download' button for whatever study you are interested in. The download may be large and is run in the background on the device. You can continue using Phlora or other apps while the download continues, but do not 'kill' the app by swiping up from the bottom of the screen.</p>
+<p>The app includes some large trees with just a small number of images. You can download a larger collection of images from the Phlora remote database by clicking on 'Download' from the main page. Then simply click the 'Download' button for whatever study you are interested in. You can continue using Phlora or other apps while the download continues, but do not 'kill' the app by swiping up from the bottom of the screen.</p>
 
 <p><b>Importing your own data</b></p>
 
@@ -55,7 +54,7 @@ the tree pans or "frozen" in place.</p>
 	<li>mrca roaring_cats = lion, tiger;
 	</ul></p>
 	
-<p>Only the first line is required. This is a tree description and has a study/treename ('Cats') and a description of the tree proper (to the right of the parens, up to the semi-colon). The study/tree name is used interchangably throughout Phlora for the name of the study and tree because each study is only permitted to have one tree. The second line is optional and presents information about the source of the tree information. Place all text between single quotes. Finally the third line is used for the optional classification scheme. It is a so-called node-based definition of a group name ('roaring_cats'). There can be more than one mrca line. See below under 'Classification scheme' for more details.</p>
+<p>Only the first line is required. This is a tree description and has a study/treename ('Cats') and a description of the tree proper (to the right of the parens, up to the semi-colon). The study/tree name is used interchangably throughout Phlora for the name of the study and tree because each study is only permitted to have one tree. The second line is optional and presents information about the source of the tree information. Place all text between single quotes. Finally the third line is used for the optional classification scheme. It is a so-called node-based definition of a group name ('roaring_cats'). There can be more than one 'mrca' line. See below under 'Classification scheme' for more details.</p>
 
 <p>Use only simple leaf labels consisting of alphanumeric characters and underscores, such as 'house_cat' above. Do not use white space within the labels. The parser in the app is still primitive.</p>
 
@@ -76,17 +75,18 @@ the tree pans or "frozen" in place.</p>
 	</ul></p>
 	
 <p>where each name corresponds exactly to the spelling of that leaf label in the tree file, but with an extension indicating the type of image format. These labels are case sensitive.</p>
-<p>Then, create a plain text file with "Information" in it about the study and give it the name Study/treename.txt based on your actual study name, and place it in the 'Text' folder.</p>
+<p>Then, (optionally) create a plain text file with any background in it about the study, give it the name Study/treename.txt based on your actual study name, and place it in the 'Text' folder.</p>
 <p>Once this hierarchy of folders is set up, copy it to the device and place it within Phlora's 'Studies' folder. Again, this can be done by moving it from laptop/desktop to iCloud Drive first and then using the device's 'Files' app to move it your device, or you may be able to use Air Drop or some other transfer. Once on your device, you can browse the directory/folders/file hierarchy using the 'Files' app, available in iOS 11 and up.</p>
 
-<p><i>Deleting images, trees, or entire studies.</i> Images can be deleted by pressing and holding for 1 second an open image and then responding to the alert with 'Delete'. This deletes only the local copy of the image stored in the Phlora directory, not your original copy. Deleting an entire study is done from the Study table view by pressing the "Edit" button and then deleting the study table entry. <i>This will delete all files associated with this study from your device, including all image files!</i> It will not affect files on iCloud drive or outside of the Phlora folder on your device. Files can also be deleted via the device 'Files' utility from outside of Phlora. </p>
+<p><i>Deleting images, trees, or entire studies.</i> Images can be deleted by pressing and holding for 1 second an open image and then responding to the alert with 'Delete'. This deletes only the local copy of the image stored in the Phlora directory, not your original copy. However, this will not delete any images that came built in to the Phlora app. Currently the only option is to replace such an image manually by adding an image with the same name to the 'Images' folder as described above. Phlora will prefer this user added image to the built-in image and display it instead.</p>
+<p>Deleting an entire study is done from the Study table view by pressing the "Edit" button and then deleting the study table entry. <i>This will delete all files associated with this study from your device, including all image files!</i> It will not affect files on iCloud drive or outside of the Phlora folder on your device. Files can also be deleted via the device 'Files' utility from outside of Phlora. Built-in studies cannot be deleted, but they can be "overridden" by adding files and folders with appropriate names as described here.</p>
 
 <p><i>Adding a "title" image for a new study, to appear on the left side of the Study table view.</i> Simply tap on the "Add image" pane in the Study table to choose an image to represent the new study. This can also be done manually by putting a file named something like 'Study/treename.jpeg', where the base of the filename is the same name used in the tree description to name the tree/study, into the Images folder for this study.</p>
 
 
 <p><b>Classification schemes</b></p>
 
-<p>A little background information is helpful if you want to add a classification scheme for your phylogenetic tree. The following is a quick start set of instructions. First, a bit of terminology: a <i>clade</i> is a subtree consisting of an ancestor and all of its descendants, including a set of leaf species. Phlora can present phylogenetic classifications in which selected clades are given names. You can see an example of a classification in both the 'Cactaceae' and 'Viburnum' studies by clicking on the yellow button at the bottom of the tree view. Clades in your tree can be given names by writing formal definitions into the tree file. The format for a so-called 'node-based' definition of a clade can be seen in this example:</p>
+<p>A little background information is helpful if you want to add a classification scheme for your phylogenetic tree (see, for example, the Wikipedia entry on 'Phylogenetic Nomenclature' and numerous references cited therein). The following is a quick start set of instructions. First, a bit of terminology: a <i>clade</i> is a subtree consisting of an ancestor and all of its descendants, including a set of leaf species. Phlora can display phylogenetic classifications in which selected clades are given names. You can see an example of a classification in both the 'Cactaceae' and 'Viburnum' studies by clicking on the yellow button at the bottom of the tree view. Clades in your tree can be given names by writing formal definitions into the tree file. The format for a so-called 'node-based' definition of a clade can be seen in this example:</p>
 	<p><ul style="list-style: none;">
 	<li>mrca roaring_cats = lion, tiger;
 	</ul></p>
@@ -99,7 +99,7 @@ the tree pans or "frozen" in place.</p>
 	</ul></p>
 <p>which refers to the clade comprising all leaves more closely related to lion than to house_cat. The order of the specifiers on the right of the '=' is important, and only two specifiers are allowed.</p>
 
-<p><b><i>Important!</i> -- Memory considerations </b></p>
+<p><b><i>Important: please read!</i>  Images and Device Memory </b></p>
 <p>Phlora can use large amounts of device RAM when numerous images are open at the same time. Most relatively recent iOS mobile devices have 1-4 GB RAM and you might wish to check to see how much yours has. In general I have had few problems with devices having 2 GB or more RAM, but occasional problems arise with very large images (meaning >10MB JPEGs) on older devices having only 1 GB RAM, such as my iPhone 5c. In general you should experience few problems on older devices if images are kept to ~ 1-3 MB in size.</p>
 
 <p>Irrespective of how much RAM is present, when images are much larger than this or very numerous, the app benefits from some active memory management. When an image first becomes visible on screen it is displayed at "low resolution". When it is zoomed by roughly enough to fill an iPad screen, it switches to the full high resolution version of the image. However, <i>when a high resolution image that has been zoomed-in scrolls off the screen, it returns to low resolution. Tap it after it scrolls back into view to restore its sharpness.</i></p>

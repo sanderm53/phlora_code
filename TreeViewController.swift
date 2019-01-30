@@ -3,12 +3,15 @@
 //  QGTut
 //
 //  Created by mcmanderson on 5/15/17.
-//  Copyright © 2017 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// The guts of the app: displays a marked up tree and possibly images
 
 import UIKit
 import Photos
 import MobileCoreServices
+
 
 
 var appleBlue = UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0).cgColor
@@ -259,6 +262,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 	override func viewDidAppear(_ animated: Bool)
 		{
 		super.viewDidAppear(animated)
+		updateViewControllerTitle() // useful when downloads have happened...
 		}
 
 	override func viewWillAppear(_ animated: Bool) // Does NOT necessarily get called on return from background!
@@ -280,9 +284,9 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		// If it is a visible treeview controller, offscreen images are deleted. Others are kept.
 		// UPDATE! New default is to delete all images everywhere. Necessary on some older devices with little RAM
 		{
-		var vcIsVisible:Bool = false
-		if self == navigationController?.visibleViewController
-			{vcIsVisible = true}
+		//var vcIsVisible:Bool = false ...reenable to use below
+		//if self == navigationController?.visibleViewController
+		//	{vcIsVisible = true}
 
 		guard let tv = treeView
 		else // sometimes this gets called on an invalid treeviewcontroller that hasn't been initialized yet
@@ -579,7 +583,8 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 	}
 
 
-// This is for selecting directory only...CURRENTLY DISABLED BECAUSE DIRECTORY SELECTION NOT ALLOWED
+// FOLLOWING IS CURRENTLY UNREACHABLE BECAUSE DIRECTORY SELECTION NOT ALLOWED IN imageSelector
+// This is for selecting a directory only...
 func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 	{
 	let treeView = imageSelector.sourceView as! DrawTreeView
@@ -604,28 +609,18 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 								{
 								let filename = fileURL.lastPathComponent
 								let destURL = targetDir.appendingPathComponent(filename)
-// BLEEPED FOR MOMENT!								//node.imageFileURL = destURL 
-								//node.imageFileDataLocation = .inDocuments
-								//treeView.xTree.hasImageFiles=true
+								node.imageFileURL = destURL
+								node.imageFileDataLocation = .inDocuments
+								treeView.xTree.hasImageFiles=true
 								
 								// DO THE COPY HERE...
-								// try copyItem(at: fileURL, to: destURL)
+								try fileManager.copyItem(at: fileURL, to: destURL)
 								// LEAVE THE IMAGE UNOPENED BUT UPDATE THE IMAGE ICONS
 								}
-
-							
-							
 							}
 						}
 					}
 				}
-/* THERE ARE TWO OF THE FOLLOWING FUNCS IN TWO SRC FILES
-				if let destURL = try copyImageToDocs(srcImage:image, copyToDir: targetDir, usingFileNameBase: fileNameBase)
-						{
-						node.imageFileURL = destURL
-						node.imageFileDataLocation = .inDocuments
-						}
-*/
 		}
 	catch
 		{

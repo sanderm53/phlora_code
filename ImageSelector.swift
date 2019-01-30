@@ -3,8 +3,10 @@
 //  QGTut
 //
 //  Created by mcmanderson on 8/20/18.
-//  Copyright © 2018 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// Present dialog to fetch one image from either photo library or Files app
 
 import Foundation
 import UIKit
@@ -77,7 +79,7 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 
 
 	func choosePhotoFromFiles() // reads any image file recognized by public.image UTI
-		// At the moment I have disabled selecting entire directory, though functions are present throughout to handle this case (need debugging)
+		// I have disabled selecting an entire directory, though functions are present elsewher to handle this case (needs debugging)
 		{
 		//let vc = UIDocumentPickerViewController(documentTypes: ["public.image","public.directory"],in: .import)
 		let vc = UIDocumentPickerViewController(documentTypes: ["public.image"],in: .import)
@@ -87,6 +89,7 @@ class ImageSelector : NSObject, UIImagePickerControllerDelegate, UINavigationCon
 		//		vc.allowsMultipleSelection = true
 		//		}
 		//	}
+
 		viewController!.present(vc, animated: false)
 		}
 	

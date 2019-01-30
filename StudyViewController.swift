@@ -3,12 +3,12 @@
 //  QGTut
 //
 //  Created by mcmanderson on 6/14/18.
-//  Copyright © 2018 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
 
 import UIKit
 
-
+// Displays a table view of the studies currently accessible to Phlora 
 
 class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate, ImageSelectorDelegate {
 
@@ -242,14 +242,14 @@ class StudyViewController: UIViewController, UITableViewDelegate, UITableViewDat
 	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
 			{
 			tableView.deselectRow(at: indexPath, animated: true)
-			if indexPath.row != pickedRowIndex
-				{
-				var cell = tableView.cellForRow(at: IndexPath(row:pickedRowIndex, section:0))
+			//if indexPath.row != pickedRowIndex
+			//	{
+				//var cell = tableView.cellForRow(at: IndexPath(row:pickedRowIndex, section:0))
 				//cell?.accessoryType = .none
-				cell = tableView.cellForRow(at: indexPath)
+				//cell = tableView.cellForRow(at: indexPath)
 				//cell?.accessoryType = .checkmark
 				//pickedRowIndex = indexPath.row
-				}
+			//	}
 			pickedRowIndex = indexPath.row
 
 			transitionToTreeView(atStudyIndex: pickedRowIndex)

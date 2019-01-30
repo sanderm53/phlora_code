@@ -3,8 +3,10 @@
 //  QGTut
 //
 //  Created by mcmanderson on 5/15/17.
-//  Copyright © 2017 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// The tree view itself
 
 import UIKit
 import QuartzCore
@@ -21,7 +23,7 @@ import QuartzCore
 		}
 
 
-@IBDesignable
+//@IBDesignable
 
 /*
 This subview is inset from the superview. It then does a bunch

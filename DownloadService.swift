@@ -205,7 +205,7 @@ class DownloadService // Instantiate this once for the entire database table vie
 						}
 					}
 
-				print ("file copied to", targetURL)
+				//print ("file copied to", targetURL)
 				return targetURL
 				}
 			else

@@ -3,7 +3,7 @@
 //  QGTut
 //
 //  Created by mcmanderson on 9/13/18.
-//  Copyright © 2018 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
 
 import UIKit

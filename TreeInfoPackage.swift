@@ -3,8 +3,10 @@
 //  iTree
 //
 //  Created by mcmanderson on 5/25/17.
-//  Copyright © 2017 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// Data model for information regarding trees/studies, whether within app or in remote database
 
 import UIKit
 //import QuartzCore
@@ -218,7 +220,7 @@ class TreeInfoPackage
 
 			if ctokens.count >= 3 // could be a valid line; there might be others that just have white space or crap
 				{
-				if ctokens[0] == "mrca" && ctokens[2] == "=" && ctokens.count == 6
+				if ctokens[0].lowercased() == "mrca" && ctokens[2] == "=" && ctokens.count == 6
 					{
 					//print ("Taxa = ",ctokens[1],ctokens[3],ctokens[5])
 					mrca["cladeName"] = ctokens[1]
@@ -228,7 +230,7 @@ class TreeInfoPackage
 					mrcaArray.append(mrca)
 					}
 
-				if ctokens[0] == "tree" && ctokens[2] == "=" && ctokens.count >= 4
+				if ctokens[0].lowercased() == "tree" && ctokens[2] == "=" && ctokens.count >= 4
 					{
 					treeName = ctokens[1]
 					for token in ctokens[3...ctokens.count-1]
@@ -248,7 +250,7 @@ class TreeInfoPackage
 					treeDescription = ctokens[3...ctokens.count-1].joined()
 					}
 
-				if ctokens[0] == "reference" && ctokens[1] == "=" && ctokens.count >= 3
+				if ctokens[0].lowercased() == "reference" && ctokens[1] == "=" && ctokens.count >= 3
 					{
 					treeSource = ctokens[2...ctokens.count-1].joined()
 					treeSource = treeSource.replacingOccurrences(of: "'", with: "")
@@ -277,8 +279,8 @@ enum parserError: Error
 let nexusToken = "#nexus"
 let commentTokens = "\\[.*?\\]"
 //let nameTokens = "[A-Za-z]\\w*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore
-let nameTokens = "[A-Za-z][-\\w]*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore. Also, 1/5/19 I added dash to valid raw name token, but it is STILL MISHANDLING DASHES WITHIN A SINGLE QUOTE!
-let puncTokens = "[=\\,\\(\\)\\;\\:]"
+let nameTokens = "[A-Za-z][-\\.\\w]*|\\'.*?\\'"   // Starts with letter, but can include additional numbers, underscores...remember \w includes letters numbers and underscore. Also, 1/5/19 I added dash to valid raw name token, but it is STILL MISHANDLING DASHES WITHIN A SINGLE QUOTE! 1/29/19 I added period character to this to handle things like 'spp.' in names
+let puncTokens = "[=\\,\\(\\)\\;\\:]" // Does not include period
 let numberTokens = "[0-9]+\\.?[0-9]+([eE][-+]\\d+)?"
 let nwktokens = nameTokens + "|" + puncTokens   + "|" + numberTokens
 let puncTokensPlusTilde = "[~=\\,\\(\\)\\;\\:]"

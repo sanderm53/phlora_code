@@ -3,8 +3,10 @@
 //  QGTut
 //
 //  Created by mcmanderson on 6/20/18.
-//  Copyright © 2018 mcmanderson. All rights reserved.
+//  Copyright © 2019 Michael J Sanderson. All rights reserved.
 //
+
+// Display a page with HTML marked up text
 
 import Foundation
 import UIKit
