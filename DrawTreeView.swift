@@ -350,7 +350,21 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 				{
 				if !imagePane.isHidden && imagePane.isAttachedToNode()
 					{
-					// SHOULD IMBED THIS TEST IN THE SETLOC FUNC
+					// ........... Obscure place to do this but so be it:
+					// 	If we deleted an image but left its pane open with an 'addimage' message and then we downloaded an image
+					//	from the database, we have to load the image to the pane here. This gets called on main.async queue
+					//	from the database view controller code
+					
+					if imagePane.addImageLabel != nil
+						{
+						if let imageFileURL = imagePane.associatedNode?.imageFileURL
+							{
+							imagePane.loadImage(atPath: imageFileURL.path)
+							}
+						}
+
+					//............Now handle different layouts if panes are frozen or not
+					
 					if imagePane.isFrozen
 						{
 						imagePane.setLocationRelativeToTreeTo(0,imagePane.imageWindowCoord)

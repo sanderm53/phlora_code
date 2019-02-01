@@ -555,7 +555,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 	// I am adding an image from a picker, not from the file on disk. The imagepane already exists at this point but it might have two histories
 	//		a. pane might have been empty before, in which case it was initialized with "add" message and no long press gesture...
 	//		b. might have had an image and imagefile before, then was deleted, but in that case it WOULD have a GR before...
-	if node.imageFileURL == nil  // ... so this is case (a)
+	if node.hasImageFile() == false  // ... so this is case (a)
 		{
 		addLongTapGestureToDeleteImageFrom(imagePane)
 		}

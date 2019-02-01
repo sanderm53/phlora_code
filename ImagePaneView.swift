@@ -134,6 +134,11 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			}
 
 
+		func loadImage(atPath file:String)
+			{
+			if let image = UIImage(contentsOfFile:file)
+				{ loadImage(image) }
+			}
 
 		func loadImage (_ image:UIImage)
 			// Load image to an existing pane , get rid of addAdd label.
@@ -293,25 +298,34 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 
 		func reloadImageToFitPaneSizeIfNeeded ()
 			// Possibly resize image resolution to fit pane's resized imageView
+			// Beta testing revealed a little problem: imageView size is constrained by imagePaneView but 'scale()'
+			// did not allow this to instantly keep up, so better to do dimensions in terms of imagePaneView's...
 			{
+			//print ("Entering reload: paneFrame,imageViewFrame ",self.frame.size,imageView.frame.size)
 			guard imageOriginalResolution == .high else { return } // we never resize images that are low res to begin with
 
-			if imageView.frame.width > imageSizeWidthBoundary! // Large image?
+			//if imageView.frame.width > imageSizeWidthBoundary! // Large image?
+			if self.frame.width > imageSizeWidthBoundary! // Large image?
 				{
+				//print (imageView.frame.width)
 				if let oldImageWidth = imageView.image?.size.width
 					{
 					//if  oldImageWidth != imageView.frame.width // imageView has changed size, adjust resolution
 
-					if abs( (oldImageWidth - imageView.frame.width) / oldImageWidth ) > 0.10 // If imageView has changed by at least 10% then do consider changing resolution
+					//if abs( (oldImageWidth - imageView.frame.width) / oldImageWidth ) > 0.10 // If imageView has changed by at least 10% then do consider changing resolution
+					if abs( (oldImageWidth - self.frame.width) / oldImageWidth ) > 0.10 // If imageView has changed by at least 10% then do consider changing resolution
 
 						{
 						if let url = associatedNode?.imageFileURL
 							{
 							if let image = UIImage(contentsOfFile:url.path)
 								{
-								if image.size.width > imageView.frame.width  // Image is bigger than view, so downsample it
+								//if image.size.width > imageView.frame.width  // Image is bigger than view, so downsample it
+								if image.size.width > self.frame.width  // Image is bigger than view, so downsample it
 									{
-									let targetResolutionSize = CGSize(width:imageView.frame.width ,height:imageView.frame.height)
+									//let targetResolutionSize = CGSize(width:imageView.frame.width ,height:imageView.frame.height)
+									let targetResolutionSize = CGSize(width:self.frame.width ,height:self.frame.height)
+									//print (targetResolutionSize)
 									imageView.image = resizeUIImage(image:image, toSize:targetResolutionSize)
 									}
 								else	// Image is smaller than view, so just load image as is
@@ -325,7 +339,8 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					}
 				}
 			else // Transitioning from large to small image size?
-			if imageView.frame.width <= imageSizeWidthBoundary! &&  imageLoadedAtResolution == .high
+			//if imageView.frame.width <= imageSizeWidthBoundary! &&  imageLoadedAtResolution == .high
+			if self.frame.width <= imageSizeWidthBoundary! &&  imageLoadedAtResolution == .high
 				{
 				if imageSmall != nil // the save low res version
 					{
@@ -353,6 +368,9 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 
 		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
 				{
+// NB! When we scale the pane, the constrained imageView does not instantly match its size; Noticed this when using
+// the doubletap 2x mag function.
+
 				let theTransform = CGAffineTransform.identity.translatedBy(x: pt.x, y: pt.y).scaledBy(x: scale, y: scale).translatedBy(x: -pt.x, y: -pt.y) // note that this order is reversed from how you'd apply them to current transform (I think)
 				let newBounds = bounds.applying(theTransform)
 				let deltaOrigin = newBounds.origin // since original bounds was just 0,0
@@ -439,6 +457,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				let necessaryRectYCoordOffset = targetTreeCoord - node.coord.y
 				frame = frame.offsetBy(dx: 0, dy: necessaryRectYCoordOffset)
 				treeView.setNeedsDisplay()
+				treeView.setNeedsLayout() // fixes a bug where unfreezing sometimes disappeared the image briefly
 				//self.setNeedsDisplay()
 				}
 			}

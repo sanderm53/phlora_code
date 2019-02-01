@@ -206,11 +206,15 @@ extension DatabaseTableViewController: URLSessionDownloadDelegate
 					if let node = treeInfo.treeViewController?.treeView.xTree.nodeHash[fileNameBase]
 						{
 						node.imageFileURL = finalURL
+						node.imageFileDataLocation = .inDocuments // Bad debugging: this controls whether longpress GR is addded in TreeVC
+						//if let imagePane = node.imagePaneView
+						// DONT TRY THIS AT HOME	{ imagePane.delete() } // bit of a hack: this is case of a deleted image and now empty image pane on tree view; for now, let's just delete it back to the dot; then let user reopen with newly downloaded image
 						treeInfo.treeViewController?.treeView.xTree.nImages += 1
 						DispatchQueue.main.async
 							{
 							//treeInfo.treeViewController?.updateViewControllerTitle() I put this in treevc.viewdidappear()
 							treeInfo.treeViewController?.treeView.setNeedsDisplay() // to redraw the image icons
+							treeInfo.treeViewController?.treeView.setNeedsLayout() // to refresh possibly empty imagePanes by calling layoutsubviews
 							// Are there any issues here having possibly many async dispatches for large collection downloads?
 							}
 						}
