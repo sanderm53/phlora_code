@@ -343,7 +343,7 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 
 	override func layoutSubviews()
 		{
-		//super.layoutSubviews() ???? yup what about other subviews? OOps this assumes all subviews are imagepanes!!!
+		//super.layoutSubviews() ???? 
 		for subview in subviews
 			{
 			if let imagePane = subview as? ImagePaneView
@@ -354,8 +354,9 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 					// 	If we deleted an image but left its pane open with an 'addimage' message and then we downloaded an image
 					//	from the database, we have to load the image to the pane here. This gets called on main.async queue
 					//	from the database view controller code
-					
-					if imagePane.addImageLabel != nil
+
+					//if imagePane.addImageLabel != nil
+					if imagePane.imageIsLoaded == false //...but there is a file now...
 						{
 						if let imageFileURL = imagePane.associatedNode?.imageFileURL
 							{

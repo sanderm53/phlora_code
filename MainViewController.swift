@@ -78,11 +78,12 @@ class MainViewController: UIViewController {
 		if databaseViewController == nil
 			{
 			databaseViewController = DatabaseTableViewController()
-			if let localTreesData = studyViewController?.treesData
-				{
-				databaseViewController?.localTreesData = localTreesData // Store this for use by that vc to update images on existing tree vc's
-				}
+			//if let localTreesData = studyViewController?.treesData
+			//	{
+			//	databaseViewController?.localTreesData = localTreesData // Store this for use by that vc to update images on existing tree vc's
+			//	}
 			}
+		databaseViewController?.localTreesData = studyViewController?.treesData // Store this for use by that vc to update images on existing tree vc's. This might be nil of course.
 		self.navigationController?.pushViewController(databaseViewController!, animated: true)
 // Is there a more approp place for these...? Probably in viewWillAppear of studyVC? and treeVC--Nope tried these, nor viewDidLoad
         navigationController!.setToolbarHidden(false, animated: false)

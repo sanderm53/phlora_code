@@ -202,6 +202,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				if let addImageLabel = addImageLabel // remove an existing addaddimage label if present
 					{
 					addImageLabel.removeFromSuperview()
+					self.addImageLabel = nil
 					}
 			}
 

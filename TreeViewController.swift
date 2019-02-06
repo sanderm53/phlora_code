@@ -177,6 +177,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 		searchController.obscuresBackgroundDuringPresentation = false
 		searchController.searchBar.placeholder = "Search leaf labels"
 		searchController.searchBar.barStyle = .black
+		searchController.searchBar.autocapitalizationType = .none
 		searchController.searchBar.delegate = self
 		searchController.hidesNavigationBarDuringPresentation = true
 		definesPresentationContext = true

@@ -133,6 +133,7 @@ class DownloadService // Instantiate this once for the entire database table vie
 					let alert = UIAlertController(title:"Really download \(nFilesToDownload) files to your device?",message:"", preferredStyle: .alert)
 					let action1 = UIAlertAction(title: "Cancel", style: .cancel)
 						{ (action:UIAlertAction) in
+						self.annotatedProgressView.isHidden = true // needed to get rid of progress view if cancel immediately
 						self.viewController.dismiss(animated:true)
 						}
 					let action2 = UIAlertAction(title: "Download", style: .default)
