@@ -38,7 +38,7 @@ var deviceType:UIUserInterfaceIdiom!
 var imageScale:CGFloat = 1.0
 let buttonGap:CGFloat = 60
 
-var treeView: DrawTreeView!  // had to drop the 'weak' to do the programmatic view handling
+var treeView: TreeView!  // had to drop the 'weak' to do the programmatic view handling
 var helpView: UITextView!
 var updateImagesButton: UIButton!
 var infoButton: UIButton!
@@ -345,7 +345,7 @@ func filterContentForSearchText(_ searchText: String, scope: String = "All")
 // ***********************************************************************************
 
 	// CAREFUL HERE RE: COORD SYSTEMS. Use 'treeView' as view in gesture recognizers. If you use self.view, the coords are in superview's system, which is a larger rectangle.
-	// See diagram in DrawTreeView.swift.
+	// See diagram in TreeView.swift.
 	// This is because the view hierarchy set up has self.view as root and a subview called treeView
 
 // ***********************************************************************************
@@ -546,7 +546,7 @@ func handleImagePaneSingleTap(recognizer : UITapGestureRecognizer)
 // Handle the image selected from file system. This is required by the ImageSelector delegate protocol
 func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage)
 	{
-	let treeView = imageSelector.sourceView as! DrawTreeView
+	let treeView = imageSelector.sourceView as! TreeView
 	let imagePane = imageSelector.imagePane
 	guard let node = imagePane.associatedNode  else  { return }
 
@@ -588,7 +588,7 @@ func imageSelector(_ imageSelector: ImageSelector, didSelectImage image: UIImage
 // This is for selecting a directory only...
 func imageSelector(_ imageSelector: ImageSelector, didSelectDirectory url: URL)
 	{
-	let treeView = imageSelector.sourceView as! DrawTreeView
+	let treeView = imageSelector.sourceView as! TreeView
 	let fileManager = FileManager.default
 
 
@@ -859,15 +859,15 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 					let aFrame = centeredRect(center: CGPoint(x:treeView.decoratedTreeRect.midX,y:treeView.decoratedTreeRect.midY), size: CGSize(width:0,height:0)) // coords of "center" of tree
 
 //iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:pickedNode, onTree:treeView.xTree)
-	if let imageFilePath = pickedNode.imageFileURL?.path // node has an imageFile
-		{
-		let image = UIImage(contentsOfFile:imageFilePath)
-		iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:nil, withImage:image, imageLabel:pickedNode.label,showBorder:true)
-		}
-	else
-		{
-		iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:nil, withImage:nil, imageLabel:pickedNode.label,showBorder:true)
-		}
+					if let imageFilePath = pickedNode.imageFileURL?.path // node has an imageFile
+						{
+						let image = UIImage(contentsOfFile:imageFilePath)
+						iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:nil, withImage:image, imageLabel:pickedNode.label,showBorder:true)
+						}
+					else
+						{
+						iconPanningImagePane = ImagePaneView(usingFrame:aFrame, atNode:nil, withImage:nil, imageLabel:pickedNode.label,showBorder:true)
+						}
 
 					iconPanningImagePane!.isFrozen = true // to guarantee stuck in cnter
 
@@ -909,17 +909,33 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 						}
 
 				}
-			else // panning on rest of tree view
+			else // panning on rest of tree view incl labels
 				{
-				treeView.panTranslateTree += translation.y // keeps track of panning position changes
-				let bottomGap = treeOpensGapAtBottomByThisMuch(withPanOffset: treeView.panTranslateTree)
-				let topGap = treeOpensGapAtTopByThisMuch(withPanOffset: treeView.panTranslateTree)
-				if (bottomGap > 0.0) {treeView.panTranslateTree -= translation.y} // note translation must have been negative
-				else if (topGap > 0.0) {treeView.panTranslateTree -= translation.y}
+				if treeView.leafLabelsRect.contains(location) && translationMostlyHorizontal(translation)
+					{
+					var labelWidthAllowed = treeView.labelWidthAllowed - translation.x
+					if labelWidthAllowed > treeView.maxLabelWidth
+						{ labelWidthAllowed = treeView.maxLabelWidth}
+					if labelWidthAllowed < treeSettings.minLabelWidth
+						{labelWidthAllowed = treeSettings.minLabelWidth}
+					treeView.labelWidthAllowed = labelWidthAllowed
+					treeView.updateTreeViewWhenLabelRectWidthSet(to:labelWidthAllowed)
+					treeView.setNeedsDisplay() // have to do these triggers here to keep display smooth
+					treeView.setNeedsLayout()
+					recognizer.setTranslation(CGPoint(x:0,y:0), in: treeView)
+					}
+				else
+					{
+					treeView.panTranslateTree += translation.y // keeps track of panning position changes
+					let bottomGap = treeOpensGapAtBottomByThisMuch(withPanOffset: treeView.panTranslateTree)
+					let topGap = treeOpensGapAtTopByThisMuch(withPanOffset: treeView.panTranslateTree)
+					if (bottomGap > 0.0) {treeView.panTranslateTree -= translation.y} // note translation must have been negative
+					else if (topGap > 0.0) {treeView.panTranslateTree -= translation.y}
 
-				treeView.setNeedsDisplay()
-				treeView.setNeedsLayout()
-				recognizer.setTranslation(CGPoint(x:0,y:0), in: treeView)
+					treeView.setNeedsDisplay()
+					treeView.setNeedsLayout()
+					recognizer.setTranslation(CGPoint(x:0,y:0), in: treeView)
+					}
 				}
 			}
 		if recognizer.state == UIGestureRecognizerState.ended
@@ -948,7 +964,13 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 				}
 			}
 		}
-
+func translationMostlyHorizontal(_ translation:CGPoint)->Bool
+	{
+	if abs(translation.y) < abs(translation.x)
+		{ return true}
+	else
+		{ return false}
+	}
 // ***********************************************************************************
 
 	func handlePinch(recognizer : UIPinchGestureRecognizer)
@@ -1014,14 +1036,14 @@ func handleImagePaneDoubleTap(recognizer : UITapGestureRecognizer)
 			// so return a + value if open space exists, otherwise a minus
 			// Note we have to nudge this a bit to add space for 1/2 the taxon labels at top and bottom
 		{
-		let yW = treeWindowCoord(fromTreeCoord: +treeView.xTree.maxY) + offset + max(treeView.maxStringHeight/2.0,treeSettings.imageIconRadius)
+		let yW = treeWindowCoord(fromTreeCoord: +treeView.xTree.maxY) + offset + max(treeView.maxLabelHeight/2.0,treeSettings.imageIconRadius)
 		return (treeView.decoratedTreeRect.maxY-yW)
 		}
 
 	func treeOpensGapAtTopByThisMuch(withPanOffset offset:CGFloat)->CGFloat
 		{
 
-		let yW = treeWindowCoord(fromTreeCoord: -treeView.xTree.maxY) + offset - max(treeView.maxStringHeight/2.0,treeSettings.imageIconRadius)
+		let yW = treeWindowCoord(fromTreeCoord: -treeView.xTree.maxY) + offset - max(treeView.maxLabelHeight/2.0,treeSettings.imageIconRadius)
 		
 		return yW - treeView.decoratedTreeRect.minY
 		}

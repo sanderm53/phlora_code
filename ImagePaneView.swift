@@ -367,7 +367,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 
 
 
-		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:DrawTreeView)
+		func scale(by scale:CGFloat, around pt:CGPoint, inTreeView treeView:TreeView)
 				{
 // NB! When we scale the pane, the constrained imageView does not instantly match its size; Noticed this when using
 // the doubletap 2x mag function.
@@ -388,7 +388,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				self.scale *= scale
 				}
 
-		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:DrawTreeView)
+		func translate(dx x:CGFloat, dy y:CGFloat, inTreeView treeView:TreeView)
 				{
 				let testFrameInsets:CGFloat = 100
 				var vertInset,horizInset:CGFloat
@@ -421,7 +421,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				self.transform = CGAffineTransform.identity.translatedBy(x: x, y: y)
 				}
 
-		func setLocationRelativeTo(treeView t:DrawTreeView)
+		func setLocationRelativeTo(treeView t:TreeView)
 				{
 				if let node = associatedNode
 					{
@@ -430,7 +430,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 					}
 				}
 
-		func convert(panePt pt:CGPoint, toTreeView treeView:DrawTreeView) -> CGPoint
+		func convert(panePt pt:CGPoint, toTreeView treeView:TreeView) -> CGPoint
 			{
 			let nodeY = self.associatedNode!.coord.y
 			let treeCoordY = nodeY + pt.y
@@ -439,7 +439,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 			return CGPoint(x: X, y: Y)
 			}
 
-		func freeze(inTreeView treeView:DrawTreeView)
+		func freeze(inTreeView treeView:TreeView)
 			{
 			if let node = associatedNode
 				{
@@ -449,7 +449,7 @@ class ImagePaneView: UIView, UIGestureRecognizerDelegate
 				}
 			}
 
-		func unfreeze(inTreeView treeView:DrawTreeView)
+		func unfreeze(inTreeView treeView:TreeView)
 			{
 			if let node = associatedNode
 				{

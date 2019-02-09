@@ -56,6 +56,7 @@ struct Settings
 	let imageSizeAtLowRes:CGFloat
 	let imageResolutionSmallSize:CGFloat // product of height and width of image is compared to this cutoff to determine its "resolution"
 	let defaultDatabasePath:String
+	let minLabelWidth:CGFloat // labels are not allowed to be squeezed smaller than this width
 	}
 
 let iPhoneTreeSettings=Settings(
@@ -103,7 +104,8 @@ let iPhoneTreeSettings=Settings(
 	imageSizeAtLowRes:1000.0,
 	imageResolutionSmallSize:1000000.0,
 	//defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
-	defaultDatabasePath:"http://phlora.org"
+	defaultDatabasePath:"http://phlora.org",
+	minLabelWidth:35
 	)
 
 	let iPadTreeSettings=Settings(
@@ -152,7 +154,8 @@ let iPhoneTreeSettings=Settings(
 	imageSizeAtLowRes:1000.0,
 	imageResolutionSmallSize:1000000.0,
 	//defaultDatabasePath:"http://db.herbarium.arizona.edu/phlora"
-	defaultDatabasePath:"http://phlora.org"
+	defaultDatabasePath:"http://phlora.org",
+	minLabelWidth:50
 	)
 
 	var treeSettings = iPadTreeSettings // as a default

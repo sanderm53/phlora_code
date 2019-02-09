@@ -11,13 +11,13 @@
 import UIKit
 import QuartzCore
 
-	func WindowCoord(fromTreeCoord Y:CGFloat, inTreeView treeView:DrawTreeView)->CGFloat
+	func WindowCoord(fromTreeCoord Y:CGFloat, inTreeView treeView:TreeView)->CGFloat
 		{
 		return (Y + treeView.decoratedTreeRect.midY + treeView.panTranslateTree)
 		
 		}
 
-	func TreeCoord(fromWindowCoord y:CGFloat, inTreeView treeView:DrawTreeView)->CGFloat
+	func TreeCoord(fromWindowCoord y:CGFloat, inTreeView treeView:TreeView)->CGFloat
 		{
 		return (y - treeView.decoratedTreeRect.midY - treeView.panTranslateTree)
 		}
@@ -33,7 +33,7 @@ Therefore, the init() for the subview apparently runs before the geometry is est
 sure to initialize any geometry dependent stuff in that view controller func. The init() below should ONLY
 handle stuff about the tree that is not dependent on the window geometry.
 
-The drawTreeView is a subview of UIView.
+The TreeView is a subview of UIView.
 Inside this is decoratedTree rectangle, which is the smallest rectangle containing the tree, taxa labels, and image icons. It may be vertically smaller than the UIView frame, so we can write some stuff at the bottom or top.
 Inside the decoratedTree is the nakedTree rectangle, which is the smallest rectangle containing just the
 tree's edges! No labels, etc. We center this around y=0 to build the tree node coordinate system.
@@ -43,7 +43,7 @@ There are a couple of other rectangles defined relative to the image icons; see 
 |---------------------------------------------------------------------------|
 |  View:UIView (basically the entire screen)                                |
 |  |----------------------------------------------------------------------| |
-|  | drawTreeView:UIView (inset on all sides from superview, set up in IB)| |
+|  |     TreeView:UIView (inset on all sides from superview              )| |
 |  |   |---------------------------------------------------------------|  | |
 |  |   | decoratedTreeRect:CGRect  (tree+trimmings)                    |  | |
 |  |   |    |-----------------------------------|                      |  | |
@@ -65,7 +65,7 @@ There are a couple of other rectangles defined relative to the image icons; see 
 
 
 
-class DrawTreeView: UIView
+class TreeView: UIView
 	{
 	var xTree:XTree!
 	var ctx : CGContext!
@@ -86,8 +86,8 @@ class DrawTreeView: UIView
 			NSFontAttributeName : UIFont(name:treeSettings.titleFontName, size:treeSettings.titleFontSize)!
 			]								// attributes for leaf labels
 	var scaleTreeBy:CGFloat=1.0				// realtime scaling of the y-axis tree size for pinch/zoom
-	var maxStringLength:CGFloat=0.0			// length of longest leaf label
-	var maxStringHeight:CGFloat=0.0			// height of heighest leaf label
+	var maxLabelWidth:CGFloat=0.0			// length of longest leaf label
+	var maxLabelHeight:CGFloat=0.0			// height of heighest leaf label
 	let imageIconWidth:CGFloat=40.0			// width to reserve for icon to the right of taxon name, for an image; center in this width
 	var xCenterImageIcon:CGFloat!				// the x coord of center of image icon
 	let topBorderInsetFromFrame:CGFloat=0.0	// Space for info at top and bottom of drawTree frame
@@ -105,7 +105,7 @@ class DrawTreeView: UIView
 	var decoratedTreeRectMinusImageIcons:CGRect!	// decorated rect minus the right column containing image icons
 	var imageIconsRect:CGRect!						// Just the rectangle containing the image icons on right of screen
 	var bottomInfoRect:CGRect!					// Rectangle below tree containing information
-
+	var leafLabelsRect:CGRect!					// Rectangle containing leaf labels only
 	var panTranslateTree:CGFloat=0.0			// realtime translation of y-axis of tree for panning
 /* yuck; easy to get into infinite loops when layoutSubviews messes with panTranslateTree somewhere in its call chain
 		{
@@ -124,7 +124,8 @@ class DrawTreeView: UIView
 	var imagesAreVisible = true					// used to toggle images (not image icons) all on or all off
 	var cladeNamesAreVisible = false				// used to toggle whether all (available) clade names
 	var showingImageAddButtons:Bool = false
-
+	var stretchLeafLabelBy:CGFloat = 0.0
+	var labelWidthAllowed = treeSettings.truncateLabelsLength // this may be shorter
 
 
 	// Used if view is called programmatically
@@ -161,7 +162,15 @@ class DrawTreeView: UIView
 		let paragraphStyle = NSMutableParagraphStyle()
 		paragraphStyle.lineBreakMode = .byTruncatingTail
 		taxonLabelAttributes[NSParagraphStyleAttributeName]=paragraphStyle
-
+		(maxLabelWidth,maxLabelHeight) =  xTree.root.getLabelSizeInfo(withAttributes: taxonLabelAttributes)
+		if treeSettings.truncateLabels // Set this up initially
+			{
+			labelWidthAllowed = min (maxLabelWidth,treeSettings.truncateLabelsLength)
+			}
+		else
+			{
+			labelWidthAllowed = maxLabelWidth
+			}
 		}
 
 	func updateTreeViewIfNeeded() // Basic initialization of tree layout; called in viewDidLayoutSubviews, and applicationDidBecomeActive
@@ -200,6 +209,27 @@ func treeOpensGapAtTopByThisMuch()->CGFloat
 func treeOpensGapAtBottomByThisMuch()->CGFloat
 	{
 	return nakedTreeRect.maxY - WindowCoord(fromTreeCoord:xTree.maxY, inTreeView:self)
+	}
+
+
+func updateTreeViewWhenLabelRectWidthSet(to newWidth:CGFloat)
+	// Manage the change in the tree when we expand or contract the allowed label width
+	// Its easier to sidestep other functions and use a transform here to avoid a bunch of assumptions in those functions
+	{
+		let widthIncrease =  newWidth - leafLabelsRect.width
+		let originalNakedTreeWidth = nakedTreeRect.width
+		nakedTreeRect = UIEdgeInsetsInsetRect(nakedTreeRect, UIEdgeInsets(top: 0, left: 0, bottom: 0, right: widthIncrease))
+
+		nakedTreeRectCentered = UIEdgeInsetsInsetRect(nakedTreeRectCentered, UIEdgeInsets(top: 0, left: 0, bottom: 0, right: widthIncrease))
+
+		leafLabelsRect = UIEdgeInsetsInsetRect(leafLabelsRect, UIEdgeInsets(top: 0, left: -widthIncrease, bottom: 0, right: 0))
+		let scaleFactor = nakedTreeRect.width/originalNakedTreeWidth
+		var nodeTransform = CGAffineTransform(translationX: +nakedTreeRect.minX, y: 0)
+		nodeTransform = nodeTransform.scaledBy(x: scaleFactor, y: 1.0)
+		nodeTransform = nodeTransform.translatedBy(x: -nakedTreeRect.minX, y: 0)
+		xTree.root.transformTreeCoords(by : nodeTransform)
+		// Have to be careful to do this w.r.t left margin of tree rect.
+		// Also note the reverse ordering of transform operations, because I am doing operators on the transform, not the points...
 	}
 
 
@@ -254,13 +284,8 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 
 	func setupViewDependentTreeRectsEtc() // Inits a tree filling the treeView with 0 pan and 1.0 scale
 		{
-		(maxStringLength,maxStringHeight) =  xTree.root.getLabelSizeInfo(withAttributes: taxonLabelAttributes)
+//		(maxLabelWidth,maxLabelHeight) =  xTree.root.getLabelSizeInfo(withAttributes: taxonLabelAttributes)
 
-		if treeSettings.truncateLabels
-			{
-			maxStringLength = min (maxStringLength,treeSettings.truncateLabelsLength)
-			}
-		
 		// the bounds rectangle is in the treeView's coord system, with origin of 0,0. That's the coord
 		// system that draw commands go into, rather than the frame. The ycenter of the tree stays fixed
 		// in the coord system, but the origin moves when the frame gets resized, which has to be corrected
@@ -277,13 +302,15 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 
 		imageIconsRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: 0, left: decoratedTreeRectMinusImageIcons.width, bottom: 0, right: 0))
 
-		let neededTopBottomGap = max(maxStringHeight/2.0,treeSettings.imageIconRadius) // to make room for labels and image icon space
+		let neededTopBottomGap = max(maxLabelHeight/2.0,treeSettings.imageIconRadius) // to make room for labels and image icon space
 
-		nakedTreeRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: neededTopBottomGap, left: 0, bottom: neededTopBottomGap, right: maxStringLength+imageIconWidth))
+		nakedTreeRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: neededTopBottomGap, left: 0, bottom: neededTopBottomGap, right: labelWidthAllowed+imageIconWidth))
 
 		nakedTreeRectCentered = nakedTreeRect.offsetBy(dx: 0, dy: -nakedTreeRect.midY)
 
-		labelScaleFactor = CGFloat(xTree.root.numDescLvs!)*maxStringHeight*labelSpacingFactor/decoratedTreeRect.height
+		leafLabelsRect = UIEdgeInsetsInsetRect(decoratedTreeRect, UIEdgeInsets(top: 0, left: nakedTreeRect.width, bottom: 0, right: imageIconsRect.width))
+
+		labelScaleFactor = CGFloat(xTree.root.numDescLvs!)*maxLabelHeight*labelSpacingFactor/decoratedTreeRect.height
 		edgeScaleFactor = edgeDarknessFactor/CGFloat(xTree.root.numDescLvs!)
 		backgroundColor=treeSettings.viewBackgroundColor
 		xCenterImageIcon = decoratedTreeRect.maxX - imageIconWidth/2.0
@@ -328,12 +355,12 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 //
 		let everyNthLabel=floorPow2(UInt(labelScaleFactor/scaleTreeBy))	// complicated but guarantees that this is an integer on [1,2,4,8..] which means once a label appears on screen it will stay on screen as we zoom in
 
-		xTree.root.drawClade(inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ decoratedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon, showingAddButtons:showingImageAddButtons)
+			xTree.root.drawClade(inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxLabelHeight/2.0,nakedTreeRect:/*self.bounds*/ decoratedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon, showingAddButtons:showingImageAddButtons,leafLabelRectangle:leafLabelsRect)
 			// NB. Jult 31,2018: this got corrected to pass decoratedTreeRect instead of nakedTreeRect, but note I haven't changed parameter id yet. This makes the upper/lower border behavior of tree/labels clean now.
 		
 		if cladeNamesAreVisible && xTree.hasCladeNames
 			{
-			xTree.root.drawInternalLabels(havingNodeArray:xTree.nodeArray,inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxStringHeight/2.0,nakedTreeRect:/*self.bounds*/ nakedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
+			xTree.root.drawInternalLabels(havingNodeArray:xTree.nodeArray,inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxLabelHeight/2.0,nakedTreeRect:/*self.bounds*/ nakedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
 			}
 		
 		}

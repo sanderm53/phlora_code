@@ -66,7 +66,7 @@ class TreesData
 	
 		}
 
-	func selectTreeView(forTreeName treeName:String)->DrawTreeView
+	func selectTreeView(forTreeName treeName:String)->TreeView
 		{
 		// make all trees that have had a treeView at sometime in past be hidden in prep for selecting a new one
 		for treeInfo in treeInfoDictionary.values
@@ -78,7 +78,7 @@ class TreesData
 		let treeInfo = treeInfoDictionary[treeName]!
 		if treeInfo.treeView == nil // This tree view has never been created, so init it and return it
 			{
-			treeInfo.treeView = DrawTreeView(using:treeInfo)
+			treeInfo.treeView = TreeView(using:treeInfo)
 			}
 		treeInfo.treeView!.isHidden = false
 		return treeInfo.treeView!
@@ -162,7 +162,7 @@ class TreeInfoPackage
 	var treeSource:String
 	var mrcaArray: [Dictionary<String, String>] = []
 	var treeViewController:TreeViewController?
-	var treeView:DrawTreeView?
+	var treeView:TreeView?
 	var isHidden:Bool = true
 	var nLeaves:Int=0
 	var nImages:Int?

@@ -366,11 +366,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 			{
 			if self.label != nil
 				{
-
-
 				drawRoundedRectClade(inContext:ctx, havingNodeArray:nodeArray)
-
-
 				//let nudge = CGFloat(4.0)
 				// handle writing the label here
 
@@ -402,9 +398,9 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 						{
 						textRect = CGRect(x:self.coord.x-aText.size().width-nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
 						}
-					else // Too big, so align left against screen
+					else // Too big, so align left against left margin
 						{
-						textRect = CGRect(x:nudge,y:self.coord.y-textHeight/2,width:nakedTreeRect.width, height:textHeight)
+						textRect = CGRect(x:nakedTreeRect.minX+nudge,y:self.coord.y-textHeight/2,width:nakedTreeRect.width-nudge, height:textHeight)
 						}
 
 					}
@@ -563,7 +559,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 			if imagePane.isFrozen
 				{
-				guard let treeView = imagePane.superview as? DrawTreeView else { return }
+				guard let treeView = imagePane.superview as? TreeView else { return }
 				let targetTreeCoord = TreeCoord(fromWindowCoord: imagePane.imageWindowCoord,inTreeView: treeView)
 				imagePaneUpperRight = CGPoint(x: imagePane.frame.maxX, y: targetTreeCoord-imagePane.frame.height/2.0 + imagePane.center.y)
 				}
@@ -625,7 +621,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		}
 
 
-	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat, showingAddButtons   showingImageAddButtons:Bool)
+	func drawClade(inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat, showingAddButtons   showingImageAddButtons:Bool,leafLabelRectangle leafLabelsRect:CGRect)
 			{
 		var curAlpha:CGFloat = 0.0 // need this default below!
 		let radius:CGFloat=3 // Adjust this to change roundedness of corners
@@ -650,20 +646,14 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 			// Only handle label writing if it will be visible!
 			if treeCoordIsInRect(coord: coord.y, theRect: nakedTreeRect, withPanTranslate: panTranslate)
 				{
-
-
-
 				let aText=NSAttributedString(string:self.label!,attributes: textAttributes)
 				let vertCenteredPt = CGPoint(x:self.coord.x+labelSpacing,y:self.coord.y-yOffset)
 
-
-if foundInSearch
-	{
-	let leafPt = CGPoint(x:self.coord.x,y:self.coord.y)
-	drawImageIcon(ofType:.filledCircle(UIColor.red.cgColor,1.0), inContext:ctx, atPointCenter:leafPt,withRadius:5.0)
-	}
-
-
+			if foundInSearch
+				{
+				let leafPt = CGPoint(x:self.coord.x,y:self.coord.y)
+				drawImageIcon(ofType:.filledCircle(UIColor.red.cgColor,1.0), inContext:ctx, atPointCenter:leafPt,withRadius:5.0)
+				}
 
 				// Following code sets up a fade out for the text labels as we zoom tree in out, controlled
 				// by setting context alpha value
@@ -696,7 +686,8 @@ if foundInSearch
 					// Draw the labels
 					if treeSettings.truncateLabels
 						{
-						let textRect = CGRect(origin: vertCenteredPt, size: CGSize(width: treeSettings.truncateLabelsLength, height: 2*yOffset))
+						//let textRect = CGRect(origin: vertCenteredPt, size: CGSize(width: treeSettings.truncateLabelsLength, height: 2*yOffset))
+						let textRect = CGRect(origin: vertCenteredPt, size: CGSize(width: leafLabelsRect.width, height: 2*yOffset))
 						aText.draw(in:textRect)
 						}
 					else
@@ -832,7 +823,7 @@ if foundInSearch
 				}
 			for child in children
 				{
-				child.drawClade(inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter, showingAddButtons:showingImageAddButtons)
+				child.drawClade(inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter, showingAddButtons:showingImageAddButtons,leafLabelRectangle:leafLabelsRect)
 				}
 			}
 		}
