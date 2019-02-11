@@ -360,7 +360,7 @@ func updateTreeViewWhenSizeChanged(oldWindowHeight oldH:CGFloat) // On resize or
 		
 		if cladeNamesAreVisible && xTree.hasCladeNames
 			{
-			xTree.root.drawInternalLabels(havingNodeArray:xTree.nodeArray,inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxLabelHeight/2.0,nakedTreeRect:/*self.bounds*/ nakedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
+			xTree.root.drawClassification(havingNodeArray:xTree.nodeArray,inContext: ctx, withAttributes: taxonLabelAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor/scaleTreeBy, withEdgeScaler: edgeScaleFactor*scaleTreeBy, labelMidY: maxLabelHeight/2.0,nakedTreeRect:/*self.bounds*/ nakedTreeRect, withPanTranslate:panTranslateTree, xImageCenter:xCenterImageIcon)
 			}
 		
 		}

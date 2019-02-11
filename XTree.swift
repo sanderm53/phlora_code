@@ -231,7 +231,8 @@ class XTree {
 			{
 			if node!.nodeFlag == true
 				{
-				node!.label = cladeName // NB! I am storing the cladeName as the display label -- really need to go through prepare label stuff!
+//node!.label = cladeName // NB! I am storing the cladeName as the display label -- really need to go through prepare label stuff!
+node!.cladeName = Node.CladeName(cladeName,ofType:.nodeBased)
 				hasCladeNames = true
 				return
 				}
@@ -257,7 +258,8 @@ class XTree {
 			{
 			if node!.parent!.nodeFlag == true
 				{
-				node!.label = cladeName // NB! I am storing the cladeName as the display label -- really need to go through prepare label stuff!
+ //node!.label = cladeName // NB! I am storing the cladeName as the display label -- really need to go through prepare label stuff!
+node!.cladeName = Node.CladeName(cladeName,ofType:.stemBased)
 				hasCladeNames = true
 				return
 				}

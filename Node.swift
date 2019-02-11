@@ -70,7 +70,23 @@ class Node {
   var closestImageIconNeighberDistance:Int = 10000
 
   var foundInSearch:Bool = false
-	
+	enum CladeNameType
+                {
+                case nodeBased
+                case stemBased
+                }
+	struct CladeName {
+		   var type:CladeNameType
+		   var label:String
+
+		   init(_ s:String, ofType ty:CladeNameType)
+				   {
+				   self.label = s
+				   self.type = ty
+				   }
+		   }
+	var cladeName:CladeName?
+
  func hasImagePaneView()->Bool
   	{
 	return imagePaneView != nil
@@ -106,7 +122,7 @@ class Node {
 	self.coord=CGPoint()
 	}
 
-  func isLabelPresent()->Bool { return label != nil }
+  //func isLabelPresent()->Bool { return label != nil }
 
 
   func add(child: Node)
@@ -360,15 +376,17 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 	...so perhaps need to come up with a fade function...
 */
 	
-	func drawInternalLabels(havingNodeArray nodeArray:[Node], inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat)
+	func drawClassification(havingNodeArray nodeArray:[Node], inContext ctx:CGContext, withAttributes textAttributes: [String: AnyObject]?, showEveryNthLabel everyNthLabel:UInt,withLabelScaler labelScaleFactor:CGFloat, withEdgeScaler edgeScaleFactor: CGFloat, labelMidY yOffset:CGFloat, nakedTreeRect:CGRect, withPanTranslate panTranslate:CGFloat, xImageCenter:CGFloat)
+		// Recurses in from this node and draws nested shaded rounded rectangles for named clades, and the clade label
 		{
-		if !isLeaf()  //  ouch, don't do what's to the right; messes up recursion...===> &&  self.originalLabel != nil
+		var cladeRootXPos:CGFloat
+//if !isLeaf()  //  ouch, don't do what's to the right; messes up recursion...===> &&  self.originalLabel != nil
+		if true  //  ouch, don't do what's to the right; messes up recursion...===> &&  self.originalLabel != nil
 			{
-			if self.label != nil
+			//if self.label != nil
+			if let cladeName = self.cladeName
 				{
 				drawRoundedRectClade(inContext:ctx, havingNodeArray:nodeArray)
-				//let nudge = CGFloat(4.0)
-				// handle writing the label here
 
 				var	cladeLabelAttributes = [
 						NSForegroundColorAttributeName : UIColor.yellow,
@@ -379,7 +397,8 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 				cladeLabelAttributes[NSParagraphStyleAttributeName]=paragraphStyle
 
 
-				let aText=NSAttributedString(string:self.label!,attributes: cladeLabelAttributes)
+				//let aText=NSAttributedString(string:self.label!,attributes: cladeLabelAttributes)
+				let aText=NSAttributedString(string:cladeName.label,attributes: cladeLabelAttributes)
 
 				let textHeight = aText.size().height
 				
@@ -388,15 +407,25 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 				let allowedTextWidthWithinClade = nakedTreeRect.maxX - self.coord.x-nudge
 				let allowedTextWidthLeftOfClade = self.coord.x - nudge
 				var textRect:CGRect
+
+				switch cladeName.type
+					{
+					case .nodeBased:
+						cladeRootXPos = self.coord.x
+					case .stemBased:
+						cladeRootXPos = parent!.coord.x  // for there to be a stem-based defn here, there has to be a parent
+					}
+
+
 				if aText.size().width < allowedTextWidthWithinClade // fits within clade
 					{
-					textRect = CGRect(x:self.coord.x+nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
+					textRect = CGRect(x:cladeRootXPos+nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
 					}
 				else
 					{
 					if aText.size().width < allowedTextWidthLeftOfClade // fits to left of clade aligned right against clade root
 						{
-						textRect = CGRect(x:self.coord.x-aText.size().width-nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
+						textRect = CGRect(x:cladeRootXPos-aText.size().width-nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
 						}
 					else // Too big, so align left against left margin
 						{
@@ -414,7 +443,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 			for child in children
 				{
-				child.drawInternalLabels(havingNodeArray:nodeArray, inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter)
+				child.drawClassification(havingNodeArray:nodeArray, inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter)
 				}
 
 			}
@@ -429,6 +458,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 	func maxUpperLengthLimitInDescendants(from leafNodeUpper:Node)->CGFloat
 		{
+if isLeaf() { return 0.0 } // happens with stem group defn of monotypic group
 		let edgeRoundAmount:CGFloat = 3 // this is the "radius" from the drawClade routine
 		var node=leafNodeUpper
 		var maxAllowedEdgeUpperLength = leafNodeUpper.coord.x  - leafNodeUpper.parent!.coord.x - edgeRoundAmount
@@ -436,7 +466,8 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 		while (node !== self) // traverse from leaf node back to root of this clade.
 			{
-			if !node.isLeaf() && node.isLabelPresent() // passing through internal node with a label on way back to root of this clade
+			//if !node.isLeaf() && node.isLabelPresent() // passing through internal node with a label on way back to root of this clade
+			if !node.isLeaf() && node.cladeName != nil // passing through internal node with a label on way back to root of this clade
 				{
 				var yMin:CGFloat = 10000000.0
 				var yMax:CGFloat = -10000000.0
@@ -470,16 +501,24 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		let edgeRoundAmount:CGFloat = 3 // this is the "radius" from the drawClade routine
 		let leafNodeUpper = nodeArray[Int(self.descendantRangeOfIDs.0)] // Upper refers to screen direction!
 		let leafNodeLower = nodeArray[Int(self.descendantRangeOfIDs.1)] // arrays don't want UInt subscripts
-		let nudge:CGFloat = 3.0 // keep clade boundary away from tree edges by this distance
+		let nudge:CGFloat = 5.0 // keep clade boundary away from tree edges by this distance
 
-
-// Careful! If these aren't big enough, it generates downstream glitches in the clade shape layout...
+		// Find the y-axis range of children of this node
+		// Careful! If these aren't big enough, it generates downstream glitches in the clade shape layout...
 		var yMin:CGFloat = 10000000.0
 		var yMax:CGFloat = -10000000.0
-		for child in children
+		if isLeaf() // for a leaf node (i.e., a monotypic stem based group
 			{
-				if child.coord.y < yMin {yMin = child.coord.y}
-				if child.coord.y > yMax {yMax = child.coord.y}
+			yMin = coord.y
+			yMax = coord.y
+			}
+		else // for an internal node get the range over children
+			{
+			for child in children
+				{
+					if child.coord.y < yMin {yMin = child.coord.y}
+					if child.coord.y > yMax {yMax = child.coord.y}
+				}
 			}
 		yMin += edgeRoundAmount
 		yMax -= edgeRoundAmount // this range measures the vertical edge (without corners) running through the self node
@@ -488,7 +527,17 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 // Nudge the "corners" so they do not overlap the tree edges
 		let upperRightCoord = CGPoint(x:leafNodeUpper.coord.x + nudge, y:leafNodeUpper.coord.y-nudge)
 		let lowerRightCoord = CGPoint(x:leafNodeLower.coord.x + nudge, y:leafNodeLower.coord.y+nudge)
-		let thisRootCoord = CGPoint(x:self.coord.x - nudge,y:self.coord.y)
+		
+		//let thisRootCoord = CGPoint(x:self.coord.x - nudge,y:self.coord.y)
+		var thisRootCoord:CGPoint
+		guard let cladeName = self.cladeName else {return}
+		switch cladeName.type
+			{
+			case .nodeBased:
+				thisRootCoord = CGPoint(x:self.coord.x - nudge,y:self.coord.y)
+			case .stemBased:
+				thisRootCoord = CGPoint(x:parent!.coord.x + nudge,y:self.coord.y) // Any stem def at a node will have a parent node
+			}
 
 		let topVertRadiusLimit = yMin - upperRightCoord.y
 		let topHorizRadiusLimit = (upperRightCoord.x - thisRootCoord.x) - maxUpperLengthLimitInDescendants(from:leafNodeUpper)

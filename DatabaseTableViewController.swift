@@ -195,12 +195,15 @@ extension DatabaseTableViewController: URLSessionDownloadDelegate
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tempLocalURL: URL)
 		{
 		guard let sourceURL = downloadTask.originalRequest?.url else { return }
-		let download = downloadService.activeDownloads[sourceURL] // do this before calling fileDidFinish...
-		guard let finalURL = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL) else { return }
-		// If we have opened a tree view in this session already for the same tree we are downloading to, let's update the nodes' info about an image as we download the images
-		if let localTreesData = localTreesData, let studyName = download?.studyName // no reason to pursue this if we haven't set up local study data yet
+		guard let download = downloadService.activeDownloads[sourceURL] else {return}// do this before calling fileDidFinish...
+		guard let finalURL = downloadService.fileDidFinishDownloading(from:sourceURL, to:tempLocalURL) else { return } // copy the file to disk or bail if couldn't
+		guard download.srcFileType == .imageFile else {return}
+		// If this is not an image file, at the moment I'm happy to have just save it to the right place
+		// TO DO. Add the text and tree files immediately to the running code, as I do with adding images ...
+		// If it is an image file...Then, if we have opened a tree view in this session already for the same tree we are downloading to, let's update the nodes' info about an image as we download the images
+		if let localTreesData = localTreesData // no reason to pursue this if we haven't set up local study data yet
 				{
-				if let treeInfo = localTreesData.treeInfoDictionary[studyName]
+				if let treeInfo = localTreesData.treeInfoDictionary[download.studyName]
 					{
 					let fileNameBase = finalURL.deletingPathExtension().lastPathComponent
 					if let node = treeInfo.treeViewController?.treeView.xTree.nodeHash[fileNameBase]
