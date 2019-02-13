@@ -78,12 +78,23 @@ class Node {
 	struct CladeName {
 		   var type:CladeNameType
 		   var label:String
+		   var originalLabel:String
 
 		   init(_ s:String, ofType ty:CladeNameType)
 				   {
-				   self.label = s
-				   self.type = ty
-				   }
+					self.originalLabel = s
+					self.type = ty
+					var label=originalLabel
+					if treeSettings.replaceUnderscore == true
+						{
+						label = label.replacingOccurrences(of: "_", with: " ")
+						}
+					if treeSettings.replaceSingleQuotes == true
+						{
+						label = label.replacingOccurrences(of: "'", with: "")
+						}
+					self.label = label
+					}
 		   }
 	var cladeName:CladeName?
 
@@ -381,8 +392,8 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 		{
 		var cladeRootXPos:CGFloat
 //if !isLeaf()  //  ouch, don't do what's to the right; messes up recursion...===> &&  self.originalLabel != nil
-		if true  //  ouch, don't do what's to the right; messes up recursion...===> &&  self.originalLabel != nil
-			{
+		//if true  //  ouch, don't do what's to the right; messes up recursion...===> &&  self.originalLabel != nil
+		//	{
 			//if self.label != nil
 			if let cladeName = self.cladeName
 				{
@@ -390,7 +401,7 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 
 				var	cladeLabelAttributes = [
 						NSForegroundColorAttributeName : UIColor.yellow,
-						NSFontAttributeName : UIFont(name:treeSettings.labelFontName, size:30)!
+						NSFontAttributeName : UIFont(name:treeSettings.labelFontName, size:treeSettings.cladeLabelFontSize)!
 						]								// attributes for leaf labels; paragraph style for truncation setup in setup()
 				let paragraphStyle = NSMutableParagraphStyle()
 				paragraphStyle.lineBreakMode = .byTruncatingTail
@@ -404,17 +415,20 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 				
 				let nudge:CGFloat = 5.0
 
-				let allowedTextWidthWithinClade = nakedTreeRect.maxX - self.coord.x-nudge
-				let allowedTextWidthLeftOfClade = self.coord.x - nudge
+				//let allowedTextWidthWithinClade = nakedTreeRect.maxX - self.coord.x-nudge
+				//let allowedTextWidthLeftOfClade = self.coord.x - nudge
 				var textRect:CGRect
-
+				var allowedTextWidthWithinClade:CGFloat
 				switch cladeName.type
 					{
 					case .nodeBased:
 						cladeRootXPos = self.coord.x
+						allowedTextWidthWithinClade = nakedTreeRect.maxX - cladeRootXPos - nudge
 					case .stemBased:
 						cladeRootXPos = parent!.coord.x  // for there to be a stem-based defn here, there has to be a parent
+						allowedTextWidthWithinClade = nakedTreeRect.maxX - cladeRootXPos - nudge
 					}
+				let allowedTextWidthLeftOfClade = cladeRootXPos - nudge
 
 
 				if aText.size().width < allowedTextWidthWithinClade // fits within clade
@@ -425,11 +439,13 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 					{
 					if aText.size().width < allowedTextWidthLeftOfClade // fits to left of clade aligned right against clade root
 						{
-						textRect = CGRect(x:cladeRootXPos-aText.size().width-nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
+						//textRect = CGRect(x:cladeRootXPos-aText.size().width-nudge,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
+						textRect = CGRect(x:cladeRootXPos-aText.size().width,y:self.coord.y-textHeight/2,width:aText.size().width, height:textHeight)
 						}
 					else // Too big, so align left against left margin
 						{
-						textRect = CGRect(x:nakedTreeRect.minX+nudge,y:self.coord.y-textHeight/2,width:nakedTreeRect.width-nudge, height:textHeight)
+						//textRect = CGRect(x:nakedTreeRect.minX+nudge,y:self.coord.y-textHeight/2,width:nakedTreeRect.width-nudge, height:textHeight)
+						textRect = CGRect(x:nakedTreeRect.minX,y:self.coord.y-textHeight/2,width:nakedTreeRect.width, height:textHeight)
 						}
 
 					}
@@ -446,11 +462,11 @@ func setEdgeAlphaModifier(haveSeenInternalLabel flag:Bool)
 				child.drawClassification(havingNodeArray:nodeArray, inContext:ctx, withAttributes: textAttributes, showEveryNthLabel: everyNthLabel, withLabelScaler: labelScaleFactor, withEdgeScaler:edgeScaleFactor, labelMidY:yOffset, nakedTreeRect: nakedTreeRect, withPanTranslate:panTranslate,xImageCenter: xImageCenter)
 				}
 
-			}
-		else // is leaf
-			{
-			return
-			}
+		//	}
+		//else // is leaf
+		//	{
+		//	return
+		//	}
 		}
 //***************************************************
 // Heinous code to make sure balloons remain nested. Following function is used to check for the length of the longest top right edge in any
@@ -495,19 +511,21 @@ if isLeaf() { return 0.0 } // happens with stem group defn of monotypic group
 
 // !! NOTE WE SHOULD CREATE PATH ONLY ONCE AND CHANGE IT ONLY ON ZOOMING. STAYS THE SAME ON PAN, BUT CURRENTLY RECOMPUTING EVEN THEN!!!
 // Note also this is for ONE KIND OF LADDERIZING ONLY. IT WILL BORK IF LADDERIZING IS REVERSED..
+// Feb 2019 I added ability to have a monotypic stem based clade. However, the code does not trivially let me fatten up the width of this without introducing artifacts in the polygon. Needs work.
 
 	func drawRoundedRectClade(inContext ctx:CGContext, havingNodeArray nodeArray:[Node])
 		{
-		let edgeRoundAmount:CGFloat = 3 // this is the "radius" from the drawClade routine
 		let leafNodeUpper = nodeArray[Int(self.descendantRangeOfIDs.0)] // Upper refers to screen direction!
 		let leafNodeLower = nodeArray[Int(self.descendantRangeOfIDs.1)] // arrays don't want UInt subscripts
-		let nudge:CGFloat = 5.0 // keep clade boundary away from tree edges by this distance
+		let edgeRoundAmount:CGFloat = 3.0 // this is same as "radius" in drawClade(), where that controls round corners of tree edges
+		let nudge:CGFloat = 3.0 // keep clade boundary away from tree edges by this distance
 
 		// Find the y-axis range of children of this node
 		// Careful! If these aren't big enough, it generates downstream glitches in the clade shape layout...
+		// yMin and yMax is the y range of the vertical line at the root of the clade; should be zero if a leaf, and is corrected downward below by the rounded corner dimension
 		var yMin:CGFloat = 10000000.0
 		var yMax:CGFloat = -10000000.0
-		if isLeaf() // for a leaf node (i.e., a monotypic stem based group
+		if isLeaf() // for a leaf node (i.e., a monotypic stem based group)
 			{
 			yMin = coord.y
 			yMax = coord.y
@@ -519,9 +537,9 @@ if isLeaf() { return 0.0 } // happens with stem group defn of monotypic group
 					if child.coord.y < yMin {yMin = child.coord.y}
 					if child.coord.y > yMax {yMax = child.coord.y}
 				}
+			yMin += edgeRoundAmount
+			yMax -= edgeRoundAmount // when not a leaf, that is, a range of subtaxa,
 			}
-		yMin += edgeRoundAmount
-		yMax -= edgeRoundAmount // this range measures the vertical edge (without corners) running through the self node
 
 // QUESTION: DO I NEED TO CORRECT LOWER EDGE AS WELL? MAYBE NOT BUT SHOULD CHECK!!! -- Checked and don't think so...
 // Nudge the "corners" so they do not overlap the tree edges
@@ -547,8 +565,6 @@ if isLeaf() { return 0.0 } // happens with stem group defn of monotypic group
 		var bottomRadius = lowerRightCoord.y - yMax
 		let bottomRadiusLimit = (leafNodeLower.parent!.coord.x + edgeRoundAmount) - thisRootCoord.x // don't allow radius to get larger than this
 		bottomRadius = min(bottomRadius,bottomRadiusLimit)
-
-
 
 		let topHorizEdgeLength = upperRightCoord.x - thisRootCoord.x - topRadius
 		let bottomHorizEdgeLength = lowerRightCoord.x - thisRootCoord.x - bottomRadius

@@ -23,6 +23,7 @@ struct Settings
 	let titleFontName:String
 	let titleFontColor:UIColor
 	let labelFontSize:CGFloat
+	let cladeLabelFontSize:CGFloat
 	let labelFontName:String
 	let labelFontColor:UIColor
 	let infoFontSize:CGFloat
@@ -71,6 +72,7 @@ let iPhoneTreeSettings=Settings(
 	titleFontName:"Helvetica",
 	titleFontColor:UIColor.white,
 	labelFontSize:12,
+	cladeLabelFontSize:24,
 	labelFontName:"Helvetica",
 	labelFontColor:UIColor.white,
 	infoFontSize:16,
@@ -120,6 +122,7 @@ let iPhoneTreeSettings=Settings(
 	titleFontName:"Helvetica",
 	titleFontColor:UIColor.white,
 	labelFontSize:18,
+	cladeLabelFontSize:30,
 	labelFontName:"Helvetica",
 	labelFontColor:UIColor.white,
 	infoFontSize:16,

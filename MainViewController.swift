@@ -68,7 +68,7 @@ class MainViewController: UIViewController {
 		if helpViewController == nil
 			{
 			helpViewController = htmlFileTextViewController()
-			helpViewController!.htmlFilePrefix="HelpGuide"
+			helpViewController!.htmlFilePrefix="Help"
 			}
 		self.navigationController?.pushViewController(helpViewController!, animated: true)
 		}
